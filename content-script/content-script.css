@@ -1,0 +1,319 @@
+keywordnote{
+  /* ===== Colors ===== */
+  --body-color: #E4E9F7;
+  --popup-color: #FFF;
+  --primary-color: #695CFE;
+  --primary-color-light: #F6F5FF;
+  --primary-color-light-popup: #695CFE;
+  --primary-text-light-popup: #FFF;
+  --toggle-color: #DDD;
+  --text-color: #707070;
+  /* ====== Transition ====== */
+  --tran-02: all 0.2s ease;
+  --tran-03: all 0.3s ease;
+  --tran-04: all 0.4s ease;
+  --tran-05: all 0.5s ease;
+  
+  background: var(--popup-color);
+}
+keywordnote.dark{
+  --body-color: #18191a;
+  --popup-color: #242526;
+  --primary-color: #3a3b3c;
+  --primary-color-light: #3a3b3c;
+  --primary-color-light-popup: #4D4F51;
+  --primary-text-light-popup: #ccc;
+  --toggle-color: #fff;
+  --text-color: #ccc;
+}
+keywordnote ::selection {
+    background-color: var(--primary-color-light-popup);
+    color: var(--primary-text-light-popup);
+}
+
+kw.highlight-keyword{
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+kw.highlight-keyword:not(.highlight-keyword-mutiple){
+	background: orange !important;
+	font-weight: bold;
+}
+kw.highlight-keyword.highlight-keyword-mutiple:not(:has(.highlight-keyword)) {
+    background: gold  !important;
+	font-weight: bold;
+}
+
+/* 簡易關鍵字懸浮視窗樣式 */
+keywordnote *{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+keywordnote .right_fade {
+    width: 3em;
+    position: absolute;
+    height: 100%;
+    left: 0;
+    background: linear-gradient(to left, var(--popup-color) 20%, transparent 100%);
+}
+keywordnote .bottom_fade {
+  height: 1em;
+  width: 100%;
+  position: absolute;
+  top: 85px;
+  background: linear-gradient(to top, var(--primary-color-light) 20%, transparent 100%);
+}
+
+keywordnote .keywordnote_popup {
+	position: absolute;
+	background-color: var(--popup-color);
+	color: var(--text-color);
+	padding: 10px;
+	box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+	text-align: center;
+	border-radius: 15px;
+	z-index: -10;
+  
+	max-width: 360px;
+	min-width: 300px;
+	
+	opacity: 0;
+	transition: opacity 0.3s ease-in-out;
+	
+	top: -500px;
+	left: -500px;
+}
+keywordnote .keywordnote_popup.show {
+	z-index: 10600;
+	opacity: 1;
+	transition: opacity 0.4s ease-in-out;
+}
+keywordnote .keywordnote_popup.quickclose {
+	z-index: -10;
+	opacity: 0;
+	top: -100px;
+	left: -100px;
+	transition: none;
+}
+keywordnote .popup_header {
+	display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  text-wrap: nowrap;
+}
+keywordnote .title_boder {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+	overflow: hidden;
+	position: relative;
+  margin-right: 8px;
+}
+keywordnote .title_boder .right_fade {
+  left: calc(218px - 3em);
+}
+keywordnote span#keyword_title {
+	font-size: 24px;
+	margin-top: 5px;
+	margin-bottom: 10px;
+  font-weight: 600;
+}
+keywordnote .keyword_button_container {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 5px;
+}
+keywordnote button {
+	border-radius: 15px;
+  height: 30px;
+  width: 30px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-color-popup);
+  color: var(--text-color);
+    
+  margin-right: 8px;
+  padding-top: 1px;
+}
+keywordnote button:hover{
+	background-color: var(--primary-color-light-popup);
+	color: var(--primary-text-light-popup);
+}
+keywordnote button .svg_icon {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+keywordnote .pin_note_container {
+	display: flex;
+  background-color: var(--primary-color-light);
+  border-radius: 8px;
+  margin-bottom: 3px;
+	flex-direction: column;
+	align-items: stretch;
+	text-align: left;
+  padding: 10px;
+}
+keywordnote div.pin_note_container img{
+    max-width: 100%;
+    height: auto;
+}
+keywordnote .note_block{
+	font-size: 15px;
+	flex: 1;
+	resize: none;
+  position: relative;
+  list-style-position: inside;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+}
+keywordnote .note_block .bottom_fade {
+  top: calc(100px - 1em);
+}
+keywordnote .note_content {
+  height: 100%;
+  /* overflow: hidden; */
+  max-height: 100px;
+  
+  overflow: auto;
+  overflow-x: hidden;
+}
+keywordnote .note_content::-webkit-scrollbar{
+  display: none;
+}
+keywordnote .note_content p{
+  margin: 0;
+}
+keywordnote .note_content ol {
+  padding-inline-start: 0;
+}
+
+keywordnote .note_content .table table {
+    border: 1px double #b3b3b3;
+    border-collapse: collapse;
+    border-spacing: 0;
+    height: 100%;
+    width: 100%;
+}
+keywordnote .note_content .table table td,
+keywordnote .note_content .table table th {
+    border: 1px solid #bfbfbf;
+    min-width: 2em;
+    padding: .4em;
+}
+
+keywordnote .windos_timestamp_container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 1px 0px;
+	
+	text-align: left;
+    float: left;
+    font-size: 12px;
+    line-height: 12px;
+    color: var(--text-color);
+}
+
+/* 簡易關鍵字懸浮視窗 -> CKEditor 5 文字編輯器設定 */
+keywordnote {
+	--ck-z-default: 10000 !important;
+}
+keywordnote img.image_resized {
+    width: auto;
+    height: auto;
+}
+keywordnote figcaption {
+	font-size: .75em;
+    text-align: center;
+}
+keywordnote div.pin_note_container img{
+    max-width: 100%;
+    height: auto;
+}
+
+code {
+    font-family: courier, monospace;
+}
+keywordnote .note_content:not(.ck) pre:has(code){
+    background: hsla(0, 0%, 78%, .3);
+    border: 1px solid #c4c4c4;
+    border-radius: 2px;
+    color: #353535;
+    direction: ltr;
+    font-style: normal;
+    min-width: 200px;
+    padding: 1em;
+    tab-size: 4;
+    text-align: left;
+    white-space: pre-wrap;
+    position: relative;
+}
+keywordnote .note_content:not(.ck) pre:has(code):after {
+    background: var(--ck-color-code-block-label-background);
+    color: #fff;
+    font-family: var(--ck-font-face);
+    font-size: 10px;
+    line-height: 16px;
+    padding: var(--ck-spacing-tiny) var(--ck-spacing-medium);
+    right: 10px;
+    top: -1px;
+    white-space: nowrap;
+    position: absolute;
+}
+
+keywordnote .note_content:not(.ck) pre:has(code.language-c):after {
+    content:"C";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-cs):after {
+    content:"C#";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-cpp):after {
+    content:"C++";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-cs):after {
+    content:"C#";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-diff):after {
+    content:"Diff";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-java):after {
+    content:"Java";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-javascript):after {
+    content:"JavaScript";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-php):after {
+    content:"PHP";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-python):after {
+    content:"Python";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-ruby):after {
+    content:"Ruby";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-typescript):after {
+    content:"TypeScript";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-php):after {
+    content:"PHP";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-xml):after {
+    content:"XML";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-html):after {
+    content:"HTML";
+}
+keywordnote .note_content:not(.ck) pre:has(code.language-plaintext):after {
+    content:"PlainText";
+}
