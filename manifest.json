@@ -8,7 +8,8 @@
         "storage",
 		"scripting",
 		"notifications",
-		"sidePanel"
+		"sidePanel",
+		"contextMenus"
     ],
 	"host_permissions": ["https://*/*", "http://*/*"],
     "action": {
@@ -40,6 +41,7 @@
 		}
 	],
 	"side_panel": {
-		"default_path": "sidepanel/sidepanel.html"
+		"default_path": "sidepanel/sidepanel.html",
+		"openPanelOnActionClick": false
 	}
 }

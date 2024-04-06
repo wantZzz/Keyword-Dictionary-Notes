@@ -669,7 +669,7 @@ chrome.tabs.onUpdated.addListener(function(tabId) {
 	}
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 	switch (request.event_name) {
 		//初始化
 		case 'quest-current-tab-popup':
@@ -775,8 +775,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 					event_name: 'response-keyword-notedata-sidepanel',
 					keyword: quest_keyword_side,
 					keyword_notedata: keyword_notedata,
-					keywords_priority: keywords_priority,
-					is_wait: false
+					keywords_priority: keywords_priority
 				};
 				
 				if (is_SidepanelON){
@@ -1043,7 +1042,41 @@ chrome.runtime.onConnect.addListener(function (port) {
 				portWithSidepanel = null;
 			});
 			break;
-  }
+	}
+});
+
+chrome.contextMenus.onClicked.addListener(function (info, tab) {
+	switch (info.menuItemId) {
+		case 'KDN_keywordselect':
+			if (info.selectionText != ""){
+				if (!is_SidepanelON){
+					current_Keyword = info.selectionText;
+					currentpage_TabId = tab.id;
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+					
+					addNewKeyword(info.selectionText, "", (process_state, save_datetime) => {});
+				}
+				else{
+					addNewKeyword(info.selectionText, "", (process_state, save_datetime) => {
+						if (process_state){
+							current_Keyword = info.selectionText;
+							
+							responseSidepanelKeywordsNoteData(info.selectionText, (keyword_notedata, keywords_priority) => {
+								const response_keyword_notedata = {
+									event_name: 'response-keyword-notedata-sidepanel',
+									keyword: info.selectionText,
+									keyword_notedata: keyword_notedata,
+									keywords_priority: keywords_priority
+								};
+								
+								chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
+							});
+						}
+					});
+				}
+			}
+			break;
+	}
 });
 
 // ====== 安裝時初始化 ====== 
@@ -1087,6 +1120,13 @@ chrome.runtime.onInstalled.addListener(function (details){
 		
 		console.log('安裝初始化完成');
 	}
+	
+	chrome.contextMenus.create({  
+        id: 'KDN_keywordselect',
+        type: 'normal',
+        title: '建立以 "%s" 為索引的筆記',
+        contexts: ['selection']
+    }); 
 });
 
 // ====== 初始化 ====== 
