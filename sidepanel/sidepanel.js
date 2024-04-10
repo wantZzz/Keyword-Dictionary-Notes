@@ -55,7 +55,7 @@ function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 				
 				if (is_SwitchWithTab){
 					is_CurrentPageSearch = true;
-					refreshSuggestionArea();
+					refreshSuggestionArea(false, null);
 				}
 				
 			});
@@ -63,7 +63,7 @@ function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 		else {
 			if (is_CurrentPageSearch){
 				is_CurrentPageSearch = false;
-				refreshSuggestionArea();
+				refreshSuggestionArea(false, null);
 			}
 		}
 	}
@@ -73,7 +73,7 @@ function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 		
 		if (is_CurrentPageSearch){
 			is_CurrentPageSearch = false;
-			refreshSuggestionArea();
+			refreshSuggestionArea(false, null);
 		}
 	}
 }
@@ -271,14 +271,19 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 	current_Url = currentpage_Url;
 }
 
-function refreshSuggestionArea(){
+function refreshSuggestionArea(is_data_ready, display_Keywords){
+	if (!is_data_ready && !is_CurrentPageSearch){
+		chrome.runtime.sendMessage({event_name: 'quest-display-keywords'}, (t) => {});
+		return;
+	}
+	
 	const suggestion_area = document.getElementById("suggestion_area");
 	const suggestion_container = suggestion_area.querySelector(".suggestion_container");
 	
 	suggestion_container.scrollLeft = 0;
 	
 	if (is_CurrentPageSearch){
-		const keywords = Object.keys(searched_Keywords).slice(0, 10);
+		const keywords = Object.keys(searched_Keywords);
 		if (keywords.length === 0){
 			const suggestion_button = suggestion_container.querySelectorAll(".keyword_suggestion");
 			
@@ -323,7 +328,7 @@ function refreshSuggestionArea(){
 		}
 	}
 	else{
-		const keywords = Object.keys(recorded_Keywords).slice(0, 10);
+		const keywords = display_Keywords;
 		if (keywords.length === 0){
 			const suggestion_button = suggestion_container.querySelectorAll(".keyword_suggestion");
 			
@@ -1628,8 +1633,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			
 			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
 				recorded_Keywords = response.recorded_keywords;
-				refreshSuggestionArea();
+				refreshSuggestionArea(false, null);
 			});
+			break;
+			
+		case 'response-display-Keywords':
+			sendResponse({});
+			
+			refreshSuggestionArea(true, request.display_keywords);
 			break;
 		//儲存資料回傳	
 		case 'response-url-note-add':
@@ -1657,7 +1668,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
 				recorded_Keywords = response.recorded_keywords;
 				refreshKeywordArea(current_Keyword, null, []);
-				refreshSuggestionArea();
+				refreshSuggestionArea(false, null);
 			});
 			break;
 		//-----

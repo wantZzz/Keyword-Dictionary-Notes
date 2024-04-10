@@ -9,7 +9,7 @@ var portWithSidepanel = null;
 var is_DarkMode = true;
 var is_SwitchWithTab = true;
 //儲存資料
-const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl'];
+const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'max_KeywordDisplay'];
 var recorded_Keywords = [];
 var current_Keyword = '';
 
@@ -253,6 +253,7 @@ function getKeywordData(keyword, callback){
 	chrome.storage.local.get([keyword]).then((result) => {
 		if(result.hasOwnProperty(keyword)){
 			callback(result[keyword], true);
+			updateDisplayCRF(keyword);
 		}
 		else{
 			callback(null, false);
@@ -646,6 +647,57 @@ function editKeywordNote(keyword, note, keyword_data_id, callback){
 	});
 }
 
+function getDisplayKeyword(callback){
+	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
+		let DisplayCRF = result.KeywordsDisplayCRF;
+		let display_list = [];
+		
+		for (let i = 0; i < DisplayCRF.length - 1; i++){
+			display_list.push(DisplayCRF[i][0]);
+		}
+		
+		callback(display_list);
+	});
+}
+
+function updateDisplayCRF(quest_keyword){
+	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
+		let DisplayCRF = result.KeywordsDisplayCRF;
+		let is_includes = false;
+		let less_index = -1;
+		let less_CRF = -1;
+		
+		for (let i = 0; i < DisplayCRF.length - 1; i++){
+			if (DisplayCRF[i][0] == quest_keyword){
+				DisplayCRF[i][1] += 1;
+				is_includes = true;
+			}
+			else{
+				DisplayCRF[i][1] *= 0.9;
+				if (less_CRF > DisplayCRF[i][1]){
+					less_CRF = DisplayCRF[i][1];
+					less_index = i;
+				}
+			}
+		}
+		
+		if(!is_includes && (less_CRF < 1)){
+			if ((DisplayCRF.length + DisplayCRF[DisplayCRF.length - 1] - 2) >= 0){
+				DisplayCRF[less_index] = [quest_keyword, 1.0];
+			}
+			else{
+				DisplayCRF.push([quest_keyword, 1.0]);
+			}
+		}
+		
+		DisplayCRF.sort((a, b) => {
+		  return b[1] - a[1]
+		});
+		
+		chrome.storage.local.set({KeywordsDisplayCRF: DisplayCRF}).then(() => {});
+	});
+}
+
 // ====== 資料接收 ====== 
 chrome.tabs.onActivated.addListener(function(info) {
 	currentpage_TabId = info.tabId;
@@ -795,6 +847,19 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				response_keyword_notedata.is_first = request.is_first;
 				
 				chrome.tabs.sendMessage(currentpage_TabId, response_keyword_notedata, (t) => {});
+			});
+			break;
+			
+		case 'quest-display-keywords':
+			sendResponse({});
+			
+			getDisplayKeyword((display_list) => {
+				const response_display_keyword = {
+					event_name: 'response-display-Keywords',
+					display_keywords: display_list
+				};
+				
+				chrome.runtime.sendMessage(response_display_keyword, (t) => {});
 			});
 			break;
 		//修改儲存資料
@@ -1085,6 +1150,7 @@ chrome.runtime.onInstalled.addListener(function (details){
 		const initial_data = {
 			RecordedKeywords: ['標籤', '無標籤'],
 			AutoTriggerUrl: [],
+			KeywordsDisplayCRF: [['標籤', 1.0], ['無標籤', 1.0], ['max_KeywordDisplay', -10.0]],
 			KeywordsNotePriority: {'標籤': [1]},
 			KeywordsSetting: {
 				is_DarkMode: true,
