@@ -10,7 +10,7 @@ var is_SwitchWithTab = true;
 //資料控制項
 var current_Host = null;
 var current_Url = null;
-var current_Keyword = '標籤';
+var current_Keyword = '';
 
 var is_UrlNoteExist = 0;
 var is_KeywordNoteExist = 0;

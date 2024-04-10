@@ -10,8 +10,8 @@ var is_DarkMode = true;
 var is_SwitchWithTab = true;
 //儲存資料
 const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl'];
-var recorded_Keywords = ['標籤', '無標籤'];
-var current_Keyword = '標籤';
+var recorded_Keywords = [];
+var current_Keyword = '';
 
 // ====== 資料回傳 ====== 
 function responseCurrentPageStatus(callback){
@@ -243,13 +243,9 @@ function datetimeOutputFormat(){
 	return datetime
 }
 
-function reloadKeywordlist(){
+function reloadKeywordlist(callback){
 	chrome.storage.local.get(['RecordedKeywords']).then((result) => {
-		let new_recorded_keywords = {}
-		for (const keyword of result['RecordedKeywords']){
-			new_recorded_keywords[keyword] = 0;
-		}
-		recorded_Keywords = new_recorded_keywords;
+		callback(result.RecordedKeywords);
 	});
 }
 	
@@ -1068,8 +1064,12 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
 									keyword_notedata: keyword_notedata,
 									keywords_priority: keywords_priority
 								};
+								const send_keyword_add = {
+									event_name: 'reload-recorded-Keywords'
+								};
 								
 								chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
+								chrome.runtime.sendMessage(send_keyword_add, (t) => {});
 							});
 						}
 					});
@@ -1118,7 +1118,21 @@ chrome.runtime.onInstalled.addListener(function (details){
 		
 		chrome.storage.local.set(initial_data).then(() => {});
 		
+		recorded_Keywords = ['標籤', '無標籤'];
+		current_Keyword = '標籤';
+		
 		console.log('安裝初始化完成');
+	}
+	else{
+		
+		questInitialSetting('is_DarkMode', (response) => {
+			is_DarkMode = response;
+		});
+		questInitialSetting('is_SwitchWithTab', (response) => {
+			is_SwitchWithTab = response;
+		});
+
+		console.log('擴充功能初始化完成');
 	}
 	
 	chrome.contextMenus.create({  
@@ -1135,11 +1149,17 @@ chrome.runtime.onStartup.addListener(() => {
 	  currentpage_TabId = tabs[0].id;
 	});
 	
-	reloadKeywordlist();
 	questInitialSetting('is_DarkMode', (response) => {
 		is_DarkMode = response;
 	});
 	questInitialSetting('is_SwitchWithTab', (response) => {
 		is_SwitchWithTab = response;
 	});
+
+	console.log('擴充功能初始化完成');
+});
+
+reloadKeywordlist((new_recorded_keywords) => {
+	recorded_Keywords = new_recorded_keywords;
+	current_Keyword = new_recorded_keywords[0];
 });
