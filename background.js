@@ -42,7 +42,7 @@ function responseCurrentPageStatus(callback){
 			};
 			
 			chrome.tabs.sendMessage(currentpage_TabId, quest_tab_message, (response) => {
-				if(response === undefined){
+				if(chrome.runtime.lastError){
 					const current_tab_info = {
 						page_status: null,
 						is_support: true,
@@ -245,7 +245,12 @@ function datetimeOutputFormat(){
 
 function reloadKeywordlist(callback){
 	chrome.storage.local.get(['RecordedKeywords']).then((result) => {
-		callback(result.RecordedKeywords);
+		if (result.RecordedKeywords == undefined){
+			callback([]);
+		}
+		else{
+			callback(result.RecordedKeywords);
+		}
 	});
 }
 	
@@ -480,6 +485,22 @@ function deleteKeyword(keyword, callback){
 			chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {});
 		}
 	});
+	
+	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
+		let DisplayCRF = result.KeywordsDisplayCRF;
+		
+		for (let i = 0; i < DisplayCRF.length - 1; i++){
+			if (DisplayCRF[i][0] == keyword){
+				DisplayCRF.splice(i, 1);
+				break;
+			}
+		}
+		
+		chrome.storage.local.set({KeywordsDisplayCRF: DisplayCRF}).then(() => {});
+		if (current_Keyword == keyword){
+			current_Keyword = DisplayCRF[0][0];
+		}
+	});
 }
 
 function addNewUrl(new_host, note, callback){
@@ -652,7 +673,8 @@ function getDisplayKeyword(callback){
 		let DisplayCRF = result.KeywordsDisplayCRF;
 		let display_list = [];
 		
-		for (let i = 0; i < DisplayCRF.length - 1; i++){
+		const display_list_length = Math.min((DisplayCRF.length - 1), Math.abs(DisplayCRF[DisplayCRF.length - 1][1]));
+		for (let i = 0; i < display_list_length; i++){
 			display_list.push(DisplayCRF[i][0]);
 		}
 		
@@ -1206,7 +1228,7 @@ chrome.runtime.onInstalled.addListener(function (details){
         type: 'normal',
         title: '建立以 "%s" 為索引的筆記',
         contexts: ['selection']
-    }); 
+    });
 });
 
 // ====== 初始化 ====== 
@@ -1225,7 +1247,12 @@ chrome.runtime.onStartup.addListener(() => {
 	console.log('擴充功能初始化完成');
 });
 
+
 reloadKeywordlist((new_recorded_keywords) => {
-	recorded_Keywords = new_recorded_keywords;
-	current_Keyword = new_recorded_keywords[0];
+	if ((current_Keyword == '') || (recorded_Keywords.length == 0)){
+		recorded_Keywords = new_recorded_keywords;
+		getDisplayKeyword((display_list) => {
+			current_Keyword = display_list[0];
+		});
+	}
 });

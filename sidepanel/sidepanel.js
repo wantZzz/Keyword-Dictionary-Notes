@@ -1806,9 +1806,9 @@ function runInitial(){
 
 		var step = 50;  
 		if(event.deltaY < 0){  
-			this.scrollLeft -= step;  
-		} else {  
 			this.scrollLeft += step;  
+		} else {  
+			this.scrollLeft -= step;  
 		}  
 	};
 	
@@ -1849,7 +1849,9 @@ function runInitial(){
 		console.log(`${is_SwitchWithTab} ${current_Keyword}`);
 		chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
 			recorded_Keywords = response.recorded_keywords;
-			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword}, (t) => {});
+			if (Boolean(current_Keyword)){
+				chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword}, (t) => {});
+			}
 		});
 	});
 }
