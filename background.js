@@ -9,9 +9,9 @@ var portWithSidepanel = null;
 var is_DarkMode = true;
 var is_SwitchWithTab = true;
 //儲存資料
-const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl'];
-var recorded_Keywords = ['標籤', '無標籤'];
-var current_Keyword = '標籤';
+const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'max_KeywordDisplay'];
+var recorded_Keywords = [];
+var current_Keyword = '';
 
 // ====== 資料回傳 ====== 
 function responseCurrentPageStatus(callback){
@@ -42,7 +42,7 @@ function responseCurrentPageStatus(callback){
 			};
 			
 			chrome.tabs.sendMessage(currentpage_TabId, quest_tab_message, (response) => {
-				if(response === undefined){
+				if(chrome.runtime.lastError){
 					const current_tab_info = {
 						page_status: null,
 						is_support: true,
@@ -243,13 +243,14 @@ function datetimeOutputFormat(){
 	return datetime
 }
 
-function reloadKeywordlist(){
+function reloadKeywordlist(callback){
 	chrome.storage.local.get(['RecordedKeywords']).then((result) => {
-		let new_recorded_keywords = {}
-		for (const keyword of result['RecordedKeywords']){
-			new_recorded_keywords[keyword] = 0;
+		if (result.RecordedKeywords == undefined){
+			callback([]);
 		}
-		recorded_Keywords = new_recorded_keywords;
+		else{
+			callback(result.RecordedKeywords);
+		}
 	});
 }
 	
@@ -257,6 +258,7 @@ function getKeywordData(keyword, callback){
 	chrome.storage.local.get([keyword]).then((result) => {
 		if(result.hasOwnProperty(keyword)){
 			callback(result[keyword], true);
+			updateDisplayCRF(keyword);
 		}
 		else{
 			callback(null, false);
@@ -483,6 +485,22 @@ function deleteKeyword(keyword, callback){
 			chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {});
 		}
 	});
+	
+	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
+		let DisplayCRF = result.KeywordsDisplayCRF;
+		
+		for (let i = 0; i < DisplayCRF.length - 1; i++){
+			if (DisplayCRF[i][0] == keyword){
+				DisplayCRF.splice(i, 1);
+				break;
+			}
+		}
+		
+		chrome.storage.local.set({KeywordsDisplayCRF: DisplayCRF}).then(() => {});
+		if (current_Keyword == keyword){
+			current_Keyword = DisplayCRF[0][0];
+		}
+	});
 }
 
 function addNewUrl(new_host, note, callback){
@@ -650,6 +668,58 @@ function editKeywordNote(keyword, note, keyword_data_id, callback){
 	});
 }
 
+function getDisplayKeyword(callback){
+	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
+		let DisplayCRF = result.KeywordsDisplayCRF;
+		let display_list = [];
+		
+		const display_list_length = Math.min((DisplayCRF.length - 1), Math.abs(DisplayCRF[DisplayCRF.length - 1][1]));
+		for (let i = 0; i < display_list_length; i++){
+			display_list.push(DisplayCRF[i][0]);
+		}
+		
+		callback(display_list);
+	});
+}
+
+function updateDisplayCRF(quest_keyword){
+	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
+		let DisplayCRF = result.KeywordsDisplayCRF;
+		let is_includes = false;
+		let less_index = -1;
+		let less_CRF = -1;
+		
+		for (let i = 0; i < DisplayCRF.length - 1; i++){
+			if (DisplayCRF[i][0] == quest_keyword){
+				DisplayCRF[i][1] += 1;
+				is_includes = true;
+			}
+			else{
+				DisplayCRF[i][1] *= 0.9;
+				if (less_CRF > DisplayCRF[i][1]){
+					less_CRF = DisplayCRF[i][1];
+					less_index = i;
+				}
+			}
+		}
+		
+		if(!is_includes && (less_CRF < 1)){
+			if ((DisplayCRF.length + DisplayCRF[DisplayCRF.length - 1] - 2) >= 0){
+				DisplayCRF[less_index] = [quest_keyword, 1.0];
+			}
+			else{
+				DisplayCRF.push([quest_keyword, 1.0]);
+			}
+		}
+		
+		DisplayCRF.sort((a, b) => {
+		  return b[1] - a[1]
+		});
+		
+		chrome.storage.local.set({KeywordsDisplayCRF: DisplayCRF}).then(() => {});
+	});
+}
+
 // ====== 資料接收 ====== 
 chrome.tabs.onActivated.addListener(function(info) {
 	currentpage_TabId = info.tabId;
@@ -669,7 +739,7 @@ chrome.tabs.onUpdated.addListener(function(tabId) {
 	}
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 	switch (request.event_name) {
 		//初始化
 		case 'quest-current-tab-popup':
@@ -775,8 +845,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 					event_name: 'response-keyword-notedata-sidepanel',
 					keyword: quest_keyword_side,
 					keyword_notedata: keyword_notedata,
-					keywords_priority: keywords_priority,
-					is_wait: false
+					keywords_priority: keywords_priority
 				};
 				
 				if (is_SidepanelON){
@@ -800,6 +869,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 				response_keyword_notedata.is_first = request.is_first;
 				
 				chrome.tabs.sendMessage(currentpage_TabId, response_keyword_notedata, (t) => {});
+			});
+			break;
+			
+		case 'quest-display-keywords':
+			sendResponse({});
+			
+			getDisplayKeyword((display_list) => {
+				const response_display_keyword = {
+					event_name: 'response-display-Keywords',
+					display_keywords: display_list
+				};
+				
+				chrome.runtime.sendMessage(response_display_keyword, (t) => {});
 			});
 			break;
 		//修改儲存資料
@@ -1043,7 +1125,45 @@ chrome.runtime.onConnect.addListener(function (port) {
 				portWithSidepanel = null;
 			});
 			break;
-  }
+	}
+});
+
+chrome.contextMenus.onClicked.addListener(function (info, tab) {
+	switch (info.menuItemId) {
+		case 'KDN_keywordselect':
+			if (info.selectionText != ""){
+				if (!is_SidepanelON){
+					current_Keyword = info.selectionText;
+					currentpage_TabId = tab.id;
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+					
+					addNewKeyword(info.selectionText, "", (process_state, save_datetime) => {});
+				}
+				else{
+					addNewKeyword(info.selectionText, "", (process_state, save_datetime) => {
+						if (process_state){
+							current_Keyword = info.selectionText;
+							
+							responseSidepanelKeywordsNoteData(info.selectionText, (keyword_notedata, keywords_priority) => {
+								const response_keyword_notedata = {
+									event_name: 'response-keyword-notedata-sidepanel',
+									keyword: info.selectionText,
+									keyword_notedata: keyword_notedata,
+									keywords_priority: keywords_priority
+								};
+								const send_keyword_add = {
+									event_name: 'reload-recorded-Keywords'
+								};
+								
+								chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
+								chrome.runtime.sendMessage(send_keyword_add, (t) => {});
+							});
+						}
+					});
+				}
+			}
+			break;
+	}
 });
 
 // ====== 安裝時初始化 ====== 
@@ -1052,6 +1172,7 @@ chrome.runtime.onInstalled.addListener(function (details){
 		const initial_data = {
 			RecordedKeywords: ['標籤', '無標籤'],
 			AutoTriggerUrl: [],
+			KeywordsDisplayCRF: [['標籤', 1.0], ['無標籤', 1.0], ['max_KeywordDisplay', -10.0]],
 			KeywordsNotePriority: {'標籤': [1]},
 			KeywordsSetting: {
 				is_DarkMode: true,
@@ -1085,8 +1206,29 @@ chrome.runtime.onInstalled.addListener(function (details){
 		
 		chrome.storage.local.set(initial_data).then(() => {});
 		
+		recorded_Keywords = ['標籤', '無標籤'];
+		current_Keyword = '標籤';
+		
 		console.log('安裝初始化完成');
 	}
+	else{
+		
+		questInitialSetting('is_DarkMode', (response) => {
+			is_DarkMode = response;
+		});
+		questInitialSetting('is_SwitchWithTab', (response) => {
+			is_SwitchWithTab = response;
+		});
+
+		console.log('擴充功能初始化完成');
+	}
+	
+	chrome.contextMenus.create({  
+        id: 'KDN_keywordselect',
+        type: 'normal',
+        title: '建立以 "%s" 為索引的筆記',
+        contexts: ['selection']
+    });
 });
 
 // ====== 初始化 ====== 
@@ -1095,11 +1237,22 @@ chrome.runtime.onStartup.addListener(() => {
 	  currentpage_TabId = tabs[0].id;
 	});
 	
-	reloadKeywordlist();
 	questInitialSetting('is_DarkMode', (response) => {
 		is_DarkMode = response;
 	});
 	questInitialSetting('is_SwitchWithTab', (response) => {
 		is_SwitchWithTab = response;
 	});
+
+	console.log('擴充功能初始化完成');
+});
+
+
+reloadKeywordlist((new_recorded_keywords) => {
+	if ((current_Keyword == '') || (recorded_Keywords.length == 0)){
+		recorded_Keywords = new_recorded_keywords;
+		getDisplayKeyword((display_list) => {
+			current_Keyword = display_list[0];
+		});
+	}
 });
