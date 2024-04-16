@@ -291,7 +291,7 @@ function searchKeywords(callback){
 				for (const keyword of recorded_keywords) {
 					let start_index = 0, keyword_index;
 					
-					while ((keyword_index = node_text.indexOf(keyword, start_index)) > -1){
+					while ((keyword_index = node_text.includes(keyword, start_index))){
 						keywords_in_node.push({start: keyword_index, end: (keyword_index + keyword.length), keywords: [keyword]});
 						start_index = (keyword_index + keyword.length);
 					}
@@ -458,7 +458,7 @@ function onlyShowOneKeywordMark(keyword){
 		for (let searched_index = 0; searched_index < searched_KeywordNodes.length; searched_index++) {
 			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[searched_index];
 			
-			if(keywords_in_node.indexOf(keyword) > -1){
+			if(keywords_in_node.includes(keyword)){
 				if (keywords_in_node.length > 1){
 					if(!is_showed){
 						const new_keywordnode_unprocessed = makeKeywordMutiplenode(node.innerText, keywords_in_node);
@@ -578,7 +578,7 @@ function scrollIntoPreviousMark(target_keyword){
 		for (let index = ((scroll_IntoIndex + mark_length - 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length - 1) % mark_length)) {
 			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[index];
 			
-			if (keywords_in_node.indexOf(target_keyword) > -1){
+			if (keywords_in_node.includes(target_keyword)){
 				node.scrollIntoView();
 				
 				scroll_IntoIndex = index;
@@ -597,7 +597,7 @@ function scrollIntoNaxtMark(target_keyword){
 		for (let index = ((scroll_IntoIndex + mark_length + 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length + 1) % mark_length)) {
 			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[index];
 			
-			if (keywords_in_node.indexOf(target_keyword) > -1){
+			if (keywords_in_node.includes(target_keyword)){
 				node.scrollIntoView();
 				
 				scroll_IntoIndex = index;
@@ -811,4 +811,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // ====== 初始化 ====== 
-console.log('kk test');
+console.log('網頁腳本初始化完成');

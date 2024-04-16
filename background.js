@@ -10,6 +10,8 @@ var is_DarkMode = true;
 var is_SwitchWithTab = true;
 //儲存資料
 const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'max_KeywordDisplay'];
+const keyword_special_urls = '';
+
 var recorded_Keywords = [];
 var current_Keyword = '';
 
@@ -391,8 +393,18 @@ function removeoutAutostartupList(domain_name, callback){
 	});
 }
 
-function questInitialSetting(setting_name, callback){
+function questInitialSetting(setting_name, callback, try_time = 0){
 	chrome.storage.local.get(["KeywordsSetting"]).then((result) => {
+		if (result.KeywordsSetting == undefined){
+			if (try_time < 3){
+				setTimeout(() => {
+					questInitialSetting(setting_name, callback, try_time + 1);
+				}, 1000);
+			}
+			else{
+				callback(null);
+			}
+		}
 		if(result.KeywordsSetting.hasOwnProperty(setting_name)){
 			callback(result.KeywordsSetting[setting_name]);
 		}
@@ -414,47 +426,55 @@ function settingInitialSetting(setting_name, value, callback){
 }
 
 function addNewKeyword(new_keyword, note, callback){
-	if(keyword_reserved_words.indexOf(new_keyword) >= 0){
+	if(keyword_reserved_words.includes(new_keyword)){
 		triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
 		callback(false, null);
 		return;
 	}
-	if(recorded_Keywords.indexOf(new_keyword) >= 0){
+	if(recorded_Keywords.includes(new_keyword)){
 		triggerNotificationMessage("該關鍵字已存在", 'error');
 		callback(false, null);
 		return;
 	}
 
-	var recorded_Keywords_copy = recorded_Keywords;
-	recorded_Keywords_copy.push(new_keyword);
-	let data = [];
-	let new_datetime = null;
-	
-	if(note !== ""){
-		const new_datetime = datetimeOutputFormat();
-		data = [[note, new_datetime, false]];
-	}else{
-		const new_datetime = null;
-		data = [];
-	}
-	
-	chrome.storage.local.set({[new_keyword]: data}).then((result) => {
-		chrome.storage.local.set({RecordedKeywords: recorded_Keywords_copy}).then(() => {
-			callback(true, new_datetime);
-			recorded_Keywords = recorded_Keywords_copy;
-			
-			triggerNotificationMessage("關鍵字索引已新增", 'ok');
+	chrome.storage.local.get([new_keyword]).then((result) => {
+		if (result.hasOwnProperty(new_keyword)){
+			triggerNotificationMessage("該關鍵字已被占用或關鍵字為一段已記錄網址", 'error');
+			callback(false, null);
+			return;
+		}
+		
+		var recorded_Keywords_copy = recorded_Keywords;
+		recorded_Keywords_copy.push(new_keyword);
+		let data = [];
+		let new_datetime = null;
+		
+		if(note !== ""){
+			const new_datetime = datetimeOutputFormat();
+			data = [[note, new_datetime, false]];
+		}else{
+			const new_datetime = null;
+			data = [];
+		}
+		
+		chrome.storage.local.set({[new_keyword]: data}).then((result) => {
+			chrome.storage.local.set({RecordedKeywords: recorded_Keywords_copy}).then(() => {
+				callback(true, new_datetime);
+				recorded_Keywords = recorded_Keywords_copy;
+				
+				triggerNotificationMessage("關鍵字索引已新增", 'ok');
+			});
 		});
 	});
 }
 
 function deleteKeyword(keyword, callback){
-	if(keyword_reserved_words.indexOf(keyword) >= 0){
+	if(keyword_reserved_words.includes(keyword)){
 		triggerNotificationMessage("這個關鍵字為系統保留字，無法移除", 'error');
 		callback(false);
 		return;
 	}
-	if(recorded_Keywords.indexOf(keyword) < 0){
+	if(!recorded_Keywords.includes(keyword)){
 		triggerNotificationMessage("該關鍵字不存在", 'error');
 		callback(false);
 		return;
@@ -507,6 +527,12 @@ function addNewUrl(new_host, note, callback){
 	let data = [];
 	let new_datetime = null;
 	
+	if(recorded_Keywords.includes(new_host)){
+		triggerNotificationMessage("該網址已被某個關鍵字占用", 'error');
+		callback(false, null);
+		return;
+	}
+	
 	if(note !== ""){
 		new_datetime = datetimeOutputFormat();
 		data = [[note, new_datetime, false]];
@@ -540,12 +566,12 @@ function deleteUrl(host, callback){
 }
 
 function editKeyword(new_keyword, old_keyword, callback){
-	if(keyword_reserved_words.indexOf(new_keyword) >= 0){
+	if(keyword_reserved_words.includes(new_keyword)){
 		triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
 		callback(false);
 		return;
 	}
-	if(recorded_Keywords.indexOf(new_keyword) >= 0){
+	if(recorded_Keywords.includes(new_keyword)){
 		triggerNotificationMessage("該關鍵字已存在", 'error');
 		callback(false);
 		return;
@@ -668,11 +694,21 @@ function editKeywordNote(keyword, note, keyword_data_id, callback){
 	});
 }
 
-function getDisplayKeyword(callback){
+function getDisplayKeyword(callback, try_time = 0){
 	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
 		let DisplayCRF = result.KeywordsDisplayCRF;
 		let display_list = [];
 		
+		if (DisplayCRF == undefined){
+			if (try_time < 3){
+				setTimeout(() => {
+					getDisplayKeyword(callback, try_time + 1);
+				}, 1000);
+			}
+			else{
+				callback([]);
+			}
+		}
 		const display_list_length = Math.min((DisplayCRF.length - 1), Math.abs(DisplayCRF[DisplayCRF.length - 1][1]));
 		for (let i = 0; i < display_list_length; i++){
 			display_list.push(DisplayCRF[i][0]);
@@ -1131,7 +1167,10 @@ chrome.runtime.onConnect.addListener(function (port) {
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
 	switch (info.menuItemId) {
 		case 'KDN_keywordselect':
-			if (info.selectionText != ""){
+			if (keyword_reserved_words.includes(info.selectionText)){
+				triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
+			}
+			else if (info.selectionText != ""){
 				if (!is_SidepanelON){
 					current_Keyword = info.selectionText;
 					currentpage_TabId = tab.id;
