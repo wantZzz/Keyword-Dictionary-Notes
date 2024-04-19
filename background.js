@@ -109,6 +109,7 @@ function responseKeywordsNoteData(keyword, callback){
 	getKeywordData(keyword, (result, is_exist) => {
 		if (is_exist){
 			callback(result);
+			updateDisplayCRF(keyword);
 		}
 		else{
 			callback(null);
@@ -258,7 +259,6 @@ function getKeywordData(keyword, callback){
 	chrome.storage.local.get([keyword]).then((result) => {
 		if(result.hasOwnProperty(keyword)){
 			callback(result[keyword], true);
-			updateDisplayCRF(keyword);
 		}
 		else{
 			callback(null, false);
