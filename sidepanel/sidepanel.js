@@ -11,6 +11,7 @@ var is_SwitchWithTab = true;
 var current_Host = null;
 var current_Url = null;
 var current_Keyword = '';
+var is_SpecialUrls = false;
 
 var is_UrlNoteExist = 0;
 var is_KeywordNoteExist = 0;
@@ -39,7 +40,10 @@ var recorded_Keywords = {};
 // ====== 資料處理 ====== 
 function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 	if(is_support && is_script_run){
-		if (!(currentpage_Host === page_status.host)){
+		if (page_status.is_special_urls && (currentpage_Url != page_status.url)){
+			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: page_status.title, host: page_status.host, url: page_status.url}, (t) => {});
+		}
+		else if (currentpage_Host != page_status.host){
 			chrome.runtime.sendMessage({event_name: 'quest-url-notedata', host: page_status.host}, (t) => {});
 		}
 		
@@ -269,6 +273,203 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 	
 	current_Host = currentpage_Host;
 	current_Url = currentpage_Url;
+	is_SpecialUrls = false;
+}
+
+function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_priority){
+	const title_area = document.getElementById("title_area");
+	
+	if (title != null){
+		const host_title = title_area.querySelector('span#url_note_host');
+		host_title.innerHTML = title;
+	}
+	
+	const url_note_container = document.getElementById("url_note_container");
+	
+	const url_note_block = Array.from(url_note_container.querySelectorAll(".windos_message_block")).reverse();
+	
+	if (host_notedata === null){
+		const message_block = document.createElement('div');
+		message_block.classList.add('windos_message_block');
+		
+		message_block.innerHTML = `<div class="interactive_block">
+								   </div>
+								   <div class="windos_message_content">
+									 你沒有在此網域做過筆記喔，<br>
+									 趕快紀錄些什麼吧!
+								   </div>
+								   <div class="windos_timestamp_container">
+								     <div class="windos_message_timestamp">
+									   設計界面是件痛苦又耗腦細胞的事
+								     </div>
+								   </div>`
+								
+		url_note_container.innerHTML = "";
+		url_note_container.appendChild(message_block);
+		
+		is_UrlNoteExist = 0;
+		display_UrlNotes = [-1];
+	}
+	else if (host_notedata.length === 0){
+		const message_block = document.createElement('div');
+		message_block.classList.add('windos_message_block');
+		
+		message_block.innerHTML = `<div class="interactive_block">
+								   </div>
+								   <div class="windos_message_content">
+									 你還沒有在此網域的筆記喔，<br>
+									 趕快紀錄些什麼吧!
+								   </div>
+								   <div class="windos_timestamp_container">
+								     <div class="windos_message_timestamp">
+									   寫程式是件既痛苦又樂在其中的事
+								     </div>
+								   </div>`;
+								
+		url_note_container.innerHTML = "";
+		url_note_container.appendChild(message_block);
+		
+		is_UrlNoteExist = 1;
+		display_UrlNotes = [-1];
+	}
+	else{
+		let count_id = 0;
+		
+		if(is_UrlNoteExist < 2){
+			const first_message_interactive_block = url_note_block[0].querySelector(".interactive_block");
+
+			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0">
+														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
+														   </svg>
+														 </button>
+														 <button class="more_options" note_id="0">
+														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+														   </svg>
+														 </button>`;
+														 
+			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
+			first_message_interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
+			
+			display_UrlNotes[0] = 0;
+		}
+		
+		let display_UrlNotes_copy = display_UrlNotes.reverse();
+		
+		const priority_note = new Array(keywords_priority.length);
+		const priority_count = keywords_priority.length;
+		
+		host_notedata.forEach(function (note_data) {
+			const [note_content, note_timestamp, undefind_value] = note_data;
+			const priority_note_index = keywords_priority.indexOf(count_id);
+			
+			if (priority_note_index >= 0){
+				const message_block = document.createElement('div');
+				message_block.classList.add('windos_message_block');
+				
+				message_block.innerHTML = `<div class="interactive_block">
+											 <button class="pinned_note is_pinned" note_id="${count_id}">
+											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
+											   </svg>
+											 </button>
+											 <button class="more_options" note_id="${count_id}">
+											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+											   </svg>
+											 </button>
+										   </div>
+										   <div class="windos_message_content">
+											 ${note_content}
+										   </div>
+										   <div class="windos_timestamp_container">
+											 <div class="windos_message_timestamp">
+											   ${note_timestamp}
+											 </div>
+										   </div>`;
+										   
+				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
+				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
+				
+				priority_note[priority_note_index] = message_block;
+			}
+			else if(!url_note_block[count_id]){
+				const message_block = document.createElement('div');
+				message_block.classList.add('windos_message_block');
+				
+				message_block.innerHTML = `<div class="interactive_block">
+											 <button class="pinned_note" note_id="${count_id}">
+											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
+											   </svg>
+											 </button>
+											 <button class="more_options" note_id="${count_id}">
+											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+											   </svg>
+											 </button>
+										   </div>
+										   <div class="windos_message_content">
+											 ${note_content}
+										   </div>
+										   <div class="windos_timestamp_container">
+											 <div class="windos_message_timestamp">
+											   ${note_timestamp}
+											 </div>
+										   </div>`;
+										   
+				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
+				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
+				
+				
+				url_note_container.insertBefore(message_block, url_note_container.firstChild);
+				//url_note_container.appendChild(message_block);
+				display_UrlNotes_copy.push(count_id);
+			}
+			else{
+				const exist_block = url_note_block[count_id];
+				
+				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
+				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
+				
+				exist_block.querySelector(".interactive_block button.pinned_note").setAttribute('note_id', count_id);
+				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
+				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
+				
+				display_UrlNotes_copy[count_id] = count_id;
+			}
+			
+			count_id += 1;
+		});
+		
+		if((count_id - priority_count) < url_note_block.length){
+			for (var i = (count_id - priority_count); i < url_note_block.length; i++) {
+				url_note_block[i].remove();
+				//url_note_container.removeChild(url_note_block[i]);
+			}
+			display_UrlNotes_copy.splice((count_id - priority_count), url_note_block.length - (count_id - priority_count));
+		}
+	
+		priority_note.reverse().forEach(function (message_block) {
+			url_note_container.insertBefore(message_block, url_note_container.firstChild);
+		});
+		
+		display_KeywordNotes = keywords_priority.concat(display_UrlNotes_copy.reverse());
+		
+		is_UrlNoteExist = 2;
+	}
+
+	current_EditingEditor[0] = null;
+	initial_EditContent[0] = null;
+	initial_EditPriority[0] = null;
+	initial_EditTimestamp[0] = null;
+	
+	is_UrlNewNoteEdit = null;
+	
+	current_Host = key_index;
+	current_Url = currentpage_Url;
+	is_SpecialUrls = true;
 }
 
 function refreshSuggestionArea(is_data_ready, display_Keywords){
@@ -1027,7 +1228,13 @@ function url_delete_button_click(event){
 		event_name: 'send-url-note-delete',
 		host: host
 	};
-	confirmNotificationMessage("你正在刪除與一個網址索引\n刪除後是無法找回該關鍵字相關聯的筆記\n是否繼續動作 ?", 'delete', send_url_note_delete);
+	
+	if (is_UrlNoteExist > 0){
+		confirmNotificationMessage("你正在刪除與一個網址索引\n刪除後是無法找回該關鍵字相關聯的筆記\n是否繼續動作 ?", 'delete', send_url_note_delete);
+	}
+	else{
+		triggerAlertWindow("你無法刪除未被紀錄的網址索引", 'warning');
+	}
 }
 
 // --- suggestion area keyword buttons ---
@@ -1623,6 +1830,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			
 			refreshTitleArea(request.host, request.host_notedata, request.keywords_priority);
 			break;	
+		case 'response-special-url-notedata':
+			sendResponse({});
+			
+			refreshSpecialTitleArea(request.title, request.key_index, request.host_notedata, request.keywords_priority);
+			break;
+			
 		case 'response-keyword-notedata-sidepanel':
 			sendResponse({});
 			
@@ -1660,7 +1873,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		case 'response-url-note-delete':
 			sendResponse({});
 			
-			refreshTitleArea(current_Host, null);
+			if (is_SpecialUrls){
+				refreshSpecialTitleArea(null, current_Host, null, null)
+			}
+			else{
+				refreshTitleArea(current_Host, null, null);
+			}
 			break;
 		case 'response-keyword-note-delete':
 			sendResponse({});

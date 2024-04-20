@@ -15,6 +15,9 @@ var current_PopupIndex = 0;
 var is_MutipleMark = false;
 //通用設定資料
 var is_DarkMode = true;
+
+var is_FirstTrack = true;
+const track_host = ['www.youtube.com', 'www.twitch.tv'];
 //儲存資料
 var searched_KeywordNodes = [];// [node, is_showed, keywords_in_node]
 var searched_Keywords = {};
@@ -25,14 +28,19 @@ chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) =
 });
 
 // ====== 資料回傳 ====== 
-function responsePageStatus(){
+function responsePageStatus(callback){
 	//console.log({is_areadysearch: is_AreadySearch, is_markhide: is_MarkHide});
 	
-	return {is_areadysearch: is_AreadySearch,
+	callback({is_areadysearch: is_AreadySearch,
 			is_markhide: is_MarkHide,
 			host: location.host,
-			url: location.href
-			};
+			url: location.href,
+			title: document.title
+			});
+			
+	if (track_host.includes(location.host) && is_FirstTrack){
+		trackHostEventBuild(location.host);
+	}
 }
 
 function responseSearchedKeywords(){
@@ -42,6 +50,18 @@ function responseSearchedKeywords(){
 			};
 }
 
+function trackHostEventBuild(host){
+	switch(host){
+		case 'www.youtube.com':
+			document.addEventListener('yt-page-data-updated', trackHostListener);
+			is_FirstTrack = False;
+			break;
+	}
+}
+
+function trackHostListener(){
+	chrome.runtime.sendMessage({event_name: 'special-url-page-updated'}, (t) => {});
+}
 // ====== 資料處理 ====== 
 function insertPopupHtml(){
 	var keyword_container = document.createElement('keywordnote');
@@ -723,6 +743,7 @@ function popup_nextkeyword(){
 	
 	chrome.runtime.sendMessage(quest_data, (t) => {});
 }
+
 // ====== 資料接收 ====== 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	var response = null;
@@ -731,21 +752,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	switch (request.event_name) {
 		//網頁腳本狀態
 		case 'quest-tab-status':
-			response = responsePageStatus()
-			sendResponse(response);
+			responsePageStatus((response) => {
+				sendResponse(response);
+			});
 			break;
 		//標記命令執行	
 		case 'keyword-mark-search':
 			sendResponse({});
 			
 			searchKeywords((process_keycount) => {
-				response = {
-					event_name: 'response-keyword-mark-search',
-					process_keycount: process_keycount,
-					page_status: responsePageStatus()
-				};
-				
-				chrome.runtime.sendMessage(response, (t) => {});
+				responsePageStatus((page_status) => {
+					response = {
+						event_name: 'response-keyword-mark-search',
+						process_keycount: process_keycount,
+						page_status: responsePageStatus()
+					};
+					
+					chrome.runtime.sendMessage(response, (t) => {});
+				});
 			});
 			break;	
 		case 'keyword-mark-show':
