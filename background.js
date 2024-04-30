@@ -366,7 +366,7 @@ function responseSidepanelSpecialUrlNoteData(title, host, url, callback){
 				const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32" style="position: relative;top: calc(50% - 0.5em);">
 											<path fill="currentColor" d="M20.917 6.883l.7 0 .8-.3q.85 2 1.4 2.15-.1 1 .1 2.27-1.5-3.2-2.25-2.5l-1 2.2q0 1 .7 2.2-.6-.5-1-1.5l-3.3 7.4q.04 1.4 1.18 2.6l1.45-.3-.85-.35 2.05-.4q-.3.15-.8-.6l2-.7-1.3.1 2.5-1.4 1.35-1.2q-2.7.4-5 0l5.5-1q-1-.7-4.5-.6 1-.6 6.8-.5l2.6 1.1q.6-.5 1.1 1.2l-.2.25q-.154-.433-.4-.5l-.1.3-.4-.4-1.2 0-.7.7q.5 1 1 1l.19-.1.02.1.8 0-1 .7q-.2-.5-2-.6l-1.5 2-.1 2-.5 1 3.6-.4 2 1.3-.7 1.7-.117-.441-1 1-.1-1-1.2.8.3-1.4-4 1.5-3 0-1 1q-5 1.8-10-1l2-.2 1.4-1.5q-3-2-10 1l2.4-2.4q-8-13 8-20zm7.4 8.7-2-.3 1 .7z" />
 									  </svg>
-									  ${title.slice(title.indexOf(' - ') + 3, title.indexOf('的創作'))}`;
+									  ${title.slice(title.lastIndexOf(' - ', title.indexOf('的創作')) + 3, title.indexOf('的創作'))}`;
 				
 				responseUrlNoteData(homegamer_key_index, (homegamer_notedata) => {
 					if (homegamer_notedata == null){
@@ -1156,7 +1156,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				}
 				response_keyword_notedata.is_first = request.is_first;
 				
-				chrome.tabs.sendMessage(currentpage_TabId, response_keyword_notedata, (t) => {});
+				chrome.tabs.sendMessage(sender.tab.id, response_keyword_notedata, (t) => {});
 			});
 			break;
 			
@@ -1395,7 +1395,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 		case 'special-url-page-updated':
 			sendResponse({});
 			
-			if (is_SidepanelON){
+			if (is_SidepanelON && currentpage_TabId == sender.tab.id){
 				const current_data = {currentpage_tabid: currentpage_TabId,
 									  is_darkmode: is_DarkMode
 									  };
@@ -1464,6 +1464,43 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
 						}
 					});
 				}
+			}
+			break;
+	}
+});
+
+chrome.commands.onCommand.addListener((command) => {
+	switch (command) {
+		case 'KDN_SearchKeyword':
+			const quest_tab_message = {
+				event_name: 'quest-tab-status',
+				tab_id: currentpage_TabId
+			};
+			
+			function quest_contentaction(tabid){
+				chrome.tabs.sendMessage(tabid, quest_tab_message, (response) => {
+					if(chrome.runtime.lastError){
+						triggerNotificationMessage("目前瀏覽網頁尚未初始化\n請重新載入", 'error');
+					}
+					else if (!response.is_areadysearch){
+						chrome.tabs.sendMessage(tabid, {event_name: 'keyword-mark-search', from: 'hotkey'}, (t) => {});
+					}
+					else if(response.is_markhide){
+						chrome.tabs.sendMessage(tabid, {event_name: 'keyword-mark-show', from: 'hotkey'}, (t) => {});
+					}
+					else{
+						chrome.tabs.sendMessage(tabid, {event_name: 'keyword-mark-hide', from: 'hotkey'}, (t) => {});
+					}
+				});
+			}
+			if (currentpage_TabId == null){
+				chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+				  currentpage_TabId = tabs[0].id;
+				  quest_contentaction(currentpage_TabId);
+				});
+			}
+			else{
+				quest_contentaction(currentpage_TabId);
 			}
 			break;
 	}

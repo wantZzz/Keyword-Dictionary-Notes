@@ -19,7 +19,10 @@ var is_KeywordNoteExist = 0;
 var display_UrlNotes = [-1];
 var display_KeywordNotes = [-1];
 
-var confirmnotifications_data = {}
+var confirmnotifications_Data = {};
+
+var is_SuggestionSearch_Composition = false;
+var is_First_SuggestionSearch = true;
 //編輯器控制項
 var current_EditingEditor = [null, null];
 
@@ -83,6 +86,10 @@ function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 }
 
 function refreshTitleArea(host, host_notedata, keywords_priority){
+	if (is_UrlNewNoteEdit != null){
+		return;
+	}
+	
 	const title_area = document.getElementById("title_area");
 	
 	const host_title = title_area.querySelector('span#url_note_host');
@@ -277,6 +284,10 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 }
 
 function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_priority){
+	if (is_UrlNewNoteEdit != null){
+		return;
+	}
+	
 	const title_area = document.getElementById("title_area");
 	
 	if (title != null){
@@ -573,9 +584,16 @@ function refreshSuggestionArea(is_data_ready, display_Keywords){
 			}
 		}
 	}
+
+	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
+	is_First_SuggestionSearch = true;
 }
 
 function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
+	if (is_KeywordNewNoteEdit != null){
+		return;
+	}
+	
 	const keyword_area = document.getElementById("keyword_area");
 	
 	const host_title = keyword_area.querySelector('span#keyword_note_host');
@@ -762,6 +780,9 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 	initial_EditTimestamp[1] = null;
 	
 	is_KeywordNewNoteEdit = null;
+	
+	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
+	is_First_SuggestionSearch = true;
 }
 
 function afterEditRefreshProcess(note_type, process_state, note_id, save_datetime){
@@ -1044,11 +1065,11 @@ function confirmNotificationMessage(message, type, senddata){
 	}
 	
 	chrome.notifications.create(options, function(notificationId) {
-		confirmnotifications_data[notificationId] = senddata;
+		confirmnotifications_Data[notificationId] = senddata;
 		
 		setTimeout(() => {
-			if (Boolean(confirmnotifications_data[notificationId])) {
-				delete confirmnotifications_data[notificationId];
+			if (Boolean(confirmnotifications_Data[notificationId])) {
+				delete confirmnotifications_Data[notificationId];
 				
 				chrome.notifications.clear(notificationId, (wasCleared) => {});
 			}
@@ -1244,6 +1265,10 @@ function suggestion_button_click(event){
 	if (trigger_keyword === 'none'){
 		return;
 	}
+	if (is_KeywordNewNoteEdit != null){
+		triggerAlertWindow('您仍有正在編輯的筆記\n請先儲存正在編輯的筆記再執行本操作', 'warning');
+		return;
+	}
 	
 	if (!(current_Keyword === trigger_keyword)){
 		chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: trigger_keyword}, (t) => {});
@@ -1251,33 +1276,88 @@ function suggestion_button_click(event){
 	}
 }
 function more_suggestion_button_click(event){
-	const more_suggestion_button_position = event.target.closest('button#more_suggestion').getBoundingClientRect() 
-	
 	const all_suggestion_popup = document.getElementById("all_suggestion_popup");
 	const popup_suggestion_container = all_suggestion_popup.querySelector(".popup_suggestion_container");
 	
-	all_suggestion_popup.style.top = `${more_suggestion_button_position.top + 45}px`;
+	if (all_suggestion_popup.classList.contains('popup_show')){
+		all_suggestion_popup.style.left = '';
+		all_suggestion_popup.style.top = '';
 	
-	let count_id = 0;
-	const suggestion_button = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
-	const keywords = Object.keys(recorded_Keywords);
-	
-	keywords.forEach(function (suggestion) {
-		if(!suggestion_button[count_id]){
-			const button_block = document.createElement('button');
-			button_block.classList.add('keyword_suggestion');
-			button_block.setAttribute('keyword', suggestion);
-									
-			button_block.innerText = `${suggestion}`;
-			button_block.addEventListener('click', suggestion_button_click, false);
-			popup_suggestion_container.appendChild(button_block);
-		}
-		else{
-			suggestion_button[count_id].innerText = `${suggestion}`;
-			suggestion_button[count_id].setAttribute('keyword', suggestion);
+		all_suggestion_popup.classList.remove('popup_show');
+		
+		if (is_First_SuggestionSearch){
+			popup_suggestion_container.innerHTML = "";
 		}
 		
-		count_id += 1;
+		return;
+	}
+	
+	const more_suggestion_button_position = event.target.closest('button#more_suggestion').getBoundingClientRect() 
+	
+	all_suggestion_popup.style.top = `${more_suggestion_button_position.top + 45}px`;
+	
+	if (is_First_SuggestionSearch){
+		let count_id = 0;
+		const suggestion_button = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
+		const keywords = Object.keys(recorded_Keywords);
+		
+		keywords.forEach(function (suggestion) {
+			if(!suggestion_button[count_id]){
+				const button_block = document.createElement('button');
+				button_block.classList.add('keyword_suggestion');
+				button_block.setAttribute('keyword', suggestion);
+										
+				button_block.innerText = `${suggestion}`;
+				button_block.addEventListener('click', suggestion_button_click, false);
+				popup_suggestion_container.appendChild(button_block);
+			}
+			else{
+				suggestion_button[count_id].innerText = `${suggestion}`;
+				suggestion_button[count_id].setAttribute('keyword', suggestion);
+			}
+			
+			count_id += 1;
+		});
+		
+		if(count_id < suggestion_button.length){
+			for (var i = count_id; i < suggestion_button.length; i++) {
+				popup_suggestion_container.removeChild(suggestion_button[i]);
+			}
+		}
+	}
+	
+	all_suggestion_popup.classList.add('popup_show');
+}
+function keywordSearchAlgorithmProcess(event){
+	if (is_SuggestionSearch_Composition){
+		return;
+	}
+	
+	const keywords = Object.keys(recorded_Keywords);
+	const search_string = event.target.value;
+	
+	const popup_suggestion_container = event.target.closest(".levitate_suggestion_contaner").querySelector(".popup_suggestion_container");
+	const suggestion_button = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
+	let count_id = 0;
+	
+	keywords.forEach(function (suggestion) {
+		if (suggestion.includes(search_string)){
+			if(!suggestion_button[count_id]){
+				const button_block = document.createElement('button');
+				button_block.classList.add('keyword_suggestion');
+				button_block.setAttribute('keyword', suggestion);
+										
+				button_block.innerText = `${suggestion}`;
+				button_block.addEventListener('click', suggestion_button_click, false);
+				popup_suggestion_container.appendChild(button_block);
+			}
+			else{
+				suggestion_button[count_id].innerText = `${suggestion}`;
+				suggestion_button[count_id].setAttribute('keyword', suggestion);
+			}
+			
+			count_id += 1;
+		}
 	});
 	
 	if(count_id < suggestion_button.length){
@@ -1286,7 +1366,12 @@ function more_suggestion_button_click(event){
 		}
 	}
 	
-	all_suggestion_popup.classList.add('popup_show');
+	if (search_string != ""){
+		is_First_SuggestionSearch = false;
+	}
+	else{
+		is_First_SuggestionSearch = true;
+	}
 }
 
 // --- keyword area title buttons ---
@@ -1532,6 +1617,7 @@ function options_delete_button_click(event){
 		
 		
 		const send_url_notedata_delete = {
+			notification_type: 'message',
 			event_name: 'send-url-notedata-delete',
 			host: host,
 			note_id: note_id
@@ -1938,12 +2024,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx) {
-    if (Boolean(confirmnotifications_data[notificationId])) {
-		switch (confirmnotifications_data[notificationId].notification_type){
+    if (Boolean(confirmnotifications_Data[notificationId])) {
+		switch (confirmnotifications_Data[notificationId].notification_type){
 			case 'message':
 				if (btnIdx === 0){
-					chrome.runtime.sendMessage(confirmnotifications_data[notificationId], (response) => {});
-					delete confirmnotifications_data[notificationId];
+					chrome.runtime.sendMessage(confirmnotifications_Data[notificationId], (response) => {});
+					delete confirmnotifications_Data[notificationId];
 				}
 				break;
 			case 'reconnect':
@@ -2049,13 +2135,24 @@ function runInitial(){
 	edit_options_popup.querySelector("button.save_note").addEventListener("click", editor_save_button_click);
 	edit_options_popup.querySelector("button.exit_note").addEventListener("click", editor_exit_button_click);
 	
-	all_suggestion_popup.addEventListener("mouseleave", levitate_popup_mouseleave_event);
+	all_suggestion_popup.addEventListener("mouseleave", composition_levitate_popup_mouseleave_event);
+	all_suggestion_popup.querySelector("input").addEventListener("compositionstart", () => {is_SuggestionSearch_Composition = true;});
+	all_suggestion_popup.querySelector("input").addEventListener("compositionend", (event) => {is_SuggestionSearch_Composition = false;keywordSearchAlgorithmProcess(event);});
+	all_suggestion_popup.querySelector("input").addEventListener("input", keywordSearchAlgorithmProcess);
 	
 	function levitate_popup_mouseleave_event(event){
 		this.style.left = '';
 		this.style.top = '';
 	
 		this.classList.remove('popup_show');
+	}
+	function composition_levitate_popup_mouseleave_event(event){
+		if (!is_SuggestionSearch_Composition){
+			this.style.left = '';
+			this.style.top = '';
+		
+			this.classList.remove('popup_show');
+		}
 	}
 
 	// ====== 請求設定資料 ====== 

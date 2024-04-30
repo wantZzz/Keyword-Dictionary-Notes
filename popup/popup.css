@@ -232,7 +232,7 @@ body.dark #popup-bar .button:hover .keyword-text{
   opacity: 0;
 }
 #popup-bar div.button.folded.folded-target{
-  height: 170px;/*230*/
+  height: 230px;
   background-color: var(--primary-color);
   margin-bottom: 0;
   position: relative;
@@ -243,25 +243,6 @@ body.dark #popup-bar .button:hover .keyword-text{
 #popup-bar div.button.folded.folded-target button.title_botton{
   height: 50px;
 }
-
-#popup-bar .search-box {
-    border-radius: 6px;
-    background-color: var(--primary-color-light);
-    transition: var(--tran-05);
-}
-#popup-bar .search-box input{
-  height: 100%;
-  width: 100%;
-  outline: none;
-  border: none;
-  background-color: var(--primary-color-light);
-  color: var(--text-color);
-  font-size: 17px;
-  font-weight: 500;
-  transition: var(--tran-05);
-  margin: 5px 0px;
-}
-
 
 #start-up .icon-show{
   opacity: 0;
@@ -279,20 +260,6 @@ body.dark #popup-bar .button:hover .keyword-text{
 #start-up .icon-unshow:before {
   content: "🔴";
 }
-/*
-#popup-search .icon-search:before {
-    content: "🔍";
-}
-#popup-new-keyword .icon-new-keyword:before {
-    content: "🗒️";
-}
-#popup-open-notebook .icon-open-notebook:before {
-    content: "📓";
-}
-#popup-setting .icon-setting:before {
-    content: "⚙️";
-}
-*/
 
 #popup-bar div.button #note_mode{
 	background-color: var(--popup-color);

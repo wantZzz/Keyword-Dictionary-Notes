@@ -180,6 +180,9 @@ keywordnote .note_block{
 keywordnote .note_block .bottom_fade {
   top: calc(100px - 1em);
 }
+keywordnote .note_block .bottom_fade.hide {
+  opacity: 0;
+}
 keywordnote .note_content {
   height: 100%;
   /* overflow: hidden; */

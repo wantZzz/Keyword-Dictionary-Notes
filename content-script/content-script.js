@@ -17,7 +17,7 @@ var is_MutipleMark = false;
 var is_DarkMode = true;
 
 var is_FirstTrack = true;
-const track_host = ['www.youtube.com', 'www.twitch.tv'];
+const track_Host = ['www.youtube.com', 'www.twitch.tv'];
 //儲存資料
 var searched_KeywordNodes = [];// [node, is_showed, keywords_in_node]
 var searched_Keywords = {};
@@ -38,7 +38,7 @@ function responsePageStatus(callback){
 			title: document.title
 			});
 			
-	if (track_host.includes(location.host) && is_FirstTrack){
+	if (track_Host.includes(location.host) && is_FirstTrack){
 		trackHostEventBuild(location.host);
 	}
 }
@@ -46,8 +46,7 @@ function responsePageStatus(callback){
 function responseSearchedKeywords(){
 	//console.log({searched_keywords: searched_Keywords});
 	
-	return {searched_keywords: searched_Keywords
-			};
+	return {searched_keywords: searched_Keywords};
 }
 
 function trackHostEventBuild(host){
@@ -55,6 +54,11 @@ function trackHostEventBuild(host){
 		case 'www.youtube.com':
 			document.addEventListener('yt-page-data-updated', trackHostListener);
 			is_FirstTrack = False;
+			break;
+		case 'www.twitch.tv':
+			let target = document.querySelector('head > title');
+			let observer = new window.WebKitMutationObserver(trackHostListener);
+			observer.observe(target, {childList: true});
 			break;
 	}
 }
@@ -176,12 +180,20 @@ function insertPopupHtml(){
 	keyword_container.querySelector('div.note_content').onwheel = function (event){ 
 		event.preventDefault();  
 
-		var step = 15;  
+		const step = 15;  
+		const last_scrollTop = this.scrollTop;
 		if(event.deltaY < 0){  
 			this.scrollTop -= step;  
 		} else {  
 			this.scrollTop += step;  
-		}  
+		}
+
+		if (last_scrollTop == this.scrollTop && last_scrollTop > 0){
+			this.parentElement.querySelector('div.bottom_fade').classList.add('hide');
+		}
+		else{
+			this.parentElement.querySelector('div.bottom_fade').classList.remove('hide');
+		}
 	};
 	
 	
@@ -311,7 +323,7 @@ function searchKeywords(callback){
 				for (const keyword of recorded_keywords) {
 					let start_index = 0, keyword_index;
 					
-					while ((keyword_index = node_text.includes(keyword, start_index))){
+					while ((keyword_index = node_text.indexOf(keyword, start_index)) > -1){
 						keywords_in_node.push({start: keyword_index, end: (keyword_index + keyword.length), keywords: [keyword]});
 						start_index = (keyword_index + keyword.length);
 					}
@@ -372,19 +384,20 @@ function searchKeywords(callback){
 			
 			if (!is_AreadySearch){
 				insertPopupHtml();
-				is_AreadySearch = true;
-				is_MarkHide = false;
-				
-				for (const keyword of recorded_keywords) {
-					if (keywords_searched_count[keyword] === 0){
-						delete keywords_searched_count[keyword];
-					}
-					else{
-						keycount += 1;
-					}
-				}
-				searched_Keywords = keywords_searched_count;
 			}
+			
+			is_AreadySearch = true;
+			is_MarkHide = false;
+			
+			for (const keyword of recorded_keywords) {
+				if (keywords_searched_count[keyword] === 0){
+					delete keywords_searched_count[keyword];
+				}
+				else{
+					keycount += 1;
+				}
+			}
+			searched_Keywords = keywords_searched_count;
 		}
 		else{
 			triggerAlertWindow("未能在目前網頁上找到關鍵字", 'nofound');
@@ -478,7 +491,7 @@ function onlyShowOneKeywordMark(keyword){
 		for (let searched_index = 0; searched_index < searched_KeywordNodes.length; searched_index++) {
 			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[searched_index];
 			
-			if(keywords_in_node.includes(keyword)){
+			if(keywords_in_node.indexOf(keyword) > -1){
 				if (keywords_in_node.length > 1){
 					if(!is_showed){
 						const new_keywordnode_unprocessed = makeKeywordMutiplenode(node.innerText, keywords_in_node);
@@ -598,7 +611,7 @@ function scrollIntoPreviousMark(target_keyword){
 		for (let index = ((scroll_IntoIndex + mark_length - 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length - 1) % mark_length)) {
 			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[index];
 			
-			if (keywords_in_node.includes(target_keyword)){
+			if (keywords_in_node.indexOf(target_keyword) > -1){
 				node.scrollIntoView();
 				
 				scroll_IntoIndex = index;
@@ -617,7 +630,7 @@ function scrollIntoNaxtMark(target_keyword){
 		for (let index = ((scroll_IntoIndex + mark_length + 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length + 1) % mark_length)) {
 			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[index];
 			
-			if (keywords_in_node.includes(target_keyword)){
+			if (keywords_in_node.indexOf(target_keyword) > -1){
 				node.scrollIntoView();
 				
 				scroll_IntoIndex = index;
@@ -625,6 +638,123 @@ function scrollIntoNaxtMark(target_keyword){
 			}
 		}
 	}
+}
+
+// ====== 元素事件 ====== 
+function keywordMouseoverEvent(event){
+	if(is_MarkHide){
+		return;
+	}
+	
+	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
+	if (popup_window.classList.contains('show')){
+		popup_window.classList.add('quickclose');
+	}
+	
+	const kw_node = event.target;
+	const keywords = kw_node.getAttribute('keywords').split(',');
+	
+	const keyword_title = popup_window.querySelector('span#keyword_title');
+	const keyword_note_content = popup_window.querySelector('div.note_content');
+	
+	keyword_title.innerText = keywords[0];
+	keyword_note_content.innerText = 'Waiting for database response...';
+	
+	current_PopupMark = keywords;
+	current_PopupIndex = 0;
+	is_MutipleMark = (keywords.length > 1);
+	
+	popup_window.classList.remove('quickclose');
+	popup_window.classList.remove('show')
+	
+	const quest_data = {
+		event_name: 'quest-keyword-notedata-content',
+		keyword: keywords[0],
+		is_first: true,
+		mouseX: event.clientX,
+		mouseY: event.clientY
+	};
+	chrome.runtime.sendMessage(quest_data, (t) => {});
+	/*if (kw_node.classList.contains('highlight-keyword-mutiple')){
+		
+		
+	}
+	else{
+		
+	}*/
+}
+function keywordMouseoutEvent(event){
+	clearTimeout(timeout_PopupMouseOn);
+	
+	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
+	timeout_PopupMouseOut = setTimeout(function () {
+		popup_window.classList.remove('show');
+		popup_window.style.left = "";
+		popup_window.style.top = "";
+	}, 500);
+}
+
+function popupMouseoverEvent(event){
+	clearTimeout(timeout_PopupMouseOut);
+}
+function popupMouseoutEvent(event){
+	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
+	timeout_PopupMouseOut = setTimeout(function () {
+		popup_window.classList.remove('show');
+		popup_window.style.left = "";
+		popup_window.style.top = "";
+	}, 500);
+}
+
+function popupSidepanelShow(event){
+	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
+	const keyword_title = popup_window.querySelector('span#keyword_title');
+	
+	const select_keyword = keyword_title.innerText;
+	
+	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
+		if (!response.is_sidepanelon){
+			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (t) => {});
+		}
+		else{
+			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: select_keyword}, (t) => {});
+		}
+	});
+	//chrome.sidePanel.open({tabId: currentpage_TabId});
+}
+function popupKeywordHighlight(event){
+	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
+	const keyword_title = popup_window.querySelector('span#keyword_title');
+	
+	const select_keyword = keyword_title.innerText;
+	onlyShowOneKeywordMark(select_keyword);
+}
+
+function popup_previouskeyword(){
+	const previous_index = (current_PopupIndex - 1 + current_PopupMark.length) % current_PopupMark.length;
+	const previous_keyword = current_PopupMark[previous_index];
+	
+	const quest_data = {
+		event_name: 'quest-keyword-notedata-content',
+		keyword: previous_keyword,
+		index: previous_index,
+		is_first: false
+	};
+	
+	chrome.runtime.sendMessage(quest_data, (t) => {});
+}
+function popup_nextkeyword(){
+	const next_index = (current_PopupIndex + 1 + current_PopupMark.length) % current_PopupMark.length;
+	const next_keyword = current_PopupMark[next_index];
+	
+	const quest_data = {
+		event_name: 'quest-keyword-notedata-content',
+		keyword: next_keyword,
+		index: next_index,
+		is_first: false
+	};
+	
+	chrome.runtime.sendMessage(quest_data, (t) => {});
 }
 
 // ====== 元素事件 ====== 
@@ -762,40 +892,67 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			
 			searchKeywords((process_keycount) => {
 				responsePageStatus((page_status) => {
-					response = {
-						event_name: 'response-keyword-mark-search',
-						process_keycount: process_keycount,
-						page_status: responsePageStatus()
-					};
-					
-					chrome.runtime.sendMessage(response, (t) => {});
+					if (request.from != 'hotkey'){
+						response = {
+							event_name: 'response-keyword-mark-search',
+							process_keycount: process_keycount,
+							page_status: page_status
+						};
+						
+						chrome.runtime.sendMessage(response, (t) => {});
+					}
 				});
 			});
 			break;	
+		case 'keyword-mark-research':
+			sendResponse({});
+			
+			hideAllKeywordMark((process_status) => {
+				searchKeywords((process_keycount) => {
+					responsePageStatus((page_status) => {
+						response = {
+							event_name: 'response-keyword-mark-search',
+							process_keycount: process_keycount,
+							page_status: page_status
+						};
+						
+						chrome.runtime.sendMessage(response, (t) => {});
+					});
+				});
+			});
+			break;
 		case 'keyword-mark-show':
 			sendResponse({});
 			
 			showAllKeywordMark((process_status) => {
-				response = {
-					event_name: 'response-keyword-mark-show',
-					process_status: process_status,
-					page_status: responsePageStatus()
-				};
-				
-				chrome.runtime.sendMessage(response, (t) => {});
+				responsePageStatus((page_status) => {
+					if (request.from != 'hotkey'){
+						response = {
+							event_name: 'response-keyword-mark-show',
+							process_status: process_status,
+							page_status: page_status
+						};
+						
+						chrome.runtime.sendMessage(response, (t) => {});
+					}
+				});
 			});
 			break;
 		case 'keyword-mark-hide':
 			sendResponse({});
 			
 			hideAllKeywordMark((process_status) => {
-				response = {
-					event_name: 'response-keyword-mark-hide',
-					process_status: process_status,
-					page_status: responsePageStatus()
-				};
-				
-				chrome.runtime.sendMessage(response, (t) => {});
+				responsePageStatus((page_status) => {
+					if (request.from != 'hotkey'){
+						response = {
+							event_name: 'response-keyword-mark-hide',
+							process_status: process_status,
+							page_status: page_status
+						};
+						
+						chrome.runtime.sendMessage(response, (t) => {});
+					}
+				});
 			});
 			break;
 		case 'keyword-previous-mark':
