@@ -19,10 +19,11 @@ var is_KeywordNoteExist = 0;
 var display_UrlNotes = [-1];
 var display_KeywordNotes = [-1];
 
-var confirmnotifications_Data = {};
+var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
 
 var is_SuggestionSearch_Composition = false;
 var is_First_SuggestionSearch = true;
+var current_SuggestionSearch = "";
 //編輯器控制項
 var current_EditingEditor = [null, null];
 
@@ -35,8 +36,8 @@ var is_KeywordNewNoteEdit = null;
 
 var is_Connect = false;
 //儲存資料
-var searched_Keywords = {};
-var recorded_Keywords = {};
+var searched_Keywords = {};//{keyword: count_in_page}
+var recorded_Keywords = {};//{keyword: [[data......], is_searched]}
 
 // ====== 資料回傳 ====== 
 
@@ -587,6 +588,7 @@ function refreshSuggestionArea(is_data_ready, display_Keywords){
 
 	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
 	is_First_SuggestionSearch = true;
+	current_SuggestionSearch = "";
 }
 
 function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
@@ -783,6 +785,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 	
 	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
 	is_First_SuggestionSearch = true;
+	current_SuggestionSearch = "";
 }
 
 function afterEditRefreshProcess(note_type, process_state, note_id, save_datetime){
@@ -1077,6 +1080,25 @@ function confirmNotificationMessage(message, type, senddata){
 	});
 }
 
+function recordedKeywordsUpdate(update_recorded_keywords){
+	const keywords = Object.keys(recorded_Keywords);
+	let new_recorded_keywords = [];
+	
+	update_recorded_keywords.forEach((check_keyword) => {
+		if (!recorded_Keywords[check_keyword]){
+			new_recorded_keywords[check_keyword] = [[], false];
+		}
+		else{
+			new_recorded_keywords[check_keyword] = recorded_Keywords[check_keyword];
+		}
+	});
+	
+	console.log(new_recorded_keywords);
+	console.log(recorded_Keywords);
+	
+	recorded_Keywords = new_recorded_keywords;
+}
+
 // ====== 元素事件 ====== 
 function triggerAlertWindow(message, type){
 	notification = {
@@ -1271,7 +1293,7 @@ function suggestion_button_click(event){
 	}
 	
 	if (!(current_Keyword === trigger_keyword)){
-		chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: trigger_keyword}, (t) => {});
+		chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: trigger_keyword, is_first: false}, (t) => {});
 		current_Keyword = trigger_keyword;
 	}
 }
@@ -1931,7 +1953,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			sendResponse({});
 			
 			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recorded_Keywords = response.recorded_keywords;
+				recordedKeywordsUpdate(response.recorded_keywords);
 				refreshSuggestionArea(false, null);
 			});
 			break;
@@ -1951,7 +1973,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			sendResponse({});
 			
 			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recorded_Keywords = response.recorded_keywords;
+				recordedKeywordsUpdate(response.recorded_keywords);
 				afterEditRefreshProcess('keyword', request.process_state, 0, request.save_datetime);
 			});
 			break;	
@@ -1970,7 +1992,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			sendResponse({});
 			
 			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recorded_Keywords = response.recorded_keywords;
+				recordedKeywordsUpdate(response.recorded_keywords);
 				refreshKeywordArea(current_Keyword, null, []);
 				refreshSuggestionArea(false, null);
 			});
@@ -2163,9 +2185,9 @@ function runInitial(){
 		
 		console.log(`${is_SwitchWithTab} ${current_Keyword}`);
 		chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-			recorded_Keywords = response.recorded_keywords;
+			recordedKeywordsUpdate(response.recorded_keywords);
 			if (Boolean(current_Keyword)){
-				chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword}, (t) => {});
+				chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword, is_first: true}, (t) => {});
 			}
 		});
 	});

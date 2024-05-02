@@ -101,20 +101,21 @@ function responseSidepanelOn(callback){
 }
 
 function responseRecordedKeywords(callback){
-	let recorded_Keywords_response = {};
+	/*let recorded_Keywords_response = {};
 	
 	recorded_Keywords.forEach(function (Keyword) {
 		recorded_Keywords_response[Keyword] = 0;
 	});
 	
-	callback({recorded_keywords: recorded_Keywords_response});
+	callback({recorded_keywords: recorded_Keywords_response});*/
+	callback({recorded_keywords: recorded_Keywords});
 }
 
 function responseKeywordsNoteData(keyword, callback){
 	getKeywordData(keyword, (result, is_exist) => {
 		if (is_exist){
 			callback(result);
-			updateDisplayCRF(keyword);
+			//updateDisplayCRF(keyword);
 		}
 		else{
 			callback(null);
@@ -159,7 +160,7 @@ function responseContentKeywordsNoteData(keyword, callback){
 	});
 }
 
-function responseSidepanelKeywordsNoteData(keyword, callback){
+function responseSidepanelKeywordsNoteData(keyword, is_first, callback){
 	responseKeywordsNoteData(keyword, (keyword_notedata) => {
 		if (keyword_notedata == null){
 			callback(null, null);
@@ -173,6 +174,10 @@ function responseSidepanelKeywordsNoteData(keyword, callback){
 					callback(keyword_notedata, keywords_priority);
 				}
 			});
+			
+			if (!is_first){
+				updateDisplayCRF(keyword);
+			}
 		}
 	});
 }
@@ -1127,8 +1132,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 		case 'quest-keyword-notedata-sidepanel':
 			sendResponse({});
 			
-			const quest_keyword_side = request.keyword
-			responseSidepanelKeywordsNoteData(quest_keyword_side, (keyword_notedata, keywords_priority) => {
+			const quest_keyword_side = request.keyword;
+			responseSidepanelKeywordsNoteData(quest_keyword_side, request.is_first, (keyword_notedata, keywords_priority) => {
 				const response_keyword_notedata = {
 					event_name: 'response-keyword-notedata-sidepanel',
 					keyword: quest_keyword_side,
@@ -1178,7 +1183,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			
 			addNewKeyword(request.keyword, "", (process_state, save_datetime) => {
 				if (is_SidepanelON && process_state){
-					responseSidepanelKeywordsNoteData(request.keyword, (keyword_notedata, keywords_priority) => {
+					responseSidepanelKeywordsNoteData(request.keyword, false, (keyword_notedata, keywords_priority) => {
 						const response_keyword_notedata = {
 							event_name: 'response-keyword-notedata-sidepanel',
 							keyword: request.keyword,
@@ -1447,7 +1452,7 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
 						if (process_state){
 							current_Keyword = info.selectionText;
 							
-							responseSidepanelKeywordsNoteData(info.selectionText, (keyword_notedata, keywords_priority) => {
+							responseSidepanelKeywordsNoteData(info.selectionText, false, (keyword_notedata, keywords_priority) => {
 								const response_keyword_notedata = {
 									event_name: 'response-keyword-notedata-sidepanel',
 									keyword: info.selectionText,

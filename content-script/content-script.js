@@ -20,7 +20,7 @@ var is_FirstTrack = true;
 const track_Host = ['www.youtube.com', 'www.twitch.tv'];
 //儲存資料
 var searched_KeywordNodes = [];// [node, is_showed, keywords_in_node]
-var searched_Keywords = {};
+var searched_Keywords = {};//{keyword: count_in_page}
 
 // ====== 請求設定資料 ====== 
 chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
@@ -240,8 +240,16 @@ function makeKeywordMutipleNode(innertext, keywords_in_node){
 	
 function searchKeywords(callback){
 	chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-		const recorded_keywords = Object.keys(response.recorded_keywords);
-		const keywords_searched_count = response.recorded_keywords;
+		/*const recorded_keywords = Object.keys(response.recorded_keywords);
+	
+		const keywords_searched_count = response.recorded_keywords;*/
+		
+		const recorded_keywords = response.recorded_keywords;
+		let keywords_searched_count = {};
+		
+		recorded_keywords.forEach(function (Keyword) {
+			keywords_searched_count[Keyword] = 0;
+		});
 		
 		function isKeywordSpan(node){
 			try{
