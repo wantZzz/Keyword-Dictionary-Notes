@@ -961,6 +961,10 @@ function getDisplayKeyword(callback, try_time = 0){
 }
 
 function updateDisplayCRF(quest_keyword){
+	if (!recorded_Keywords.includes(quest_keyword)){
+		return;
+	}
+	
 	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
 		let DisplayCRF = result.KeywordsDisplayCRF;
 		let is_includes = false;
@@ -1133,19 +1137,23 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			sendResponse({});
 			
 			const quest_keyword_side = request.keyword;
-			responseSidepanelKeywordsNoteData(quest_keyword_side, request.is_first, (keyword_notedata, keywords_priority) => {
-				const response_keyword_notedata = {
-					event_name: 'response-keyword-notedata-sidepanel',
-					keyword: quest_keyword_side,
-					keyword_notedata: keyword_notedata,
-					keywords_priority: keywords_priority
-				};
-				
-				if (is_SidepanelON){
-					chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-					current_Keyword = quest_keyword_side;
-				}
-			});
+			
+			if (recorded_Keywords.includes(quest_keyword_side)){
+				responseSidepanelKeywordsNoteData(quest_keyword_side, request.is_first, (keyword_notedata, keywords_priority) => {
+					const response_keyword_notedata = {
+						event_name: 'response-keyword-notedata-sidepanel',
+						keyword: quest_keyword_side,
+						keyword_notedata: keyword_notedata,
+						keywords_priority: keywords_priority
+					};
+					
+					if (is_SidepanelON){
+						chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
+						current_Keyword = quest_keyword_side;
+					}
+				});
+			}
+			
 			break;
 		case 'quest-keyword-notedata-content':
 			sendResponse({});

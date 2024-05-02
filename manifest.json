@@ -9,7 +9,8 @@
 		"scripting",
 		"notifications",
 		"sidePanel",
-		"contextMenus"
+		"contextMenus",
+		"commands"
     ],
 	"host_permissions": ["https://*/*", "http://*/*"],
     "action": {
@@ -43,5 +44,11 @@
 	"side_panel": {
 		"default_path": "sidepanel/sidepanel.html",
 		"openPanelOnActionClick": false
+	},
+	"commands": {
+		"KDN_SearchKeyword": {
+			"suggested_key": "Ctrl+Shift+F",
+			"description": "Search/show/hide keywords in web pages"
+		}
 	}
 }
