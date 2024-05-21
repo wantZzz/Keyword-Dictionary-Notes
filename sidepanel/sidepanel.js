@@ -171,6 +171,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		
 		const priority_note = new Array(keywords_priority.length);
 		const priority_count = keywords_priority.length;
+		let priority_jump = 0;
 		
 		host_notedata.forEach(function (note_data) {
 			const [note_content, note_timestamp, undefind_value] = note_data;
@@ -205,8 +206,9 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
 				priority_note[priority_note_index] = message_block;
+				priority_jump += 1;
 			}
-			else if(!url_note_block[count_id]){
+			else if(!url_note_block[count_id - priority_jump]){
 				const message_block = document.createElement('div');
 				message_block.classList.add('windos_message_block');
 				
@@ -240,7 +242,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				display_UrlNotes_copy.push(count_id);
 			}
 			else{
-				const exist_block = url_note_block[count_id];
+				const exist_block = url_note_block[count_id + priority_jump];
 				
 				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
 				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
@@ -249,7 +251,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
 				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
 				
-				display_UrlNotes_copy[count_id] = count_id;
+				display_UrlNotes_copy[count_id - priority_jump] = count_id;
 			}
 			
 			count_id += 1;
@@ -371,6 +373,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 		
 		const priority_note = new Array(keywords_priority.length);
 		const priority_count = keywords_priority.length;
+		let priority_jump = 0;
 		
 		host_notedata.forEach(function (note_data) {
 			const [note_content, note_timestamp, undefind_value] = note_data;
@@ -405,8 +408,9 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
 				priority_note[priority_note_index] = message_block;
+				priority_jump += 1;
 			}
-			else if(!url_note_block[count_id]){
+			else if(!url_note_block[count_id - priority_jump]){
 				const message_block = document.createElement('div');
 				message_block.classList.add('windos_message_block');
 				
@@ -440,7 +444,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 				display_UrlNotes_copy.push(count_id);
 			}
 			else{
-				const exist_block = url_note_block[count_id];
+				const exist_block = url_note_block[count_id - priority_jump];
 				
 				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
 				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
@@ -449,7 +453,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
 				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
 				
-				display_UrlNotes_copy[count_id] = count_id;
+				display_UrlNotes_copy[count_id - priority_jump] = count_id;
 			}
 			
 			count_id += 1;
@@ -676,6 +680,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		
 		const priority_note = new Array(keywords_priority.length);
 		const priority_count = keywords_priority.length;
+		let priority_jump = 0;
 		
 		keyword_notedata.forEach(function (note_data) {
 			const [note_content, note_timestamp, is_pinned] = note_data;
@@ -710,8 +715,9 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
 				priority_note[priority_note_index] = message_block;
+				priority_jump += 1;
 			}
-			else if(!keyword_note_block[count_id]){
+			else if(!keyword_note_block[count_id - priority_jump]){
 				const message_block = document.createElement('div');
 				message_block.classList.add('windos_message_block');
 				
@@ -744,7 +750,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				display_KeywordNotes_copy.push(count_id);
 			}
 			else{
-				const exist_block = keyword_note_block[count_id];
+				const exist_block = keyword_note_block[count_id - priority_jump];
 				
 				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
 				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
@@ -753,7 +759,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
 				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
 				
-				display_KeywordNotes_copy[count_id] = count_id;
+				display_KeywordNotes_copy[count_id - priority_jump] = count_id;
 			}
 			
 			count_id += 1;
@@ -1093,8 +1099,8 @@ function recordedKeywordsUpdate(update_recorded_keywords){
 		}
 	});
 	
-	console.log(new_recorded_keywords);
-	console.log(recorded_Keywords);
+	//console.log(new_recorded_keywords);
+	//console.log(recorded_Keywords);
 	
 	recorded_Keywords = new_recorded_keywords;
 }
@@ -1628,6 +1634,7 @@ function options_copy_button_click(event){
 	more_options_popup.style.top = '';
 
 	more_options_popup.classList.remove('popup_show');
+	triggerAlertWindow('該功能功能處草稿階段', 'warning');
 }
 function options_delete_button_click(event){
 	const more_options_popup = event.target.closest('.levitate_options_popup');
