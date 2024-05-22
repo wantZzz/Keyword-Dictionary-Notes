@@ -612,8 +612,14 @@ function notedataUpdate(keyword, keyword_notedata, index){
 function scrollIntoPreviousMark(target_keyword){
 	const mark_length = searched_KeywordNodes.length
 	
-	if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
+	if (!is_AreadySearch){
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
+	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
 		triggerAlertWindow('當前單獨顯示的標記非所選關鍵字', 'error');
+	}
+	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
+		triggerAlertWindow('當前顯示的標記不包含所選關鍵字', 'error');
 	}
 	else{
 		for (let index = ((scroll_IntoIndex + mark_length - 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length - 1) % mark_length)) {
@@ -631,8 +637,14 @@ function scrollIntoPreviousMark(target_keyword){
 function scrollIntoNaxtMark(target_keyword){
 	const mark_length = searched_KeywordNodes.length
 	
-	if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
+	if (!is_AreadySearch){
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
+	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
 		triggerAlertWindow('當前單獨顯示的標記非所選關鍵字', 'error');
+	}
+	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
+		triggerAlertWindow('當前顯示的標記不包含所選關鍵字', 'error');
 	}
 	else{
 		for (let index = ((scroll_IntoIndex + mark_length + 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length + 1) % mark_length)) {
@@ -900,15 +912,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			
 			searchKeywords((process_keycount) => {
 				responsePageStatus((page_status) => {
-					if (request.from != 'hotkey'){
-						response = {
-							event_name: 'response-keyword-mark-search',
-							process_keycount: process_keycount,
-							page_status: page_status
-						};
-						
-						chrome.runtime.sendMessage(response, (t) => {});
-					}
+					response = {
+						event_name: 'response-keyword-mark-search',
+						process_keycount: process_keycount,
+						page_status: page_status,
+						request_from: request.from
+					};
+					
+					chrome.runtime.sendMessage(response, (t) => {});
 				});
 			});
 			break;	
@@ -989,12 +1000,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			else{
 				notedataUpdate(request.keyword, request.keyword_notedata, request.index);
 			}
-			break;
-		
-		case 'test':
-			sendResponse({});
-
-			onlyShowOneKeywordMark('標籤');
 			break;
 	}
 });

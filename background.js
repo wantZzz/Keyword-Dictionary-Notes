@@ -1415,6 +1415,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				portWithSidepanel.postMessage(current_data);
 			}
 			break;
+			
+		case 'response-keyword-mark-search':
+			if (request.request_from == 'hotkey'){
+				sendResponse({});
+			}
 	}
 	console.log(request.event_name);
 });

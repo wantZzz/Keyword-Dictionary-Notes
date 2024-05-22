@@ -1407,10 +1407,16 @@ function keyword_previous_mark_button_click(event){
 	if (is_CurrentPageSearch){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-previous-mark', target_keyword: current_Keyword}, (t) => {});
 	}
+	else{
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
 }
 function keyword_next_mark_button_click(event){
 	if (is_CurrentPageSearch){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-next-mark', target_keyword: current_Keyword}, (t) => {});
+	}
+	else{
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
 	}
 }
 function keyword_new_note_button_click(event){
