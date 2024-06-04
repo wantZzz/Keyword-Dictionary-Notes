@@ -6,8 +6,11 @@ var waiting_RefreshPage = null;
 
 var portWithSidepanel = null;
 //通用設定資料
-var is_DarkMode = true;
-var is_SwitchWithTab = true;
+var setting = {
+	is_DarkMode: true,
+	is_SwitchWithTab: true
+}
+
 //儲存資料
 const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'max_KeywordDisplay'];
 const keyword_special_urls = ['www.google.com', 'www.bing.com', 'www.youtube.com', 'www.twitch.tv', 'forum.gamer.com.tw', 'home.gamer.com.tw'];
@@ -90,8 +93,8 @@ function responseCurrentPageStatus(callback){
 }
 
 function responseSetting(callback){
-	callback({is_darkmode: is_DarkMode,
-			  is_switchwithtab: is_SwitchWithTab,
+	callback({is_darkmode: setting['is_DarkMode'],
+			  is_switchwithtab: setting['is_SwitchWithTab'],
 			  current_Keyword: current_Keyword
 			  });
 }
@@ -660,6 +663,7 @@ function settingInitialSetting(setting_name, value, callback){
 	chrome.storage.local.get(["KeywordsSetting"]).then((result) => {
 		let new_keywordssetting = result.KeywordsSetting;
 		new_keywordssetting[setting_name] = value;
+		setting[setting_name] = value;
 			
 		chrome.storage.local.set({KeywordsSetting: new_keywordssetting}).then(() => {
 			callback(true);
@@ -1009,7 +1013,7 @@ chrome.tabs.onActivated.addListener(function(info) {
 	
 	if (is_SidepanelON){
 		const current_data = {currentpage_tabid: currentpage_TabId,
-							  is_darkmode: is_DarkMode
+							  is_darkmode: setting['is_DarkMode']
 							  };
 		portWithSidepanel.postMessage(current_data);
 	}
@@ -1069,7 +1073,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			if (sender.tab && is_SidepanelON){
 				if (sender.tab.id === waiting_RefreshPage){
 					const current_data = {currentpage_tabid: currentpage_TabId,
-						is_darkmode: is_DarkMode
+						is_darkmode: setting['is_DarkMode']
 						};
 					portWithSidepanel.postMessage(current_data);
 					
@@ -1403,6 +1407,20 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				chrome.runtime.sendMessage(response_url_process, (t) => {});
 			});
 			break;
+		//-------
+		case 'update-setting-change':
+			sendResponse({});
+			
+			settingInitialSetting(request.setting_name, request.value, (process_state) => {
+				const response_setting_change = {
+					event_name: 'response-setting-change',
+					setting_name: request.setting_name,
+					value: request.value,
+					process_state: process_state
+				};
+					
+				chrome.runtime.sendMessage(response_setting_change, (t) => {});
+			});
 			
 		//頁面更新
 		case 'special-url-page-updated':
@@ -1410,7 +1428,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			
 			if (is_SidepanelON && currentpage_TabId == sender.tab.id){
 				const current_data = {currentpage_tabid: currentpage_TabId,
-									  is_darkmode: is_DarkMode
+									  is_darkmode: setting['is_DarkMode']
 									  };
 				portWithSidepanel.postMessage(current_data);
 			}
@@ -1433,7 +1451,7 @@ chrome.runtime.onConnect.addListener(function (port) {
 			
 			setTimeout(() => {
 				const current_data = {currentpage_tabid: currentpage_TabId,
-									  is_darkmode: is_DarkMode
+									  is_darkmode: setting['is_DarkMode']
 									  };
 				portWithSidepanel.postMessage(current_data);
 			}, 500);
@@ -1521,6 +1539,11 @@ chrome.commands.onCommand.addListener((command) => {
 				quest_contentaction(currentpage_TabId);
 			}
 			break;
+			
+		case 'KDN_Sidepanel':
+			if (!is_SidepanelON){
+				chrome.sidePanel.open({tabId: currentpage_TabId});
+			}
 	}
 });
 
@@ -1572,10 +1595,10 @@ chrome.runtime.onInstalled.addListener(function (details){
 	else{
 		
 		questInitialSetting('is_DarkMode', (response) => {
-			is_DarkMode = response;
+			setting['is_DarkMode'] = response;
 		});
 		questInitialSetting('is_SwitchWithTab', (response) => {
-			is_SwitchWithTab = response;
+			setting['is_SwitchWithTab'] = response;
 		});
 
 		console.log('擴充功能初始化完成');
@@ -1596,10 +1619,10 @@ chrome.runtime.onStartup.addListener(() => {
 	});
 	
 	questInitialSetting('is_DarkMode', (response) => {
-		is_DarkMode = response;
+		setting['is_DarkMode'] = response;
 	});
 	questInitialSetting('is_SwitchWithTab', (response) => {
-		is_SwitchWithTab = response;
+		setting['is_SwitchWithTab'] = response;
 	});
 
 	console.log('擴充功能初始化完成');

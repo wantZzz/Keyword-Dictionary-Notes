@@ -49,6 +49,11 @@
 		"KDN_SearchKeyword": {
 			"suggested_key": "Ctrl+Shift+F",
 			"description": "Search/show/hide keywords in web pages"
+		},
+		"KDN_Sidepanel": {
+			"suggested_key": "Ctrl+Shift+O",
+			"description": "Open sidepanel notebook"
 		}
-	}
+	},
+	"options_page": "setting_page/setting.html"
 }
