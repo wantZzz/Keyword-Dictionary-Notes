@@ -78,7 +78,9 @@ function open_notebook_click(event){
 }
 
 function popup_setting_click(event){
-	triggerAlertWindow('功能不足，設定頁待做', 'warning');
+	window.open(chrome.runtime.getURL('setting_page/setting.html'));
+	
+	//triggerAlertWindow('功能不足，設定頁待做', 'warning');
 }
 
 function popup_research_click(event){
@@ -105,7 +107,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			break;
 			
 		case 'response-keyword-mark-search':
-			sendResponse({});
+			if (request.request_from == 'popup'){
+				sendResponse({});
+			}
 			
 			currentPagePageStatusUpdate(true, true, request.page_status);
 			chrome.action.setBadgeText({tabId: currentpage_TabId, text: `${request.process_keycount}`}, (t) => {});
