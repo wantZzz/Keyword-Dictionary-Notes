@@ -2,11 +2,11 @@ keywordnote{
   /* ===== Colors ===== */
   --body-color: #E4E9F7;
   --popup-color: #FFF;
-  --primary-color: #695CFE;
-  --primary-color-light: #F6F5FF;
+  --primary-color: #8685EF;
+  --primary-color-light: #efefef;
   --primary-color-light-popup: #695CFE;
   --primary-text-light-popup: #FFF;
-  --toggle-color: #DDD;
+  --toggle-color: #a8b0da;
   --text-color: #707070;
   /* ====== Transition ====== */
   --tran-02: all 0.2s ease;

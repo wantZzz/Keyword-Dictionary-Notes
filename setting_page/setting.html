@@ -17,7 +17,7 @@
                 <span class="name">
                   Keyword Dictionary Notes <span class="version"></span>
                 </span>
-                <span class="profession">version 0.0.0-beta.3 | by Wannazzz</span>
+                <span class="profession">version 0.0.0-beta.3 | by wantZzz</span>
               </div>
             </div>
             <i class="bx bx-chevron-right toggle"></i>
@@ -39,6 +39,14 @@
 				<span class="keyword-text button-text">分頁索引規則</span>
             </button>
           </div>
+		  <div class="settings-button">
+            <button class="title_botton" open_page="support-tab">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+					<path fill="currentColor" d="m12 22l-.25-3h-.25q-3.55 0-6.025-2.475T3 10.5t2.475-6.025T11.5 2q1.775 0 3.313.662t2.7 1.825t1.824 2.7T20 10.5q0 1.875-.612 3.6t-1.676 3.2t-2.525 2.675T12 22m-.525-6.025q.425 0 .725-.3t.3-.725t-.3-.725t-.725-.3t-.725.3t-.3.725t.3.725t.725.3M10.75 12.8h1.5q0-.75.15-1.05t.95-1.1q.45-.45.75-.975t.3-1.125q0-1.275-.862-1.913T11.5 6q-1.1 0-1.85.613T8.6 8.1l1.4.55q.125-.425.475-.837T11.5 7.4t1.013.375t.337.825q0 .425-.25.763t-.6.687q-.875.75-1.062 1.188T10.75 12.8" />
+				</svg>
+				<span class="keyword-text button-text">關於</span>
+            </button>
+          </div>
         </div>
         <div id="center-area">
           <div id="display-tab" style="display: block;">
@@ -56,7 +64,7 @@
                   <div class="switch-toggle">
                     <span class="toggle-box"></span>
                   </div>
-                  <label>主題設為暗黑模式</label>
+                  <label>主題設為暗黑模式 (僅簡易關鍵字懸浮視窗、彈出式功能欄)</label>
                 </li>
                 <li class="switch-content bottom-line" setting_name="is_SwitchWithTab">
                   <div class="switch-toggle">
@@ -285,7 +293,41 @@
 				</ul>
 			</div>
           </div>
-        </div>
+		  <div id="support-tab" style="display: none;">
+			<h2 class="page-title">回報錯誤與協助</h2>
+			<p>
+				使用中若遇到錯誤可以到本擴充功能的 
+				<a href="https://github.com/wantZzz/Keyword-Dictionary-Notes/issues" target="_blank" class="clickable">
+					github issues
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+						<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+					</svg>
+				</a>
+				中回報
+			</p>
+			<p>
+				本擴充功能將在未來持續更新與增添功能，並對諸多錯誤進行修正、效率優化，<br>煩請各位先進與用戶不吝嗇地指教、提出改進建議
+			</p>
+			<div class="bottom-line"></div>
+			<h2 class="page-title">關於 Keyword Dictionary Notes</h2>
+			<p>
+				Keyword Dictionary Notes 由 wantZzz 
+				<a href="https://github.com/wantZzz" target="_blank" class="clickable">
+				  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+					<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+				  </svg>
+				</a>
+				開發、設計
+			</p>
+			<p>
+				輸入筆記內容的編輯器採用 
+				<a href="https://cksource.com/" target="_blank" class="clickable">
+					CKSource Holding sp.
+				</a>
+				的客製化編輯器
+			</p>
+		  </div>
+		</div>
       </div>
 	  <script src="setting.js"></script>
     </body>

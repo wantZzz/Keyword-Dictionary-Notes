@@ -396,6 +396,25 @@ li.switch-content.on .switch-toggle .toggle-box::before{
   flex-basis: 600px;
   flex-shrink: 0;
 }
+#center-area svg{
+  fill: var(--text-color);
+}
+#center-area a svg{
+  position: relative;
+  top: 2px;
+}
+#center-area a{
+  color: var(--text-color);
+  text-decoration: none;
+  background-color: var(--primary-color-light-popup);
+  border-radius: 3px;
+  padding: 0 2px;
+  display: inline-block;
+}
+
+#center-area #support-tab p {
+    margin: 10px 0;
+}
 
 .unfinish {
     z-index: 1000;

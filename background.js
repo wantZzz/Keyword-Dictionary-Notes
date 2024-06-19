@@ -11,6 +11,7 @@ var setting = {
 	is_SwitchWithTab: true
 }
 
+var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
 //儲存資料
 const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'max_KeywordDisplay'];
 const keyword_special_urls = ['www.google.com', 'www.bing.com', 'www.youtube.com', 'www.twitch.tv', 'forum.gamer.com.tw', 'home.gamer.com.tw'];
@@ -478,6 +479,45 @@ function triggerNotificationMessage(message, type){
 	});
 }
 
+function confirmNotificationMessage(message, type, senddata){
+	const options = {
+	  type: "basic",
+	  iconUrl: "../images/icon.png",
+	  title: "! 執行動作前確認",
+	  message: message
+	};
+	
+	switch (type) {
+		case 'new_version':
+			options.title = "✔ 有新版本可用";
+			options.buttons = [{
+				title: "前往新版本下載"
+			}, {
+				title: "下個版本再說吧"
+			}];
+			break;
+		default:
+			options.title = "! 執行動作前確認";
+			options.buttons = [{
+				title: "確認動作"
+			}, {
+				title: "取消動作"
+			}];
+	}
+	
+	chrome.notifications.create(options, function(notificationId) {
+		confirmnotifications_Data[notificationId] = senddata;
+		
+		setTimeout(() => {
+			if (Boolean(confirmnotifications_Data[notificationId])) {
+				delete confirmnotifications_Data[notificationId];
+				
+				chrome.notifications.clear(notificationId, (wasCleared) => {});
+			}
+		}, 10000);
+	});
+}
+
 // ====== 資料處理 ====== 
 function datetimeOutputFormat(){
 	let currentdate = new Date();
@@ -489,6 +529,92 @@ function datetimeOutputFormat(){
 	+ currentdate.getSeconds().toString().padStart(2,'0');
 
 	return datetime
+}
+
+function checkForNewRelease(){
+	questInitialSetting('github_', (github_data) => {
+		if ((Date.now() - github_data['notify_time']) > 1209600000){
+			const apiURL = 'https://api.github.com/repos/wantZzz/Keyword-Dictionary-Notes/releases/latest';
+				
+			fetch(apiURL)
+			.then(response => response.json())
+			.then(data => {
+				const latest_version = data.tag_name;
+				
+				console.log(latest_version);
+				console.log(github_data['version']);
+				
+				if (github_data['version'] != latest_version){
+					const consequences = compareVersion(latest_version, github_data['version']);
+					
+					//console.log(consequences);
+					if (consequences > 0){
+						const send_url_note_delete = {
+							notification_type: 'new_version',
+							latest_version: latest_version
+						};
+
+						confirmNotificationMessage(`新版本 ${latest_version} 已經釋出\n你可以選擇是否前往更新`, 'new_version', send_url_note_delete);
+						
+						github_data['notify_time'] = Date.now();
+						settingInitialSetting('github_', github_data, () => {});
+					}
+					else{
+						github_data['notify_time'] += 302400000;
+						settingInitialSetting('github_', github_data, () => {});
+					}
+				}
+				else{
+					github_data['notify_time'] = Date.now();
+					settingInitialSetting('github_', github_data, () => {});
+				}
+			});
+		}
+	});
+}
+
+function compareVersion(v1, v2, callback){
+	const parseVersion = (version) => {
+		if (version.startsWith('v')){
+			version = version.slice(1);
+		}
+		
+		const [version_Suffix, version_BetaOrAlpha] = version.split('-');
+		
+		const [major, minor, patch] = version_Suffix.split('.').map(Number);
+		return { major, minor, patch };
+	};
+	
+	const v1_parses = parseVersion(v1);
+	const v2_parses = parseVersion(v2);
+	
+	if (v1_parses.major !== v2_parses.major) {
+		return v1_parses.major > v2_parses.major ? 1 : -1;
+		return
+	}
+	if (v1_parses.minor !== v2_parses.minor) {
+		return v1_parses.minor > v2_parses.minor ? 1 : -1;
+	}
+	if (v1_parses.patch !== v2_parses.patch) {
+		return v1_parses.patch > v2_parses.patch ? 1 : -1;
+	}
+	
+	const isBetaOrAlpha = (version) => version.includes('-');
+	if (isBetaOrAlpha(v1) && isBetaOrAlpha(v2)) {
+		const [v1Suffix, v1BetaOrAlpha] = v1.split('-');
+		const [v2Suffix, v2BetaOrAlpha] = v2.split('-');
+
+		if (v1Suffix === v2Suffix) {
+			const v1Num = parseInt(v1BetaOrAlpha.split('.')[1]);
+			const v2Num = parseInt(v2BetaOrAlpha.split('.')[1]);
+			return v1Num - v2Num;
+		}
+	}
+	else if(isBetaOrAlpha(v1) || isBetaOrAlpha(v2)){
+		return isBetaOrAlpha(v2) ? 1 : -1;
+	}
+	
+	callback(0);
 }
 
 function reloadKeywordlist(callback){
@@ -663,7 +789,10 @@ function settingInitialSetting(setting_name, value, callback){
 	chrome.storage.local.get(["KeywordsSetting"]).then((result) => {
 		let new_keywordssetting = result.KeywordsSetting;
 		new_keywordssetting[setting_name] = value;
-		setting[setting_name] = value;
+		
+		if (Object.keys(setting).includes(setting_name)){
+			setting[setting_name] = value;
+		}
 			
 		chrome.storage.local.set({KeywordsSetting: new_keywordssetting}).then(() => {
 			callback(true);
@@ -1051,18 +1180,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 					current_tab_info: current_tab_info
 				};
 				chrome.runtime.sendMessage(response_tab_message, (t) => {});
-			});
-			break;
-		case 'quest-initialization-data':
-			sendResponse({});
-			
-			responseInitializationData(request.domain_name, (initialization_data) => {
-				
-				const response_tab_message = {
-					event_name: 'response-initialization-data',
-					initialization_data: initialization_data
-				};
-				chrome.tabs.sendMessage(currentpage_TabId, response_tab_message, (t) => {});
 			});
 			break;
 		case 'quest-extension-setting':
@@ -1547,6 +1664,28 @@ chrome.commands.onCommand.addListener((command) => {
 	}
 });
 
+chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx) {
+    if (Boolean(confirmnotifications_Data[notificationId])) {
+		switch (confirmnotifications_Data[notificationId].notification_type){
+			case 'new_version':
+				if (btnIdx == 0){
+					chrome.tabs.create({ url: 'https://github.com/wantZzz/Keyword-Dictionary-Notes/releases/latest' });
+				}
+				else if(btnIdx == 1){
+					const latest_version = confirmnotifications_Data[notificationId].latest_version;
+					questInitialSetting('github_', (github_data) => {
+						github_data['version'] = latest_version;
+						settingInitialSetting('github_', github_data, () => {});
+					});
+					delete confirmnotifications_Data[notificationId];
+				}
+				break;
+		}
+    }
+	else{
+		triggerAlertWindow("該操作似乎超過時間限制了\n請嘗試重新該操作", 'warning');
+	}
+});
 // ====== 安裝時初始化 ====== 
 chrome.runtime.onInstalled.addListener(function (details){
 	if (details.reason == "install"){
@@ -1558,7 +1697,12 @@ chrome.runtime.onInstalled.addListener(function (details){
 			KeywordsSetting: {
 				is_DarkMode: true,
 				is_SwitchWithTab: true,
-				note_version: 0
+				note_version: 1,
+				extension_version: "v0.0.0-beta.3",
+				github_: {
+					version: "v0.0.0-beta.3",
+					notify_time: -1
+				}
 			},
 			標籤: [
 				[
@@ -1593,15 +1737,34 @@ chrome.runtime.onInstalled.addListener(function (details){
 		console.log('安裝初始化完成');
 	}
 	else{
-		
 		questInitialSetting('is_DarkMode', (response) => {
 			setting['is_DarkMode'] = response;
 		});
 		questInitialSetting('is_SwitchWithTab', (response) => {
 			setting['is_SwitchWithTab'] = response;
 		});
-
-		console.log('擴充功能初始化完成');
+		
+		questInitialSetting('note_version', (note_version) => {
+			if (note_version != 1){
+				switch (note_version) {
+					case 0:
+						const setting_github_init = {
+							version: "v0.0.0-beta.3",
+							notify_time: 100
+						}
+						
+						settingInitialSetting('github_', setting_github_init, () => {});
+						settingInitialSetting('note_version', 1, () => {});
+				}
+			}
+			/*
+			else if (note_version > 1){
+			}
+			*/
+			
+			
+			console.log('擴充功能初始化完成');
+		});
 	}
 	
 	chrome.contextMenus.create({  
@@ -1625,9 +1788,9 @@ chrome.runtime.onStartup.addListener(() => {
 		setting['is_SwitchWithTab'] = response;
 	});
 
+	checkForNewRelease();
 	console.log('擴充功能初始化完成');
 });
-
 
 reloadKeywordlist((new_recorded_keywords) => {
 	if ((current_Keyword == '') || (recorded_Keywords.length == 0)){
