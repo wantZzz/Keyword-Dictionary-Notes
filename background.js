@@ -336,7 +336,7 @@ function responseSidepanelSpecialUrlNoteData(title, host, url, callback){
 			
 			if (forumgamer_url.searchParams.has('bsn')){
 				is_match = true;
-				const forumgamer_key_index = host + ':' + forumgamer_url.searchParams.get('sn');
+				const forumgamer_key_index = host + ':' + forumgamer_url.searchParams.get('bsn');
 				const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 40 40" style="position: relative;top: calc(50% - 0.5em);">
 											<path fill="currentColor" d="M 35 4 l 1 1 l 0 1 l -1 -1 l -2 5 q -0.3 1 0.5 2 l 3 -2.6 l -2 -0.2 q 1 0 2.5 -0.5 q 0 -0.4 -2 -0.4 l 3.018 -0.2 l 1 0.6 l 0.6 0 l 0.5 1 l -1 1 l -1 -1 l -1 1 q 0.2 1 0 2 l 2 -0.3 l 0.6 1 l -1 1 l -0.5 -1 l -2 1 l -1 -0.2 l -2 1 q 0.2 4 -3 3 l -0.921 1.4 q 6 -0.4 8 4 a 1 1 0 0 0 -11 7 q 3 5 10 2.5 a 1 1 0 0 1 -11 -11 q 1 -1 2.5 -2 q 0 -2 0.6 -2 q 0.8 1 2 -2 c -11 6 -10 -0.726 -20 1 c 13 -2 11 4 20 -4 q -3 -1 -8 3 q 4 -8 -8 -2 q 10 -8 -13 -9 l 12 -2 l -12 -2 q 23 -3 33 3 z" />
 									  </svg>
@@ -898,7 +898,7 @@ function deleteKeyword(keyword, callback){
 	});
 }
 
-function addNewUrl(new_host, note, callback){
+function addNewUrl(new_host, note, is_special_url, callback){
 	let data = [];
 	let new_datetime = null;
 	
@@ -921,9 +921,11 @@ function addNewUrl(new_host, note, callback){
 		
 		triggerNotificationMessage("網址索引已新增", 'ok');
 	});
+	
+	addUrlIndex(new_host, is_special_url);
 }
 
-function deleteUrl(host, callback){
+function deleteUrl(host, is_special_url, callback){
 	chrome.storage.local.remove([host]).then(() => {
 		callback(true);
 		
@@ -938,6 +940,8 @@ function deleteUrl(host, callback){
 			chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {});
 		}
 	});
+
+	removeUrlIndex(host, is_special_url);
 }
 
 function editKeyword(new_keyword, old_keyword, callback){
@@ -1132,6 +1136,95 @@ function updateDisplayCRF(quest_keyword){
 		});
 		
 		chrome.storage.local.set({KeywordsDisplayCRF: DisplayCRF}).then(() => {});
+	});
+}
+
+function checkUrlIndex(host, callback){
+	chrome.storage.local.get(['RecordedUrls']).then((result) => {
+		callback(result.RecordedUrls.keys().includes(host));
+	});
+}
+
+function addUrlIndex(host, is_special_url){
+	if (is_special_url){
+		let main = host.slice(0, host.indexOf(':'));
+		let sub = host.slice(host.indexOf(':') + 1);
+		
+		chrome.storage.local.get(['RecordedUrls']).then((result) => {
+			let new_recordedurls = result.RecordedUrls;
+			
+			if (!new_recordedurls[main]){
+				new_recordedurls[main] = {main: false, sub: [sub]};
+			}
+			else{
+				new_recordedurls[main].sub.push(sub);
+			}
+			
+			chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
+		});
+	}
+	else{
+		chrome.storage.local.get(['RecordedUrls']).then((result) => {
+			let new_recordedurls = result.RecordedUrls;
+			
+			if (!new_recordedurls[main]){
+				new_recordedurls[main] = {main: true, sub: []};
+			}
+			else{
+				new_recordedurls[main].main = true;
+			}
+			
+			chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
+		});
+	}
+}
+
+function removeUrlIndex(host, is_special_url){
+	if (is_special_url){
+		let main = host.slice(0, host.indexOf(':'));
+		let sub = host.slice(host.indexOf(':') + 1);
+		
+		chrome.storage.local.get(['RecordedUrls']).then((result) => {
+			let new_recordedurls = result.RecordedUrls;
+			
+			if (new_recordedurls[main]){
+				let remove_index = new_recordedurls[main].sub.indexOf(sub);
+				
+				if (remove_index >= 0){
+					new_recordedurls[main].sub.splice(remove_index, 1);
+					
+					if (!new_recordedurls[main].main){
+						delete new_recordedurls[main];
+					}
+					chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
+				}
+			}
+		});
+	}
+	else{
+		chrome.storage.local.get(['RecordedUrls']).then((result) => {
+			let new_recordedurls = result.RecordedUrls;
+			
+			if (new_recordedurls[main]){
+				new_recordedurls[main].main = false;
+				
+				if (len(new_recordedurls[main].sub) == 0){
+					delete new_recordedurls[main];
+				}
+				chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
+			}
+		});
+	}
+}
+
+// ====== 檔案存取 ====== 
+function getInitTagFileData(callback){
+	fetch("/data_file/init_tagdata.json")
+	.then((response) => {
+		return response.json();
+	})
+	.then((data) => {
+		callback(data);
 	});
 }
 
@@ -1350,7 +1443,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 		case 'send-url-note-add':
 			sendResponse({});
 			
-			addNewUrl(request.host, request.notecontent, (process_state, save_datetime) => {
+			addNewUrl(request.host, request.notecontent, request.is_special_url, (process_state, save_datetime) => {
 				const response_url_process = {
 					event_name: 'response-url-note-add',
 					process_state: process_state,
@@ -1376,7 +1469,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 		case 'send-url-note-delete':
 			sendResponse({});
 			
-			deleteUrl(request.host, (process_state) => {
+			deleteUrl(request.host, request.is_special_url, (process_state) => {
 				const response_url_process = {
 					event_name: 'response-url-note-delete',
 					process_state: process_state
@@ -1682,59 +1775,21 @@ chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx
 				break;
 		}
     }
-	else{
-		triggerAlertWindow("該操作似乎超過時間限制了\n請嘗試重新該操作", 'warning');
-	}
+	/*else{
+		triggerNotificationMessage("該操作似乎超過時間限制了\n請嘗試重新該操作", 'warning');
+	}*/
 });
 // ====== 安裝時初始化 ====== 
 chrome.runtime.onInstalled.addListener(function (details){
 	if (details.reason == "install"){
-		const initial_data = {
-			RecordedKeywords: ['標籤', '無標籤'],
-			AutoTriggerUrl: [],
-			KeywordsDisplayCRF: [['標籤', 1.0], ['無標籤', 1.0], ['max_KeywordDisplay', -10.0]],
-			KeywordsNotePriority: {'標籤': [1]},
-			KeywordsSetting: {
-				is_DarkMode: true,
-				is_SwitchWithTab: true,
-				note_version: 1,
-				extension_version: "v0.0.0-beta.3",
-				github_: {
-					version: "v0.0.0-beta.3",
-					notify_time: -1
-				}
-			},
-			標籤: [
-				[
-					"<p>这是一个圆角矩形。&nbsp;<br>它的高度会随着文本内容而变化，但上下边距保持8px。</p>",
-					"2024/03/12 16:50:03",
-					false
-				],
-				[
-					"我好想睡覺，我的夢想是攀登枕頭山山峰",
-					"2023/09/09 10:20:36",
-					true
-				],
-				[
-					"早安",
-					"2023/09/01 14:03:23",
-					false
-				],
-				[
-					"<p><i>新資料 </i><strong>輸入測試</strong></p><p>&nbsp;</p><ol><li><strong>項目一ejenfnefnef</strong></li><li><strong>項目二</strong></li><li><strong>項目三</strong></li></ol>",
-					"2024/01/13 20:54:16",
-					false
-				]
-			],
-			無標籤: []
-		}
+		getInitTagFileData((initial_data) => {
+			chrome.storage.local.set(initial_data).then(() => {});
 		
-		chrome.storage.local.set(initial_data).then(() => {});
-		
-		recorded_Keywords = ['標籤', '無標籤'];
-		current_Keyword = '標籤';
-		
-		console.log('安裝初始化完成');
+			recorded_Keywords = ['標籤', '無標籤'];
+			current_Keyword = '標籤';
+			
+			console.log('安裝初始化完成');
+		})
 	}
 	else{
 		questInitialSetting('is_DarkMode', (response) => {
@@ -1745,7 +1800,7 @@ chrome.runtime.onInstalled.addListener(function (details){
 		});
 		
 		questInitialSetting('note_version', (note_version) => {
-			if (note_version != 1){
+			if (note_version != 2){
 				switch (note_version) {
 					case 0:
 						const setting_github_init = {
@@ -1755,6 +1810,9 @@ chrome.runtime.onInstalled.addListener(function (details){
 						
 						settingInitialSetting('github_', setting_github_init, () => {});
 						settingInitialSetting('note_version', 1, () => {});
+					case 1:
+						chrome.storage.local.set({"RecordedUrls": {}}).then(() => {});
+						settingInitialSetting('note_version', 2, () => {});
 				}
 			}
 			/*
