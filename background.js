@@ -6,8 +6,12 @@ var waiting_RefreshPage = null;
 
 var portWithSidepanel = null;
 //通用設定資料
-var is_DarkMode = true;
-var is_SwitchWithTab = true;
+var setting = {
+	is_DarkMode: true,
+	is_SwitchWithTab: true
+}
+
+var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
 //儲存資料
 const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'max_KeywordDisplay'];
 const keyword_special_urls = ['www.google.com', 'www.bing.com', 'www.youtube.com', 'www.twitch.tv', 'forum.gamer.com.tw', 'home.gamer.com.tw'];
@@ -90,8 +94,8 @@ function responseCurrentPageStatus(callback){
 }
 
 function responseSetting(callback){
-	callback({is_darkmode: is_DarkMode,
-			  is_switchwithtab: is_SwitchWithTab,
+	callback({is_darkmode: setting['is_DarkMode'],
+			  is_switchwithtab: setting['is_SwitchWithTab'],
 			  current_Keyword: current_Keyword
 			  });
 }
@@ -332,7 +336,7 @@ function responseSidepanelSpecialUrlNoteData(title, host, url, callback){
 			
 			if (forumgamer_url.searchParams.has('bsn')){
 				is_match = true;
-				const forumgamer_key_index = host + ':' + forumgamer_url.searchParams.get('sn');
+				const forumgamer_key_index = host + ':' + forumgamer_url.searchParams.get('bsn');
 				const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 40 40" style="position: relative;top: calc(50% - 0.5em);">
 											<path fill="currentColor" d="M 35 4 l 1 1 l 0 1 l -1 -1 l -2 5 q -0.3 1 0.5 2 l 3 -2.6 l -2 -0.2 q 1 0 2.5 -0.5 q 0 -0.4 -2 -0.4 l 3.018 -0.2 l 1 0.6 l 0.6 0 l 0.5 1 l -1 1 l -1 -1 l -1 1 q 0.2 1 0 2 l 2 -0.3 l 0.6 1 l -1 1 l -0.5 -1 l -2 1 l -1 -0.2 l -2 1 q 0.2 4 -3 3 l -0.921 1.4 q 6 -0.4 8 4 a 1 1 0 0 0 -11 7 q 3 5 10 2.5 a 1 1 0 0 1 -11 -11 q 1 -1 2.5 -2 q 0 -2 0.6 -2 q 0.8 1 2 -2 c -11 6 -10 -0.726 -20 1 c 13 -2 11 4 20 -4 q -3 -1 -8 3 q 4 -8 -8 -2 q 10 -8 -13 -9 l 12 -2 l -12 -2 q 23 -3 33 3 z" />
 									  </svg>
@@ -475,6 +479,45 @@ function triggerNotificationMessage(message, type){
 	});
 }
 
+function confirmNotificationMessage(message, type, senddata){
+	const options = {
+	  type: "basic",
+	  iconUrl: "../images/icon.png",
+	  title: "! 執行動作前確認",
+	  message: message
+	};
+	
+	switch (type) {
+		case 'new_version':
+			options.title = "✔ 有新版本可用";
+			options.buttons = [{
+				title: "前往新版本下載"
+			}, {
+				title: "下個版本再說吧"
+			}];
+			break;
+		default:
+			options.title = "! 執行動作前確認";
+			options.buttons = [{
+				title: "確認動作"
+			}, {
+				title: "取消動作"
+			}];
+	}
+	
+	chrome.notifications.create(options, function(notificationId) {
+		confirmnotifications_Data[notificationId] = senddata;
+		
+		setTimeout(() => {
+			if (Boolean(confirmnotifications_Data[notificationId])) {
+				delete confirmnotifications_Data[notificationId];
+				
+				chrome.notifications.clear(notificationId, (wasCleared) => {});
+			}
+		}, 10000);
+	});
+}
+
 // ====== 資料處理 ====== 
 function datetimeOutputFormat(){
 	let currentdate = new Date();
@@ -486,6 +529,92 @@ function datetimeOutputFormat(){
 	+ currentdate.getSeconds().toString().padStart(2,'0');
 
 	return datetime
+}
+
+function checkForNewRelease(){
+	questInitialSetting('github_', (github_data) => {
+		if ((Date.now() - github_data['notify_time']) > 1209600000){
+			const apiURL = 'https://api.github.com/repos/wantZzz/Keyword-Dictionary-Notes/releases/latest';
+				
+			fetch(apiURL)
+			.then(response => response.json())
+			.then(data => {
+				const latest_version = data.tag_name;
+				
+				console.log(latest_version);
+				console.log(github_data['version']);
+				
+				if (github_data['version'] != latest_version){
+					const consequences = compareVersion(latest_version, github_data['version']);
+					
+					//console.log(consequences);
+					if (consequences > 0){
+						const send_url_note_delete = {
+							notification_type: 'new_version',
+							latest_version: latest_version
+						};
+
+						confirmNotificationMessage(`新版本 ${latest_version} 已經釋出\n你可以選擇是否前往更新`, 'new_version', send_url_note_delete);
+						
+						github_data['notify_time'] = Date.now();
+						settingInitialSetting('github_', github_data, () => {});
+					}
+					else{
+						github_data['notify_time'] += 302400000;
+						settingInitialSetting('github_', github_data, () => {});
+					}
+				}
+				else{
+					github_data['notify_time'] = Date.now();
+					settingInitialSetting('github_', github_data, () => {});
+				}
+			});
+		}
+	});
+}
+
+function compareVersion(v1, v2, callback){
+	const parseVersion = (version) => {
+		if (version.startsWith('v')){
+			version = version.slice(1);
+		}
+		
+		const [version_Suffix, version_BetaOrAlpha] = version.split('-');
+		
+		const [major, minor, patch] = version_Suffix.split('.').map(Number);
+		return { major, minor, patch };
+	};
+	
+	const v1_parses = parseVersion(v1);
+	const v2_parses = parseVersion(v2);
+	
+	if (v1_parses.major !== v2_parses.major) {
+		return v1_parses.major > v2_parses.major ? 1 : -1;
+		return
+	}
+	if (v1_parses.minor !== v2_parses.minor) {
+		return v1_parses.minor > v2_parses.minor ? 1 : -1;
+	}
+	if (v1_parses.patch !== v2_parses.patch) {
+		return v1_parses.patch > v2_parses.patch ? 1 : -1;
+	}
+	
+	const isBetaOrAlpha = (version) => version.includes('-');
+	if (isBetaOrAlpha(v1) && isBetaOrAlpha(v2)) {
+		const [v1Suffix, v1BetaOrAlpha] = v1.split('-');
+		const [v2Suffix, v2BetaOrAlpha] = v2.split('-');
+
+		if (v1Suffix === v2Suffix) {
+			const v1Num = parseInt(v1BetaOrAlpha.split('.')[1]);
+			const v2Num = parseInt(v2BetaOrAlpha.split('.')[1]);
+			return v1Num - v2Num;
+		}
+	}
+	else if(isBetaOrAlpha(v1) || isBetaOrAlpha(v2)){
+		return isBetaOrAlpha(v2) ? 1 : -1;
+	}
+	
+	callback(0);
 }
 
 function reloadKeywordlist(callback){
@@ -660,6 +789,10 @@ function settingInitialSetting(setting_name, value, callback){
 	chrome.storage.local.get(["KeywordsSetting"]).then((result) => {
 		let new_keywordssetting = result.KeywordsSetting;
 		new_keywordssetting[setting_name] = value;
+		
+		if (Object.keys(setting).includes(setting_name)){
+			setting[setting_name] = value;
+		}
 			
 		chrome.storage.local.set({KeywordsSetting: new_keywordssetting}).then(() => {
 			callback(true);
@@ -765,7 +898,7 @@ function deleteKeyword(keyword, callback){
 	});
 }
 
-function addNewUrl(new_host, note, callback){
+function addNewUrl(new_host, note, is_special_url, callback){
 	let data = [];
 	let new_datetime = null;
 	
@@ -788,9 +921,11 @@ function addNewUrl(new_host, note, callback){
 		
 		triggerNotificationMessage("網址索引已新增", 'ok');
 	});
+	
+	addUrlIndex(new_host, is_special_url);
 }
 
-function deleteUrl(host, callback){
+function deleteUrl(host, is_special_url, callback){
 	chrome.storage.local.remove([host]).then(() => {
 		callback(true);
 		
@@ -805,6 +940,8 @@ function deleteUrl(host, callback){
 			chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {});
 		}
 	});
+
+	removeUrlIndex(host, is_special_url);
 }
 
 function editKeyword(new_keyword, old_keyword, callback){
@@ -1002,6 +1139,95 @@ function updateDisplayCRF(quest_keyword){
 	});
 }
 
+function checkUrlIndex(host, callback){
+	chrome.storage.local.get(['RecordedUrls']).then((result) => {
+		callback(result.RecordedUrls.keys().includes(host));
+	});
+}
+
+function addUrlIndex(host, is_special_url){
+	if (is_special_url){
+		let main = host.slice(0, host.indexOf(':'));
+		let sub = host.slice(host.indexOf(':') + 1);
+		
+		chrome.storage.local.get(['RecordedUrls']).then((result) => {
+			let new_recordedurls = result.RecordedUrls;
+			
+			if (!new_recordedurls[main]){
+				new_recordedurls[main] = {main: false, sub: [sub]};
+			}
+			else{
+				new_recordedurls[main].sub.push(sub);
+			}
+			
+			chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
+		});
+	}
+	else{
+		chrome.storage.local.get(['RecordedUrls']).then((result) => {
+			let new_recordedurls = result.RecordedUrls;
+			
+			if (!new_recordedurls[main]){
+				new_recordedurls[main] = {main: true, sub: []};
+			}
+			else{
+				new_recordedurls[main].main = true;
+			}
+			
+			chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
+		});
+	}
+}
+
+function removeUrlIndex(host, is_special_url){
+	if (is_special_url){
+		let main = host.slice(0, host.indexOf(':'));
+		let sub = host.slice(host.indexOf(':') + 1);
+		
+		chrome.storage.local.get(['RecordedUrls']).then((result) => {
+			let new_recordedurls = result.RecordedUrls;
+			
+			if (new_recordedurls[main]){
+				let remove_index = new_recordedurls[main].sub.indexOf(sub);
+				
+				if (remove_index >= 0){
+					new_recordedurls[main].sub.splice(remove_index, 1);
+					
+					if (!new_recordedurls[main].main){
+						delete new_recordedurls[main];
+					}
+					chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
+				}
+			}
+		});
+	}
+	else{
+		chrome.storage.local.get(['RecordedUrls']).then((result) => {
+			let new_recordedurls = result.RecordedUrls;
+			
+			if (new_recordedurls[main]){
+				new_recordedurls[main].main = false;
+				
+				if (len(new_recordedurls[main].sub) == 0){
+					delete new_recordedurls[main];
+				}
+				chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
+			}
+		});
+	}
+}
+
+// ====== 檔案存取 ====== 
+function getInitTagFileData(callback){
+	fetch("/data_file/init_tagdata.json")
+	.then((response) => {
+		return response.json();
+	})
+	.then((data) => {
+		callback(data);
+	});
+}
+
 // ====== 資料接收 ====== 
 chrome.tabs.onActivated.addListener(function(info) {
 	currentpage_TabId = info.tabId;
@@ -1009,7 +1235,7 @@ chrome.tabs.onActivated.addListener(function(info) {
 	
 	if (is_SidepanelON){
 		const current_data = {currentpage_tabid: currentpage_TabId,
-							  is_darkmode: is_DarkMode
+							  is_darkmode: setting['is_DarkMode']
 							  };
 		portWithSidepanel.postMessage(current_data);
 	}
@@ -1049,18 +1275,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				chrome.runtime.sendMessage(response_tab_message, (t) => {});
 			});
 			break;
-		case 'quest-initialization-data':
-			sendResponse({});
-			
-			responseInitializationData(request.domain_name, (initialization_data) => {
-				
-				const response_tab_message = {
-					event_name: 'response-initialization-data',
-					initialization_data: initialization_data
-				};
-				chrome.tabs.sendMessage(currentpage_TabId, response_tab_message, (t) => {});
-			});
-			break;
 		case 'quest-extension-setting':
 			responseSetting((setting) => {
 				sendResponse(setting);
@@ -1069,7 +1283,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			if (sender.tab && is_SidepanelON){
 				if (sender.tab.id === waiting_RefreshPage){
 					const current_data = {currentpage_tabid: currentpage_TabId,
-						is_darkmode: is_DarkMode
+						is_darkmode: setting['is_DarkMode']
 						};
 					portWithSidepanel.postMessage(current_data);
 					
@@ -1229,7 +1443,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 		case 'send-url-note-add':
 			sendResponse({});
 			
-			addNewUrl(request.host, request.notecontent, (process_state, save_datetime) => {
+			addNewUrl(request.host, request.notecontent, request.is_special_url, (process_state, save_datetime) => {
 				const response_url_process = {
 					event_name: 'response-url-note-add',
 					process_state: process_state,
@@ -1255,7 +1469,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 		case 'send-url-note-delete':
 			sendResponse({});
 			
-			deleteUrl(request.host, (process_state) => {
+			deleteUrl(request.host, request.is_special_url, (process_state) => {
 				const response_url_process = {
 					event_name: 'response-url-note-delete',
 					process_state: process_state
@@ -1403,6 +1617,20 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				chrome.runtime.sendMessage(response_url_process, (t) => {});
 			});
 			break;
+		//-------
+		case 'update-setting-change':
+			sendResponse({});
+			
+			settingInitialSetting(request.setting_name, request.value, (process_state) => {
+				const response_setting_change = {
+					event_name: 'response-setting-change',
+					setting_name: request.setting_name,
+					value: request.value,
+					process_state: process_state
+				};
+					
+				chrome.runtime.sendMessage(response_setting_change, (t) => {});
+			});
 			
 		//頁面更新
 		case 'special-url-page-updated':
@@ -1410,11 +1638,16 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			
 			if (is_SidepanelON && currentpage_TabId == sender.tab.id){
 				const current_data = {currentpage_tabid: currentpage_TabId,
-									  is_darkmode: is_DarkMode
+									  is_darkmode: setting['is_DarkMode']
 									  };
 				portWithSidepanel.postMessage(current_data);
 			}
 			break;
+			
+		case 'response-keyword-mark-search':
+			if (request.request_from == 'hotkey'){
+				sendResponse({});
+			}
 	}
 	console.log(request.event_name);
 });
@@ -1428,7 +1661,7 @@ chrome.runtime.onConnect.addListener(function (port) {
 			
 			setTimeout(() => {
 				const current_data = {currentpage_tabid: currentpage_TabId,
-									  is_darkmode: is_DarkMode
+									  is_darkmode: setting['is_DarkMode']
 									  };
 				portWithSidepanel.postMessage(current_data);
 			}, 500);
@@ -1516,64 +1749,80 @@ chrome.commands.onCommand.addListener((command) => {
 				quest_contentaction(currentpage_TabId);
 			}
 			break;
+			
+		case 'KDN_Sidepanel':
+			if (!is_SidepanelON){
+				chrome.sidePanel.open({tabId: currentpage_TabId});
+			}
 	}
 });
 
+chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx) {
+    if (Boolean(confirmnotifications_Data[notificationId])) {
+		switch (confirmnotifications_Data[notificationId].notification_type){
+			case 'new_version':
+				if (btnIdx == 0){
+					chrome.tabs.create({ url: 'https://github.com/wantZzz/Keyword-Dictionary-Notes/releases/latest' });
+				}
+				else if(btnIdx == 1){
+					const latest_version = confirmnotifications_Data[notificationId].latest_version;
+					questInitialSetting('github_', (github_data) => {
+						github_data['version'] = latest_version;
+						settingInitialSetting('github_', github_data, () => {});
+					});
+					delete confirmnotifications_Data[notificationId];
+				}
+				break;
+		}
+    }
+	/*else{
+		triggerNotificationMessage("該操作似乎超過時間限制了\n請嘗試重新該操作", 'warning');
+	}*/
+});
 // ====== 安裝時初始化 ====== 
 chrome.runtime.onInstalled.addListener(function (details){
 	if (details.reason == "install"){
-		const initial_data = {
-			RecordedKeywords: ['標籤', '無標籤'],
-			AutoTriggerUrl: [],
-			KeywordsDisplayCRF: [['標籤', 1.0], ['無標籤', 1.0], ['max_KeywordDisplay', -10.0]],
-			KeywordsNotePriority: {'標籤': [1]},
-			KeywordsSetting: {
-				is_DarkMode: true,
-				is_SwitchWithTab: true,
-				note_version: 0
-			},
-			標籤: [
-				[
-					"<p>这是一个圆角矩形。&nbsp;<br>它的高度会随着文本内容而变化，但上下边距保持8px。</p>",
-					"2024/03/12 16:50:03",
-					false
-				],
-				[
-					"我好想睡覺，我的夢想是攀登枕頭山山峰",
-					"2023/09/09 10:20:36",
-					true
-				],
-				[
-					"早安",
-					"2023/09/01 14:03:23",
-					false
-				],
-				[
-					"<p><i>新資料 </i><strong>輸入測試</strong></p><p>&nbsp;</p><ol><li><strong>項目一ejenfnefnef</strong></li><li><strong>項目二</strong></li><li><strong>項目三</strong></li></ol>",
-					"2024/01/13 20:54:16",
-					false
-				]
-			],
-			無標籤: []
-		}
+		getInitTagFileData((initial_data) => {
+			chrome.storage.local.set(initial_data).then(() => {});
 		
-		chrome.storage.local.set(initial_data).then(() => {});
-		
-		recorded_Keywords = ['標籤', '無標籤'];
-		current_Keyword = '標籤';
-		
-		console.log('安裝初始化完成');
+			recorded_Keywords = ['標籤', '無標籤'];
+			current_Keyword = '標籤';
+			
+			console.log('安裝初始化完成');
+		})
 	}
 	else{
-		
 		questInitialSetting('is_DarkMode', (response) => {
-			is_DarkMode = response;
+			setting['is_DarkMode'] = response;
 		});
 		questInitialSetting('is_SwitchWithTab', (response) => {
-			is_SwitchWithTab = response;
+			setting['is_SwitchWithTab'] = response;
 		});
-
-		console.log('擴充功能初始化完成');
+		
+		questInitialSetting('note_version', (note_version) => {
+			if (note_version != 2){
+				switch (note_version) {
+					case 0:
+						const setting_github_init = {
+							version: "v0.0.0-beta.3",
+							notify_time: 100
+						}
+						
+						settingInitialSetting('github_', setting_github_init, () => {});
+						settingInitialSetting('note_version', 1, () => {});
+					case 1:
+						chrome.storage.local.set({"RecordedUrls": {}}).then(() => {});
+						settingInitialSetting('note_version', 2, () => {});
+				}
+			}
+			/*
+			else if (note_version > 1){
+			}
+			*/
+			
+			
+			console.log('擴充功能初始化完成');
+		});
 	}
 	
 	chrome.contextMenus.create({  
@@ -1591,15 +1840,15 @@ chrome.runtime.onStartup.addListener(() => {
 	});
 	
 	questInitialSetting('is_DarkMode', (response) => {
-		is_DarkMode = response;
+		setting['is_DarkMode'] = response;
 	});
 	questInitialSetting('is_SwitchWithTab', (response) => {
-		is_SwitchWithTab = response;
+		setting['is_SwitchWithTab'] = response;
 	});
 
+	checkForNewRelease();
 	console.log('擴充功能初始化完成');
 });
-
 
 reloadKeywordlist((new_recorded_keywords) => {
 	if ((current_Keyword == '') || (recorded_Keywords.length == 0)){

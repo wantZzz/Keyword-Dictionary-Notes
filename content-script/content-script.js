@@ -612,8 +612,14 @@ function notedataUpdate(keyword, keyword_notedata, index){
 function scrollIntoPreviousMark(target_keyword){
 	const mark_length = searched_KeywordNodes.length
 	
-	if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
+	if (!is_AreadySearch){
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
+	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
 		triggerAlertWindow('當前單獨顯示的標記非所選關鍵字', 'error');
+	}
+	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
+		triggerAlertWindow('當前顯示的標記不包含所選關鍵字', 'error');
 	}
 	else{
 		for (let index = ((scroll_IntoIndex + mark_length - 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length - 1) % mark_length)) {
@@ -631,8 +637,14 @@ function scrollIntoPreviousMark(target_keyword){
 function scrollIntoNaxtMark(target_keyword){
 	const mark_length = searched_KeywordNodes.length
 	
-	if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
+	if (!is_AreadySearch){
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
+	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
 		triggerAlertWindow('當前單獨顯示的標記非所選關鍵字', 'error');
+	}
+	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
+		triggerAlertWindow('當前顯示的標記不包含所選關鍵字', 'error');
 	}
 	else{
 		for (let index = ((scroll_IntoIndex + mark_length + 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length + 1) % mark_length)) {
@@ -646,123 +658,6 @@ function scrollIntoNaxtMark(target_keyword){
 			}
 		}
 	}
-}
-
-// ====== 元素事件 ====== 
-function keywordMouseoverEvent(event){
-	if(is_MarkHide){
-		return;
-	}
-	
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	if (popup_window.classList.contains('show')){
-		popup_window.classList.add('quickclose');
-	}
-	
-	const kw_node = event.target;
-	const keywords = kw_node.getAttribute('keywords').split(',');
-	
-	const keyword_title = popup_window.querySelector('span#keyword_title');
-	const keyword_note_content = popup_window.querySelector('div.note_content');
-	
-	keyword_title.innerText = keywords[0];
-	keyword_note_content.innerText = 'Waiting for database response...';
-	
-	current_PopupMark = keywords;
-	current_PopupIndex = 0;
-	is_MutipleMark = (keywords.length > 1);
-	
-	popup_window.classList.remove('quickclose');
-	popup_window.classList.remove('show')
-	
-	const quest_data = {
-		event_name: 'quest-keyword-notedata-content',
-		keyword: keywords[0],
-		is_first: true,
-		mouseX: event.clientX,
-		mouseY: event.clientY
-	};
-	chrome.runtime.sendMessage(quest_data, (t) => {});
-	/*if (kw_node.classList.contains('highlight-keyword-mutiple')){
-		
-		
-	}
-	else{
-		
-	}*/
-}
-function keywordMouseoutEvent(event){
-	clearTimeout(timeout_PopupMouseOn);
-	
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	timeout_PopupMouseOut = setTimeout(function () {
-		popup_window.classList.remove('show');
-		popup_window.style.left = "";
-		popup_window.style.top = "";
-	}, 500);
-}
-
-function popupMouseoverEvent(event){
-	clearTimeout(timeout_PopupMouseOut);
-}
-function popupMouseoutEvent(event){
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	timeout_PopupMouseOut = setTimeout(function () {
-		popup_window.classList.remove('show');
-		popup_window.style.left = "";
-		popup_window.style.top = "";
-	}, 500);
-}
-
-function popupSidepanelShow(event){
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	const keyword_title = popup_window.querySelector('span#keyword_title');
-	
-	const select_keyword = keyword_title.innerText;
-	
-	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
-		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (t) => {});
-		}
-		else{
-			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: select_keyword}, (t) => {});
-		}
-	});
-	//chrome.sidePanel.open({tabId: currentpage_TabId});
-}
-function popupKeywordHighlight(event){
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	const keyword_title = popup_window.querySelector('span#keyword_title');
-	
-	const select_keyword = keyword_title.innerText;
-	onlyShowOneKeywordMark(select_keyword);
-}
-
-function popup_previouskeyword(){
-	const previous_index = (current_PopupIndex - 1 + current_PopupMark.length) % current_PopupMark.length;
-	const previous_keyword = current_PopupMark[previous_index];
-	
-	const quest_data = {
-		event_name: 'quest-keyword-notedata-content',
-		keyword: previous_keyword,
-		index: previous_index,
-		is_first: false
-	};
-	
-	chrome.runtime.sendMessage(quest_data, (t) => {});
-}
-function popup_nextkeyword(){
-	const next_index = (current_PopupIndex + 1 + current_PopupMark.length) % current_PopupMark.length;
-	const next_keyword = current_PopupMark[next_index];
-	
-	const quest_data = {
-		event_name: 'quest-keyword-notedata-content',
-		keyword: next_keyword,
-		index: next_index,
-		is_first: false
-	};
-	
-	chrome.runtime.sendMessage(quest_data, (t) => {});
 }
 
 // ====== 元素事件 ====== 
@@ -900,15 +795,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			
 			searchKeywords((process_keycount) => {
 				responsePageStatus((page_status) => {
-					if (request.from != 'hotkey'){
-						response = {
-							event_name: 'response-keyword-mark-search',
-							process_keycount: process_keycount,
-							page_status: page_status
-						};
-						
-						chrome.runtime.sendMessage(response, (t) => {});
-					}
+					response = {
+						event_name: 'response-keyword-mark-search',
+						process_keycount: process_keycount,
+						page_status: page_status,
+						request_from: request.from
+					};
+					
+					chrome.runtime.sendMessage(response, (t) => {});
 				});
 			});
 			break;	
@@ -989,12 +883,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			else{
 				notedataUpdate(request.keyword, request.keyword_notedata, request.index);
 			}
-			break;
-		
-		case 'test':
-			sendResponse({});
-
-			onlyShowOneKeywordMark('標籤');
 			break;
 	}
 });

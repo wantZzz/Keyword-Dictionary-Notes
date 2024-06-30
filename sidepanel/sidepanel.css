@@ -353,7 +353,7 @@ div.levitate_options_popup {
   background-color: var(--primary-color-light);
   border-radius: 5px;
   position: absolute;
-  box-shadow: rgba(0, 0, 0, 0.2) 10px 0px 10px;
+  box-shadow: rgba(0, 0, 0, 0.2) 10px 0px 10px;/*rgba(255, 255, 255, 0.2) 0px 0px 15px, rgba(255, 255, 255, 0.15) 0px 0px 3px 1px*/
   top: -500px;
   left: -500px;
   z-index: 4000;

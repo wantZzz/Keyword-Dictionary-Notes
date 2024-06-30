@@ -1275,7 +1275,8 @@ function url_delete_button_click(event){
 	const send_url_note_delete = {
 		notification_type: 'message',
 		event_name: 'send-url-note-delete',
-		host: host
+		host: host,
+		is_special_url: is_SpecialUrls
 	};
 	
 	if (is_UrlNoteExist > 0){
@@ -1407,10 +1408,16 @@ function keyword_previous_mark_button_click(event){
 	if (is_CurrentPageSearch){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-previous-mark', target_keyword: current_Keyword}, (t) => {});
 	}
+	else{
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
 }
 function keyword_next_mark_button_click(event){
 	if (is_CurrentPageSearch){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-next-mark', target_keyword: current_Keyword}, (t) => {});
+	}
+	else{
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
 	}
 }
 function keyword_new_note_button_click(event){
@@ -1701,7 +1708,8 @@ function editor_save_button_click(event){
 			const send_url_note_add = {
 				event_name: 'send-url-note-add',
 				host: host,
-				notecontent: notecontent
+				notecontent: notecontent,
+				is_special_url: is_SpecialUrls
 			};
 			chrome.runtime.sendMessage(send_url_note_add, (t) => {});
 		}
@@ -1889,7 +1897,8 @@ function editor_ctrlS_press(index){
 			const send_url_note_add = {
 				event_name: 'send-url-note-add',
 				host: host,
-				notecontent: notecontent
+				notecontent: notecontent,
+				is_special_url: is_SpecialUrls
 			};
 			chrome.runtime.sendMessage(send_url_note_add, (t) => {});
 		}

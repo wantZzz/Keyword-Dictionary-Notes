@@ -4,11 +4,6 @@ var is_NewKeywordFolded = false;
 //通用設定資料
 var is_DarkMode = true;
 
-// ====== 請求設定資料 ====== 
-chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
-	is_DarkMode = response.is_darkmode;
-});
-
 // ====== 資料處理 ====== 
 function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 	const startup_Switch = document.getElementById("start-up");
@@ -78,7 +73,9 @@ function open_notebook_click(event){
 }
 
 function popup_setting_click(event){
-	triggerAlertWindow('功能不足，設定頁待做', 'warning');
+	window.open(chrome.runtime.getURL('setting_page/setting.html'));
+	
+	//triggerAlertWindow('功能不足，設定頁待做', 'warning');
 }
 
 function popup_research_click(event){
@@ -105,7 +102,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			break;
 			
 		case 'response-keyword-mark-search':
-			sendResponse({});
+			if (request.request_from == 'popup'){
+				sendResponse({});
+			}
 			
 			currentPagePageStatusUpdate(true, true, request.page_status);
 			chrome.action.setBadgeText({tabId: currentpage_TabId, text: `${request.process_keycount}`}, (t) => {});
@@ -200,7 +199,12 @@ function runInitial(){
 	document.getElementById("popup-open-notebook").addEventListener("click", open_notebook_click);
 	document.getElementById("popup-setting").addEventListener("click", popup_setting_click);
 	document.getElementById("popup-research").addEventListener("click", popup_research_click);
+	
+	// 請求設定資料
+	chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
+		is_DarkMode = response.is_darkmode;
+		runSetting();
+	});
 }
 
-runSetting();
 runInitial();
