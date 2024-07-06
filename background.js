@@ -1,3 +1,5 @@
+import {newNoteGoogleDocs, remitNoteGoogleDocs} from "./modle/Remit2GoogleDocs.js";
+
 //外部腳本資料
 var currentpage_TabId = null;
 var is_CurrentPageSearch = false;
@@ -8,7 +10,8 @@ var portWithSidepanel = null;
 //通用設定資料
 var setting = {
 	is_DarkMode: true,
-	is_SwitchWithTab: true
+	is_SwitchWithTab: true,
+	is_GoogleConnect: [false, ""]
 }
 
 var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
@@ -96,6 +99,7 @@ function responseCurrentPageStatus(callback){
 function responseSetting(callback){
 	callback({is_darkmode: setting['is_DarkMode'],
 			  is_switchwithtab: setting['is_SwitchWithTab'],
+			  is_googleconnect: setting['is_GoogleConnect'],
 			  current_Keyword: current_Keyword
 			  });
 }
@@ -1217,6 +1221,8 @@ function removeUrlIndex(host, is_special_url){
 	}
 }
 
+//function getNodeBackgroundColor(input_node)
+
 // ====== 檔案存取 ====== 
 function getInitTagFileData(callback){
 	fetch("/data_file/init_tagdata.json")
@@ -1227,6 +1233,44 @@ function getInitTagFileData(callback){
 		callback(data);
 	});
 }
+
+// ====== 網路功能 ======
+function checkGoogleAccount(callback){
+	chrome.identity.getProfileUserInfo({accountStatus: 'ANY'}, (result) => {
+		callback(result);
+	})
+}
+
+function connectGoogleAccount(need_token, callback){
+	chrome.identity.getAuthToken({'interactive': true}, (result) => {
+		if(chrome.runtime.lastError){
+			setting['is_GoogleConnect'] = [false, ""];
+			callback([false, ""]);
+		}
+		else if (need_token){
+			checkGoogleAccount((account_info) => {
+				setting['is_GoogleConnect'] = [true, account_info.email];
+				callback(result);
+			});
+		}
+		else{
+			checkGoogleAccount((account_info) => {
+				setting['is_GoogleConnect'] = [true, account_info.email];
+				callback(true);
+			});
+		}
+	});
+}
+
+function disconnectGoogleAccount(callback){
+	chrome.identity.clearAllCachedAuthTokens((result) => {
+		setting['is_GoogleConnect'] = [false, ""];
+		callback(true);
+	})
+}
+
+//function newNoteGoogleDocs(title, token, callback)
+//function remitNoteGoogleDocs(token, callback)
 
 // ====== 資料接收 ====== 
 chrome.tabs.onActivated.addListener(function(info) {
@@ -1648,6 +1692,62 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			if (request.request_from == 'hotkey'){
 				sendResponse({});
 			}
+			break;
+			
+		//帳戶連接
+		case 'check-account-google':
+			sendResponse({});
+			checkGoogleAccount((account_info) => {
+				const response_check_account = {
+					event_name: 'response-check-account-google',
+					account_info: account_info
+				};
+					
+				chrome.runtime.sendMessage(response_check_account, (t) => {});
+			});
+			break;
+			
+		case 'connect-account-google':
+			sendResponse({});
+			connectGoogleAccount(false, (process_state) => {
+				const response_connect_account = {
+					event_name: 'response-connect-account-google',
+					process_state: process_state
+				};
+					
+				chrome.runtime.sendMessage(response_connect_account, (t) => {});
+			});
+			break;
+		case 'disconnect-account-google':
+			sendResponse({});
+			disconnectGoogleAccount((process_state) => {
+				const response_disconnect_account = {
+					event_name: 'response-disconnect-account-google',
+					process_state: process_state
+				};
+					
+				chrome.runtime.sendMessage(response_disconnect_account, (t) => {});
+			});
+			break;
+			
+		case 'test-create-docs-google':
+			sendResponse({});
+			getKeywordData(request.tag_name, (result, is_exist) => {
+				if (is_exist){
+					chrome.runtime.sendMessage({event_name: 'format-note2googledocs', tag_name: request.tag_name, note_data: result}, () => {});
+				}
+				else{
+					console.log('error');
+				}
+			});
+			break;
+		case 'response-format-note2googledocs':
+			sendResponse({});
+
+			connectGoogleAccount(true, (token) => {
+				remitNoteGoogleDocs(request.tag_name, request.output_requests, request.output_await_requests, request.process_state, token, () => {});
+			});
+			break;
 	}
 	console.log(request.event_name);
 });
@@ -1845,7 +1945,15 @@ chrome.runtime.onStartup.addListener(() => {
 	questInitialSetting('is_SwitchWithTab', (response) => {
 		setting['is_SwitchWithTab'] = response;
 	});
-
+	checkGoogleAccount((account_info) => {
+		if (account_info.email || account_info.id){
+			setting['is_GoogleConnect'] = [true, account_info.email];
+		}
+		else{
+			setting['is_GoogleConnect'] = [false, ""];
+		}
+	})
+	
 	checkForNewRelease();
 	console.log('擴充功能初始化完成');
 });
