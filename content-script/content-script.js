@@ -571,9 +571,19 @@ function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
 	}
 	
 	timeout_PopupMouseOn = setTimeout(function () {
-		const mouseX = X + 10;
-		const mouseY = Y + 10 + window.scrollY;
-
+		const windowX = window.innerWidth;
+		const windowY = window.innerHeight;
+		
+		let mouseX = ((windowX - X) < 360) ? X - 350 : X + 10;
+		const mouseY = ((windowY - Y) < 220) ? Y - 230 + window.scrollY : Y + 10 + window.scrollY;
+		
+		if (windowX < 300 || mouseX < 0){
+			mouseX = 10;
+		}
+		if ((mouseY - window.scrollY) < 0){
+			mouseY = 10;
+		}
+		
 		popup_window.style.left = mouseX + "px";
 		popup_window.style.top = mouseY + "px";
 		
