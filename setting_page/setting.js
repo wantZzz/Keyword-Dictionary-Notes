@@ -1,7 +1,8 @@
 //通用設定資料
 var settings = {
 	is_DarkMode: [true, -1],
-	is_SwitchWithTab: [true, -1]
+	is_SwitchWithTab: [true, -1],
+	is_GoogleConnect: [false, ""]
 }
 
 //資料控制項
@@ -40,6 +41,26 @@ function UpdateDisplaySwitch(setting_name, value){
 		const sync_message_container = document.getElementById('display-tab').querySelector('.sync-message-container');
 		sync_message_container.classList.remove('display');
 	}, 3200);
+}
+
+function UpdateAccountGoogleInfo(){
+	const account_tab = document.getElementById('account-tab');
+	const google_account_button = account_tab.querySelector('.google-account-block button.account-connect-button');
+	const google_account_button_text = google_account_button.querySelector('span');
+	const google_account_info = account_tab.querySelector('.google-account-block p.account-info');
+	
+	if (settings['is_GoogleConnect'][0]){
+		google_account_info.innerText = "已登入帳號 [" + settings['is_GoogleConnect'][1] + "] 並同步資料";
+		google_account_button_text.innerText = "登出 Google 帳戶";
+		google_account_button.addEventListener('click', disconnectGoogleAccount);
+	}
+	else{
+		google_account_info.innerText = "未與 Google 連接帳戶、同步資料";
+		google_account_button_text.innerText = "登入 Google 帳戶"
+		google_account_button.addEventListener('click', connectGoogleAccount);
+	}
+	
+	google_account_button.disabled = false;
 }
 
 // ====== 元素事件 ====== 
@@ -182,6 +203,24 @@ function changeInputDisabled(event){
 	}
 }
 
+function connectGoogleAccount(event){
+	const google_account_button = event.target.closest('button');
+	google_account_button.querySelector('span').innerText = "處理中...";
+	google_account_button.disabled = true;
+	
+	chrome.runtime.sendMessage({event_name: 'connect-account-google'}, (t) => {});
+	google_account_button.removeEventListener('click', connectGoogleAccount);
+}
+
+function disconnectGoogleAccount(event){
+	const google_account_button = event.target.closest('button');
+	google_account_button.querySelector('span').innerText = "處理中...";
+	google_account_button.disabled = true;
+	
+	chrome.runtime.sendMessage({event_name: 'disconnect-account-google'}, (t) => {});
+	google_account_button.removeEventListener('click', disconnectGoogleAccount);
+}
+
 // ====== 資料接收 ====== 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 	switch (request.event_name) {
@@ -195,6 +234,41 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			else{
 				triggerAlertWindow('該設定更新失敗', 'error');
 			}
+			break;
+	
+		case 'response-check-account-google':
+			sendResponse({});
+			break;
+			
+		case 'response-connect-account-google':
+			sendResponse({});
+			chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
+				settings['is_GoogleConnect'] = response.is_googleconnect;
+				UpdateAccountGoogleInfo();
+			});
+			break;
+		case 'response-disconnect-account-google':
+			sendResponse({});
+			chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
+				settings['is_GoogleConnect'] = response.is_googleconnect;
+				UpdateAccountGoogleInfo();
+			});
+			break;
+			
+		case 'format-note2googledocs':
+			formatNote2GoogleDocs(request.tag_name, request.note_data, (output_requests, output_await_requests, process_state) => {
+				const response_note2_googledocs = {
+					event_name: 'response-format-note2googledocs',
+					tag_name: request.tag_name,
+					process_state: process_state,
+					output_requests: output_requests,
+					output_await_requests: output_await_requests
+				};
+				console.log(output_requests, process_state);
+				
+				chrome.runtime.sendMessage(response_note2_googledocs, () => {})
+			});
+			break;
 	}
 });
 
@@ -232,6 +306,7 @@ function runInitial(){
 	chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
 		settings['is_DarkMode'][0] = response.is_darkmode;
 		settings['is_SwitchWithTab'][0] = response.is_switchwithtab;
+		settings['is_GoogleConnect'] = response.is_googleconnect;
 		
 		const display_option_list = document.getElementById('display-option-list');
 		const displays_switch_toggles = display_option_list.querySelectorAll('.switch-toggle span.toggle-box');
@@ -257,6 +332,8 @@ function runInitial(){
 				switch_toggle.closest('li.switch-content').remove();
 			}
 		});
+		
+		UpdateAccountGoogleInfo();
 	});
 }
 

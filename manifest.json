@@ -10,7 +10,9 @@
 		"notifications",
 		"sidePanel",
 		"contextMenus",
-		"commands"
+		"commands",
+		"identity",
+		"identity.email"
     ],
 	"host_permissions": ["https://*/*", "http://*/*"],
     "action": {
@@ -55,5 +57,26 @@
 			"description": "Open sidepanel notebook"
 		}
 	},
-	"options_page": "setting_page/setting.html"
+	"options_page": "setting_page/setting.html",
+	"web_accessible_resources": [
+		{
+			"resources": ["images/*.png"],
+			"extension_ids": ["*"]
+		},
+		{
+			"resources": ["data_file/init_tagdata.json"],
+			"extension_ids": ["*"]
+		},
+		{
+			"resources": ["modle/*.js"],
+			"extension_ids": ["*"]
+		}
+	],
+	"oauth2": {
+		"client_id": "319739714364-g6pej5j7c5usjetg25b5ua7i24g03ce4.apps.googleusercontent.com",
+		"scopes": [
+			"https://www.googleapis.com/auth/documents",
+			"https://www.googleapis.com/auth/userinfo.email"
+		]
+	}
 }
