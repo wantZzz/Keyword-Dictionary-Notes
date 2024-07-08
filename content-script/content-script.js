@@ -4,6 +4,7 @@ var is_MarkHide = true;
 var is_PopupHide = true;
 var popup_is_needrefresh = true;
 var is_onlyShowOne = null;
+var is_PopupContentExpand = false;
 
 var timeout_PopupMouseOn;
 var timeout_PopupMouseOut;
@@ -128,12 +129,12 @@ function insertPopupHtml(){
 											<div class="right_fade"></div>
 									  </div>
 									  <div class="keyword_button_container">
-											<button id="keyword_note_sidepanel_show">
+											<button id="keyword_note_sidepanel_show" title="在側邊欄顯示">
 												<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
 												<path fill="currentColor" d="M40 12a6.25 6.25 0 00-6-6h-24a6.25 6.25 0 00-5 6v22a6.25 6.25 0 005 5h24a6.25 6.25 0 006-5.25zm-30 24a3.75 3.75 0 01-2-2v-22a3.75 3.75 0 012-3h15v27z" />
 												</svg>
 											</button>
-											<button id="keyword_note_highlight">
+											<button id="keyword_note_highlight" title="僅顯示此關鍵字">
 												<i class="svg_icon">
 												<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24">
 													<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
@@ -195,10 +196,10 @@ function insertPopupHtml(){
 			this.parentElement.querySelector('div.bottom_fade').classList.remove('hide');
 		}
 	};
+	keyword_container.querySelector('div.pin_note_container').addEventListener("click", clickNoteContent);
 	
-	
-	const suggestion_container = keyword_container.querySelector("span#keyword_title");
-	suggestion_container.onwheel = function (event){ 
+	const keyword_title = keyword_container.querySelector("span#keyword_title");
+	keyword_title.onwheel = function (event){ 
 		if(is_MutipleMark){ 
 			event.preventDefault();  
 			
@@ -554,6 +555,7 @@ function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
 	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
 	const keyword_note_content = popup_window.querySelector('div.note_content');
 	const keyword_timestamp_container = popup_window.querySelector('div.windos_timestamp_container');
+	const keyword_title = popup_window.querySelector("span#keyword_title");
 	
 	if (keyword_notedata == null){
 		keyword_note_content.innerText = '你沒有此關鍵字的筆記喔，趕快紀錄些什麼吧!';
@@ -568,6 +570,13 @@ function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
 		
 		keyword_note_content.innerHTML = note_content;
 		keyword_timestamp_container.innerText = note_timestamp;
+	}
+	
+	if (is_MutipleMark){
+		keyword_title.setAttribute('title', `滾動查看其他 ${current_PopupMark.length - 1} 個關鍵字`);
+	}
+	else{
+		keyword_title.setAttribute('title', "此位置的關鍵字");
 	}
 	
 	timeout_PopupMouseOn = setTimeout(function () {
@@ -589,6 +598,7 @@ function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
 		
 		setTimeout(function () {
 			popup_window.classList.add('show');
+			is_PopupHide = false;
 		}, 490);
 	}, 1000);
 }
@@ -721,6 +731,7 @@ function keywordMouseoutEvent(event){
 		popup_window.classList.remove('show');
 		popup_window.style.left = "";
 		popup_window.style.top = "";
+		is_PopupHide = true;
 	}, 500);
 }
 
@@ -733,6 +744,15 @@ function popupMouseoutEvent(event){
 		popup_window.classList.remove('show');
 		popup_window.style.left = "";
 		popup_window.style.top = "";
+		is_PopupHide = true;
+		
+		const note_content = popup_window.querySelector('div.note_content');
+		const bottom_fade = popup_window.querySelector('div.bottom_fade');
+		
+		note_content.style.maxHeight = "";
+		bottom_fade.style.top = "";
+		
+		is_PopupContentExpand = false;
 	}, 500);
 }
 
@@ -787,6 +807,27 @@ function popup_nextkeyword(){
 	chrome.runtime.sendMessage(quest_data, (t) => {});
 }
 
+function clickNoteContent(event){
+	const note_block = event.target.closest('.pin_note_container');
+	const note_content = note_block.querySelector('div.note_content');
+	const bottom_fade = note_block.querySelector('div.bottom_fade');
+	
+	if (is_PopupContentExpand || is_PopupHide){
+		note_content.style.maxHeight = "";
+		bottom_fade.style.top = "";
+		
+		is_PopupContentExpand = false;
+	}
+	else{
+		const content_rect = note_content.getBoundingClientRect();
+		const windowY = window.innerHeight;
+
+		note_content.style.maxHeight = `${windowY - content_rect.top - 70}px`;
+		bottom_fade.style.top = `calc(${windowY - content_rect.top - 70}px - 1em)`;
+		
+		is_PopupContentExpand = true;
+	}
+}
 // ====== 資料接收 ====== 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	var response = null;

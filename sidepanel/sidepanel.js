@@ -150,12 +150,12 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		if(is_UrlNoteExist < 2){
 			const first_message_interactive_block = url_note_block[0].querySelector(".interactive_block");
 
-			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0">
+			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 														   </svg>
 														 </button>
-														 <button class="more_options" note_id="0">
+														 <button class="more_options" note_id="0" title="更多操作">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 														   </svg>
@@ -182,12 +182,12 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note is_pinned" note_id="${count_id}">
+											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多操作">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -213,12 +213,12 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note" note_id="${count_id}">
+											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多操作">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -352,12 +352,12 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 		if(is_UrlNoteExist < 2){
 			const first_message_interactive_block = url_note_block[0].querySelector(".interactive_block");
 
-			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0">
+			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 														   </svg>
 														 </button>
-														 <button class="more_options" note_id="0">
+														 <button class="more_options" note_id="0" title="更多操作">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 														   </svg>
@@ -384,12 +384,12 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note is_pinned" note_id="${count_id}">
+											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多操作">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -415,12 +415,12 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note" note_id="${count_id}">
+											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多操作">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -660,12 +660,12 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		if(is_KeywordNoteExist < 2){
 			const first_message_interactive_block = keyword_note_block[0].querySelector(".interactive_block");
 
-			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0">
+			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 														   </svg>
 														 </button>
-														 <button class="more_options" note_id="0">
+														 <button class="more_options" note_id="0" title="更多選項">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 														   </svg>
@@ -691,12 +691,12 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note is_pinned" note_id="${count_id}">
+											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多選項">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -722,12 +722,12 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note" note_id="${count_id}">
+											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多選項">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -821,12 +821,12 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 			}
 			
 			message_block.innerHTML = `<div class="interactive_block">
-										 <button class="${class_tag}" note_id="${note_id}">
+										 <button class="${class_tag}" note_id="${note_id}" title="釘選筆記">
 										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 											 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 										   </svg>
 										 </button>
-										 <button class="more_options" note_id="${note_id}">
+										 <button class="more_options" note_id="${note_id}" title="更多選項">
 										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 											 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 										   </svg>
@@ -882,12 +882,12 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 			}
 			
 			message_block.innerHTML = `<div class="interactive_block">
-										 <button class="${class_tag}" note_id="${note_id}">
+										 <button class="${class_tag}" note_id="${note_id}" title="釘選筆記">
 										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 											 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 										   </svg>
 										 </button>
-										 <button class="more_options" note_id="${note_id}">
+										 <button class="more_options" note_id="${note_id}" title="更多選項">
 										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 											 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 										   </svg>
@@ -1519,7 +1519,7 @@ function options_edit_button_click(event){
 		initial_EditPriority[0] = url_note_is_pinned;
 		
 		message_block.innerHTML = `<div class="interactive_block edit">
-								 <button class="more_options" note_id="${note_id}">
+								 <button class="more_options" note_id="${note_id}" title="更多選項">
 								   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 									 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 								   </svg>
@@ -1582,7 +1582,7 @@ function options_edit_button_click(event){
 		initial_EditPriority[1] = keyword_note_is_pinned;
 		
 		message_block.innerHTML = `<div class="interactive_block edit">
-								 <button class="more_options" note_id="${note_id}">
+								 <button class="more_options" note_id="${note_id}" title="更多選項">
 								   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 									 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 								   </svg>
