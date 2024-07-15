@@ -2,11 +2,11 @@ body{
   /* ===== Colors ===== */
   --body-color: #E4E9F7;
   --popup-color: #FFF;
-  --primary-color: #695CFE;
-  --primary-color-light: #F6F5FF;
+  --primary-color: #8685EF;
+  --primary-color-light: #efefef;
   --primary-color-light-popup: #695CFE;
   --primary-text-light-popup: #FFF;
-  --toggle-color: #DDD;
+  --toggle-color: #a8b0da;
   --text-color: #707070;
   /* ====== Transition ====== */
   --tran-02: all 0.2s ease;
@@ -91,10 +91,6 @@ body.dark{
   font-size: 18px;
   font-weight: 600;
 }
-#popup-bar header .image-text .version{
-  font-size: 10px;
-  font-weight: 300;
-}
 #popup-bar header .image-text .profession{
   margin-top: 2px;
   font-size: 12px;
@@ -126,7 +122,6 @@ body.dark{
   border-radius: 6px;
   background-color: var(--primary-color-light);
   position: relative;
-  transition: var(--tran-05);
 }
 #popup-bar .switch .switch-icon{
   height: 50px;
@@ -232,7 +227,7 @@ body.dark #popup-bar .button:hover .keyword-text{
   opacity: 0;
 }
 #popup-bar div.button.folded.folded-target{
-  height: 170px;/*230*/
+  height: 230px;
   background-color: var(--primary-color);
   margin-bottom: 0;
   position: relative;
@@ -243,25 +238,6 @@ body.dark #popup-bar .button:hover .keyword-text{
 #popup-bar div.button.folded.folded-target button.title_botton{
   height: 50px;
 }
-
-#popup-bar .search-box {
-    border-radius: 6px;
-    background-color: var(--primary-color-light);
-    transition: var(--tran-05);
-}
-#popup-bar .search-box input{
-  height: 100%;
-  width: 100%;
-  outline: none;
-  border: none;
-  background-color: var(--primary-color-light);
-  color: var(--text-color);
-  font-size: 17px;
-  font-weight: 500;
-  transition: var(--tran-05);
-  margin: 5px 0px;
-}
-
 
 #start-up .icon-show{
   opacity: 0;
@@ -279,20 +255,6 @@ body.dark #popup-bar .button:hover .keyword-text{
 #start-up .icon-unshow:before {
   content: "🔴";
 }
-/*
-#popup-search .icon-search:before {
-    content: "🔍";
-}
-#popup-new-keyword .icon-new-keyword:before {
-    content: "🗒️";
-}
-#popup-open-notebook .icon-open-notebook:before {
-    content: "📓";
-}
-#popup-setting .icon-setting:before {
-    content: "⚙️";
-}
-*/
 
 #popup-bar div.button #note_mode{
 	background-color: var(--popup-color);
@@ -314,6 +276,7 @@ body.dark #popup-bar .button:hover .keyword-text{
 	font-weight: 500;
 	border: none;
 	padding: 0 5px;
+	font-weight: bold;
 }
 #popup-bar div.button.folded-target #new-keyword-submit{
 	height: 25px;
@@ -332,9 +295,16 @@ body.dark #popup-bar .button:hover .keyword-text{
   width: 100%;
   border-radius: 2px;
   line-height: 19px;
+  font-weight: bold;
 }
 #popup-bar div.button.folded-target #new-keyword-submit div:hover{
   background: var(--primary-color);
+}
+body:not(.dark) #popup-bar div.button.folded-target #new-keyword-submit div{
+  color: var(--primary-color);
+}
+body:not(.dark) #popup-bar div.button.folded-target #new-keyword-submit div:hover{
+  color: var(--popup-color);
 }
 
 #popup-bar div.button:not(.folded-target) #note_mode,

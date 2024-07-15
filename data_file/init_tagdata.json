@@ -1,0 +1,40 @@
+{
+	"RecordedKeywords": ["標籤", "無標籤"],
+	"RecordedUrls": {},
+	"AutoTriggerUrl": [],
+	"KeywordsDisplayCRF": [["標籤", 1.0], ["無標籤", 1.0], ["max_KeywordDisplay", -10.0]],
+	"KeywordsNotePriority": {"標籤": [1]},
+	"KeywordsSetting": {
+		"is_DarkMode": true,
+		"is_SwitchWithTab": true,
+		"note_version": 2,
+		"extension_version": "v0.0.0-beta.3",
+		"github_": {
+			"version": "v0.0.0-beta.3",
+			"notify_time": -1
+		}
+	},
+	"標籤": [
+		[
+			"<p>这是一个圆角矩形。&nbsp;<br>它的高度会随着文本内容而变化，但上下边距保持8px。</p>",
+			"2024/03/12 16:50:03",
+			false
+		],
+		[
+			"我好想睡覺，我的夢想是攀登枕頭山山峰",
+			"2023/09/09 10:20:36",
+			true
+		],
+		[
+			"早安",
+			"2023/09/01 14:03:23",
+			false
+		],
+		[
+			"<p><i>新資料 </i><strong>輸入測試</strong></p><p>&nbsp;</p><ol><li><strong>項目一ejenfnefnef</strong></li><li><strong>項目二</strong></li><li><strong>項目三</strong></li></ol>",
+			"2024/01/13 20:54:16",
+			false
+		]
+	],
+	"無標籤": []
+}

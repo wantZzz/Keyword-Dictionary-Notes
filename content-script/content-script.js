@@ -4,6 +4,7 @@ var is_MarkHide = true;
 var is_PopupHide = true;
 var popup_is_needrefresh = true;
 var is_onlyShowOne = null;
+var is_PopupContentExpand = false;
 
 var timeout_PopupMouseOn;
 var timeout_PopupMouseOut;
@@ -15,9 +16,12 @@ var current_PopupIndex = 0;
 var is_MutipleMark = false;
 //通用設定資料
 var is_DarkMode = true;
+
+var is_FirstTrack = true;
+const track_Host = ['www.youtube.com', 'www.twitch.tv'];
 //儲存資料
 var searched_KeywordNodes = [];// [node, is_showed, keywords_in_node]
-var searched_Keywords = {};
+var searched_Keywords = {};//{keyword: count_in_page}
 
 // ====== 請求設定資料 ====== 
 chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
@@ -25,23 +29,44 @@ chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) =
 });
 
 // ====== 資料回傳 ====== 
-function responsePageStatus(){
+function responsePageStatus(callback){
 	//console.log({is_areadysearch: is_AreadySearch, is_markhide: is_MarkHide});
 	
-	return {is_areadysearch: is_AreadySearch,
+	callback({is_areadysearch: is_AreadySearch,
 			is_markhide: is_MarkHide,
 			host: location.host,
-			url: location.href
-			};
+			url: location.href,
+			title: document.title
+			});
+			
+	if (track_Host.includes(location.host) && is_FirstTrack){
+		trackHostEventBuild(location.host);
+	}
 }
 
 function responseSearchedKeywords(){
 	//console.log({searched_keywords: searched_Keywords});
 	
-	return {searched_keywords: searched_Keywords
-			};
+	return {searched_keywords: searched_Keywords};
 }
 
+function trackHostEventBuild(host){
+	switch(host){
+		case 'www.youtube.com':
+			document.addEventListener('yt-page-data-updated', trackHostListener);
+			is_FirstTrack = False;
+			break;
+		case 'www.twitch.tv':
+			let target = document.querySelector('head > title');
+			let observer = new window.WebKitMutationObserver(trackHostListener);
+			observer.observe(target, {childList: true});
+			break;
+	}
+}
+
+function trackHostListener(){
+	chrome.runtime.sendMessage({event_name: 'special-url-page-updated'}, (t) => {});
+}
 // ====== 資料處理 ====== 
 function insertPopupHtml(){
 	var keyword_container = document.createElement('keywordnote');
@@ -104,12 +129,12 @@ function insertPopupHtml(){
 											<div class="right_fade"></div>
 									  </div>
 									  <div class="keyword_button_container">
-											<button id="keyword_note_sidepanel_show">
+											<button id="keyword_note_sidepanel_show" title="在側邊欄顯示">
 												<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
 												<path fill="currentColor" d="M40 12a6.25 6.25 0 00-6-6h-24a6.25 6.25 0 00-5 6v22a6.25 6.25 0 005 5h24a6.25 6.25 0 006-5.25zm-30 24a3.75 3.75 0 01-2-2v-22a3.75 3.75 0 012-3h15v27z" />
 												</svg>
 											</button>
-											<button id="keyword_note_highlight">
+											<button id="keyword_note_highlight" title="僅顯示此關鍵字">
 												<i class="svg_icon">
 												<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24">
 													<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
@@ -156,17 +181,25 @@ function insertPopupHtml(){
 	keyword_container.querySelector('div.note_content').onwheel = function (event){ 
 		event.preventDefault();  
 
-		var step = 15;  
+		const step = 15;  
+		const last_scrollTop = this.scrollTop;
 		if(event.deltaY < 0){  
 			this.scrollTop -= step;  
 		} else {  
 			this.scrollTop += step;  
-		}  
+		}
+
+		if (last_scrollTop == this.scrollTop && last_scrollTop > 0){
+			this.parentElement.querySelector('div.bottom_fade').classList.add('hide');
+		}
+		else{
+			this.parentElement.querySelector('div.bottom_fade').classList.remove('hide');
+		}
 	};
+	keyword_container.querySelector('div.pin_note_container').addEventListener("click", clickNoteContent);
 	
-	
-	const suggestion_container = keyword_container.querySelector("span#keyword_title");
-	suggestion_container.onwheel = function (event){ 
+	const keyword_title = keyword_container.querySelector("span#keyword_title");
+	keyword_title.onwheel = function (event){ 
 		if(is_MutipleMark){ 
 			event.preventDefault();  
 			
@@ -208,8 +241,16 @@ function makeKeywordMutipleNode(innertext, keywords_in_node){
 	
 function searchKeywords(callback){
 	chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-		const recorded_keywords = Object.keys(response.recorded_keywords);
-		const keywords_searched_count = response.recorded_keywords;
+		/*const recorded_keywords = Object.keys(response.recorded_keywords);
+	
+		const keywords_searched_count = response.recorded_keywords;*/
+		
+		const recorded_keywords = response.recorded_keywords;
+		let keywords_searched_count = {};
+		
+		recorded_keywords.forEach(function (Keyword) {
+			keywords_searched_count[Keyword] = 0;
+		});
 		
 		function isKeywordSpan(node){
 			try{
@@ -352,19 +393,20 @@ function searchKeywords(callback){
 			
 			if (!is_AreadySearch){
 				insertPopupHtml();
-				is_AreadySearch = true;
-				is_MarkHide = false;
-				
-				for (const keyword of recorded_keywords) {
-					if (keywords_searched_count[keyword] === 0){
-						delete keywords_searched_count[keyword];
-					}
-					else{
-						keycount += 1;
-					}
-				}
-				searched_Keywords = keywords_searched_count;
 			}
+			
+			is_AreadySearch = true;
+			is_MarkHide = false;
+			
+			for (const keyword of recorded_keywords) {
+				if (keywords_searched_count[keyword] === 0){
+					delete keywords_searched_count[keyword];
+				}
+				else{
+					keycount += 1;
+				}
+			}
+			searched_Keywords = keywords_searched_count;
 		}
 		else{
 			triggerAlertWindow("未能在目前網頁上找到關鍵字", 'nofound');
@@ -513,6 +555,7 @@ function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
 	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
 	const keyword_note_content = popup_window.querySelector('div.note_content');
 	const keyword_timestamp_container = popup_window.querySelector('div.windos_timestamp_container');
+	const keyword_title = popup_window.querySelector("span#keyword_title");
 	
 	if (keyword_notedata == null){
 		keyword_note_content.innerText = '你沒有此關鍵字的筆記喔，趕快紀錄些什麼吧!';
@@ -529,15 +572,33 @@ function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
 		keyword_timestamp_container.innerText = note_timestamp;
 	}
 	
+	if (is_MutipleMark){
+		keyword_title.setAttribute('title', `滾動查看其他 ${current_PopupMark.length - 1} 個關鍵字`);
+	}
+	else{
+		keyword_title.setAttribute('title', "此位置的關鍵字");
+	}
+	
 	timeout_PopupMouseOn = setTimeout(function () {
-		const mouseX = X + 10;
-		const mouseY = Y + 10 + window.scrollY;
-
+		const windowX = window.innerWidth;
+		const windowY = window.innerHeight;
+		
+		let mouseX = ((windowX - X) < 360) ? X - 350 : X + 10;
+		const mouseY = ((windowY - Y) < 220) ? Y - 230 + window.scrollY : Y + 10 + window.scrollY;
+		
+		if (windowX < 300 || mouseX < 0){
+			mouseX = 10;
+		}
+		if ((mouseY - window.scrollY) < 0){
+			mouseY = 10;
+		}
+		
 		popup_window.style.left = mouseX + "px";
 		popup_window.style.top = mouseY + "px";
 		
 		setTimeout(function () {
 			popup_window.classList.add('show');
+			is_PopupHide = false;
 		}, 490);
 	}, 1000);
 }
@@ -571,8 +632,14 @@ function notedataUpdate(keyword, keyword_notedata, index){
 function scrollIntoPreviousMark(target_keyword){
 	const mark_length = searched_KeywordNodes.length
 	
-	if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
+	if (!is_AreadySearch){
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
+	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
 		triggerAlertWindow('當前單獨顯示的標記非所選關鍵字', 'error');
+	}
+	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
+		triggerAlertWindow('當前顯示的標記不包含所選關鍵字', 'error');
 	}
 	else{
 		for (let index = ((scroll_IntoIndex + mark_length - 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length - 1) % mark_length)) {
@@ -590,8 +657,14 @@ function scrollIntoPreviousMark(target_keyword){
 function scrollIntoNaxtMark(target_keyword){
 	const mark_length = searched_KeywordNodes.length
 	
-	if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
+	if (!is_AreadySearch){
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
+	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
 		triggerAlertWindow('當前單獨顯示的標記非所選關鍵字', 'error');
+	}
+	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
+		triggerAlertWindow('當前顯示的標記不包含所選關鍵字', 'error');
 	}
 	else{
 		for (let index = ((scroll_IntoIndex + mark_length + 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length + 1) % mark_length)) {
@@ -658,6 +731,7 @@ function keywordMouseoutEvent(event){
 		popup_window.classList.remove('show');
 		popup_window.style.left = "";
 		popup_window.style.top = "";
+		is_PopupHide = true;
 	}, 500);
 }
 
@@ -670,6 +744,15 @@ function popupMouseoutEvent(event){
 		popup_window.classList.remove('show');
 		popup_window.style.left = "";
 		popup_window.style.top = "";
+		is_PopupHide = true;
+		
+		const note_content = popup_window.querySelector('div.note_content');
+		const bottom_fade = popup_window.querySelector('div.bottom_fade');
+		
+		note_content.style.maxHeight = "";
+		bottom_fade.style.top = "";
+		
+		is_PopupContentExpand = false;
 	}, 500);
 }
 
@@ -723,6 +806,28 @@ function popup_nextkeyword(){
 	
 	chrome.runtime.sendMessage(quest_data, (t) => {});
 }
+
+function clickNoteContent(event){
+	const note_block = event.target.closest('.pin_note_container');
+	const note_content = note_block.querySelector('div.note_content');
+	const bottom_fade = note_block.querySelector('div.bottom_fade');
+	
+	if (is_PopupContentExpand || is_PopupHide){
+		note_content.style.maxHeight = "";
+		bottom_fade.style.top = "";
+		
+		is_PopupContentExpand = false;
+	}
+	else{
+		const content_rect = note_content.getBoundingClientRect();
+		const windowY = window.innerHeight;
+
+		note_content.style.maxHeight = `${windowY - content_rect.top - 70}px`;
+		bottom_fade.style.top = `calc(${windowY - content_rect.top - 70}px - 1em)`;
+		
+		is_PopupContentExpand = true;
+	}
+}
 // ====== 資料接收 ====== 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	var response = null;
@@ -731,47 +836,76 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 	switch (request.event_name) {
 		//網頁腳本狀態
 		case 'quest-tab-status':
-			response = responsePageStatus()
-			sendResponse(response);
+			responsePageStatus((response) => {
+				sendResponse(response);
+			});
 			break;
 		//標記命令執行	
 		case 'keyword-mark-search':
 			sendResponse({});
 			
 			searchKeywords((process_keycount) => {
-				response = {
-					event_name: 'response-keyword-mark-search',
-					process_keycount: process_keycount,
-					page_status: responsePageStatus()
-				};
-				
-				chrome.runtime.sendMessage(response, (t) => {});
+				responsePageStatus((page_status) => {
+					response = {
+						event_name: 'response-keyword-mark-search',
+						process_keycount: process_keycount,
+						page_status: page_status,
+						request_from: request.from
+					};
+					
+					chrome.runtime.sendMessage(response, (t) => {});
+				});
 			});
 			break;	
+		case 'keyword-mark-research':
+			sendResponse({});
+			
+			hideAllKeywordMark((process_status) => {
+				searchKeywords((process_keycount) => {
+					responsePageStatus((page_status) => {
+						response = {
+							event_name: 'response-keyword-mark-search',
+							process_keycount: process_keycount,
+							page_status: page_status
+						};
+						
+						chrome.runtime.sendMessage(response, (t) => {});
+					});
+				});
+			});
+			break;
 		case 'keyword-mark-show':
 			sendResponse({});
 			
 			showAllKeywordMark((process_status) => {
-				response = {
-					event_name: 'response-keyword-mark-show',
-					process_status: process_status,
-					page_status: responsePageStatus()
-				};
-				
-				chrome.runtime.sendMessage(response, (t) => {});
+				responsePageStatus((page_status) => {
+					if (request.from != 'hotkey'){
+						response = {
+							event_name: 'response-keyword-mark-show',
+							process_status: process_status,
+							page_status: page_status
+						};
+						
+						chrome.runtime.sendMessage(response, (t) => {});
+					}
+				});
 			});
 			break;
 		case 'keyword-mark-hide':
 			sendResponse({});
 			
 			hideAllKeywordMark((process_status) => {
-				response = {
-					event_name: 'response-keyword-mark-hide',
-					process_status: process_status,
-					page_status: responsePageStatus()
-				};
-				
-				chrome.runtime.sendMessage(response, (t) => {});
+				responsePageStatus((page_status) => {
+					if (request.from != 'hotkey'){
+						response = {
+							event_name: 'response-keyword-mark-hide',
+							process_status: process_status,
+							page_status: page_status
+						};
+						
+						chrome.runtime.sendMessage(response, (t) => {});
+					}
+				});
 			});
 			break;
 		case 'keyword-previous-mark':
@@ -801,14 +935,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 				notedataUpdate(request.keyword, request.keyword_notedata, request.index);
 			}
 			break;
-		
-		case 'test':
-			sendResponse({});
-
-			onlyShowOneKeywordMark('標籤');
-			break;
 	}
 });
 
 // ====== 初始化 ====== 
-console.log('kk test');
+console.log('網頁腳本初始化完成');

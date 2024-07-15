@@ -4,11 +4,6 @@ var is_NewKeywordFolded = false;
 //通用設定資料
 var is_DarkMode = true;
 
-// ====== 請求設定資料 ====== 
-chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
-	is_DarkMode = response.is_darkmode;
-});
-
 // ====== 資料處理 ====== 
 function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 	const startup_Switch = document.getElementById("start-up");
@@ -78,7 +73,21 @@ function open_notebook_click(event){
 }
 
 function popup_setting_click(event){
-	triggerAlertWindow('功能不足，設定頁待做', 'warning');
+	window.open(chrome.runtime.getURL('setting_page/setting.html'));
+	
+	//triggerAlertWindow('功能不足，設定頁待做', 'warning');
+}
+
+function popup_research_click(event){
+	const startup_Switch = document.getElementById("start-up");
+	const startup_Text = startup_Switch.querySelector(".keyword-text");
+	
+	if (startup_Text.innerText === "Start up"){
+		triggerAlertWindow('請先至少搜尋一次再重新搜尋', 'warning');
+	}
+	else{
+		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-research'}, (t) => {});
+	}
 }
 // ====== 資料接收 ====== 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -93,7 +102,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			break;
 			
 		case 'response-keyword-mark-search':
-			sendResponse({});
+			if (request.request_from == 'popup'){
+				sendResponse({});
+			}
 			
 			currentPagePageStatusUpdate(true, true, request.page_status);
 			chrome.action.setBadgeText({tabId: currentpage_TabId, text: `${request.process_keycount}`}, (t) => {});
@@ -141,13 +152,13 @@ function runInitial(){
 		startup_Switch.classList.toggle("on");
 		
 		if (startup_Text.innerText === "Start up"){
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-search'}, (t) => {});
+			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-search', from: 'popup'}, (t) => {});
 		}
 		else if (startup_Switch.classList.contains("on")) {
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-show'}, (t) => {});
+			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-show', from: 'popup'}, (t) => {});
 		} 
 		else{
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-hide'}, (t) => {});
+			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-hide', from: 'popup'}, (t) => {});
 		}
 	});
 	
@@ -184,15 +195,16 @@ function runInitial(){
 		}
 	});	
 
-	// 開啟側邊欄
 	document.getElementById("popup-open-notebook").addEventListener("click", open_notebook_click);
-	
-	// 開啟側邊欄
 	document.getElementById("popup-open-notebook").addEventListener("click", open_notebook_click);
-	
-	// 開啟側邊欄
 	document.getElementById("popup-setting").addEventListener("click", popup_setting_click);
+	document.getElementById("popup-research").addEventListener("click", popup_research_click);
+	
+	// 請求設定資料
+	chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
+		is_DarkMode = response.is_darkmode;
+		runSetting();
+	});
 }
 
-runSetting();
 runInitial();

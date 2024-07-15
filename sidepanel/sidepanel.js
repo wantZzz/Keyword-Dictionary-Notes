@@ -11,6 +11,7 @@ var is_SwitchWithTab = true;
 var current_Host = null;
 var current_Url = null;
 var current_Keyword = '';
+var is_SpecialUrls = false;
 
 var is_UrlNoteExist = 0;
 var is_KeywordNoteExist = 0;
@@ -18,7 +19,11 @@ var is_KeywordNoteExist = 0;
 var display_UrlNotes = [-1];
 var display_KeywordNotes = [-1];
 
-var confirmnotifications_data = {}
+var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
+
+var is_SuggestionSearch_Composition = false;
+var is_First_SuggestionSearch = true;
+var current_SuggestionSearch = "";
 //編輯器控制項
 var current_EditingEditor = [null, null];
 
@@ -31,15 +36,18 @@ var is_KeywordNewNoteEdit = null;
 
 var is_Connect = false;
 //儲存資料
-var searched_Keywords = {};
-var recorded_Keywords = {};
+var searched_Keywords = {};//{keyword: count_in_page}
+var recorded_Keywords = {};//{keyword: [[data......], is_searched]}
 
 // ====== 資料回傳 ====== 
 
 // ====== 資料處理 ====== 
 function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 	if(is_support && is_script_run){
-		if (!(currentpage_Host === page_status.host)){
+		if (page_status.is_special_urls && (currentpage_Url != page_status.url)){
+			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: page_status.title, host: page_status.host, url: page_status.url}, (t) => {});
+		}
+		else if (currentpage_Host != page_status.host){
 			chrome.runtime.sendMessage({event_name: 'quest-url-notedata', host: page_status.host}, (t) => {});
 		}
 		
@@ -79,6 +87,10 @@ function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 }
 
 function refreshTitleArea(host, host_notedata, keywords_priority){
+	if (is_UrlNewNoteEdit != null){
+		return;
+	}
+	
 	const title_area = document.getElementById("title_area");
 	
 	const host_title = title_area.querySelector('span#url_note_host');
@@ -138,12 +150,12 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		if(is_UrlNoteExist < 2){
 			const first_message_interactive_block = url_note_block[0].querySelector(".interactive_block");
 
-			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0">
+			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 														   </svg>
 														 </button>
-														 <button class="more_options" note_id="0">
+														 <button class="more_options" note_id="0" title="更多操作">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 														   </svg>
@@ -159,6 +171,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		
 		const priority_note = new Array(keywords_priority.length);
 		const priority_count = keywords_priority.length;
+		let priority_jump = 0;
 		
 		host_notedata.forEach(function (note_data) {
 			const [note_content, note_timestamp, undefind_value] = note_data;
@@ -169,12 +182,12 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note is_pinned" note_id="${count_id}">
+											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多操作">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -193,18 +206,19 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
 				priority_note[priority_note_index] = message_block;
+				priority_jump += 1;
 			}
-			else if(!url_note_block[count_id]){
+			else if(!url_note_block[count_id - priority_jump]){
 				const message_block = document.createElement('div');
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note" note_id="${count_id}">
+											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多操作">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -228,7 +242,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				display_UrlNotes_copy.push(count_id);
 			}
 			else{
-				const exist_block = url_note_block[count_id];
+				const exist_block = url_note_block[count_id + priority_jump];
 				
 				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
 				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
@@ -237,7 +251,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
 				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
 				
-				display_UrlNotes_copy[count_id] = count_id;
+				display_UrlNotes_copy[count_id - priority_jump] = count_id;
 			}
 			
 			count_id += 1;
@@ -269,6 +283,209 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 	
 	current_Host = currentpage_Host;
 	current_Url = currentpage_Url;
+	is_SpecialUrls = false;
+}
+
+function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_priority){
+	if (is_UrlNewNoteEdit != null){
+		return;
+	}
+	
+	const title_area = document.getElementById("title_area");
+	
+	if (title != null){
+		const host_title = title_area.querySelector('span#url_note_host');
+		host_title.innerHTML = title;
+	}
+	
+	const url_note_container = document.getElementById("url_note_container");
+	
+	const url_note_block = Array.from(url_note_container.querySelectorAll(".windos_message_block")).reverse();
+	
+	if (host_notedata === null){
+		const message_block = document.createElement('div');
+		message_block.classList.add('windos_message_block');
+		
+		message_block.innerHTML = `<div class="interactive_block">
+								   </div>
+								   <div class="windos_message_content">
+									 你沒有在此網域做過筆記喔，<br>
+									 趕快紀錄些什麼吧!
+								   </div>
+								   <div class="windos_timestamp_container">
+								     <div class="windos_message_timestamp">
+									   設計界面是件痛苦又耗腦細胞的事
+								     </div>
+								   </div>`
+								
+		url_note_container.innerHTML = "";
+		url_note_container.appendChild(message_block);
+		
+		is_UrlNoteExist = 0;
+		display_UrlNotes = [-1];
+	}
+	else if (host_notedata.length === 0){
+		const message_block = document.createElement('div');
+		message_block.classList.add('windos_message_block');
+		
+		message_block.innerHTML = `<div class="interactive_block">
+								   </div>
+								   <div class="windos_message_content">
+									 你還沒有在此網域的筆記喔，<br>
+									 趕快紀錄些什麼吧!
+								   </div>
+								   <div class="windos_timestamp_container">
+								     <div class="windos_message_timestamp">
+									   寫程式是件既痛苦又樂在其中的事
+								     </div>
+								   </div>`;
+								
+		url_note_container.innerHTML = "";
+		url_note_container.appendChild(message_block);
+		
+		is_UrlNoteExist = 1;
+		display_UrlNotes = [-1];
+	}
+	else{
+		let count_id = 0;
+		
+		if(is_UrlNoteExist < 2){
+			const first_message_interactive_block = url_note_block[0].querySelector(".interactive_block");
+
+			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
+														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
+														   </svg>
+														 </button>
+														 <button class="more_options" note_id="0" title="更多操作">
+														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+														   </svg>
+														 </button>`;
+														 
+			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
+			first_message_interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
+			
+			display_UrlNotes[0] = 0;
+		}
+		
+		let display_UrlNotes_copy = display_UrlNotes.reverse();
+		
+		const priority_note = new Array(keywords_priority.length);
+		const priority_count = keywords_priority.length;
+		let priority_jump = 0;
+		
+		host_notedata.forEach(function (note_data) {
+			const [note_content, note_timestamp, undefind_value] = note_data;
+			const priority_note_index = keywords_priority.indexOf(count_id);
+			
+			if (priority_note_index >= 0){
+				const message_block = document.createElement('div');
+				message_block.classList.add('windos_message_block');
+				
+				message_block.innerHTML = `<div class="interactive_block">
+											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
+											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
+											   </svg>
+											 </button>
+											 <button class="more_options" note_id="${count_id}" title="更多操作">
+											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+											   </svg>
+											 </button>
+										   </div>
+										   <div class="windos_message_content">
+											 ${note_content}
+										   </div>
+										   <div class="windos_timestamp_container">
+											 <div class="windos_message_timestamp">
+											   ${note_timestamp}
+											 </div>
+										   </div>`;
+										   
+				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
+				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
+				
+				priority_note[priority_note_index] = message_block;
+				priority_jump += 1;
+			}
+			else if(!url_note_block[count_id - priority_jump]){
+				const message_block = document.createElement('div');
+				message_block.classList.add('windos_message_block');
+				
+				message_block.innerHTML = `<div class="interactive_block">
+											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
+											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
+											   </svg>
+											 </button>
+											 <button class="more_options" note_id="${count_id}" title="更多操作">
+											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+											   </svg>
+											 </button>
+										   </div>
+										   <div class="windos_message_content">
+											 ${note_content}
+										   </div>
+										   <div class="windos_timestamp_container">
+											 <div class="windos_message_timestamp">
+											   ${note_timestamp}
+											 </div>
+										   </div>`;
+										   
+				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
+				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
+				
+				
+				url_note_container.insertBefore(message_block, url_note_container.firstChild);
+				//url_note_container.appendChild(message_block);
+				display_UrlNotes_copy.push(count_id);
+			}
+			else{
+				const exist_block = url_note_block[count_id - priority_jump];
+				
+				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
+				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
+				
+				exist_block.querySelector(".interactive_block button.pinned_note").setAttribute('note_id', count_id);
+				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
+				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
+				
+				display_UrlNotes_copy[count_id - priority_jump] = count_id;
+			}
+			
+			count_id += 1;
+		});
+		
+		if((count_id - priority_count) < url_note_block.length){
+			for (var i = (count_id - priority_count); i < url_note_block.length; i++) {
+				url_note_block[i].remove();
+				//url_note_container.removeChild(url_note_block[i]);
+			}
+			display_UrlNotes_copy.splice((count_id - priority_count), url_note_block.length - (count_id - priority_count));
+		}
+	
+		priority_note.reverse().forEach(function (message_block) {
+			url_note_container.insertBefore(message_block, url_note_container.firstChild);
+		});
+		
+		display_KeywordNotes = keywords_priority.concat(display_UrlNotes_copy.reverse());
+		
+		is_UrlNoteExist = 2;
+	}
+
+	current_EditingEditor[0] = null;
+	initial_EditContent[0] = null;
+	initial_EditPriority[0] = null;
+	initial_EditTimestamp[0] = null;
+	
+	is_UrlNewNoteEdit = null;
+	
+	current_Host = key_index;
+	current_Url = currentpage_Url;
+	is_SpecialUrls = true;
 }
 
 function refreshSuggestionArea(is_data_ready, display_Keywords){
@@ -372,9 +589,17 @@ function refreshSuggestionArea(is_data_ready, display_Keywords){
 			}
 		}
 	}
+
+	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
+	is_First_SuggestionSearch = true;
+	current_SuggestionSearch = "";
 }
 
 function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
+	if (is_KeywordNewNoteEdit != null){
+		return;
+	}
+	
 	const keyword_area = document.getElementById("keyword_area");
 	
 	const host_title = keyword_area.querySelector('span#keyword_note_host');
@@ -435,12 +660,12 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		if(is_KeywordNoteExist < 2){
 			const first_message_interactive_block = keyword_note_block[0].querySelector(".interactive_block");
 
-			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0">
+			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 														   </svg>
 														 </button>
-														 <button class="more_options" note_id="0">
+														 <button class="more_options" note_id="0" title="更多選項">
 														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 														   </svg>
@@ -455,6 +680,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		
 		const priority_note = new Array(keywords_priority.length);
 		const priority_count = keywords_priority.length;
+		let priority_jump = 0;
 		
 		keyword_notedata.forEach(function (note_data) {
 			const [note_content, note_timestamp, is_pinned] = note_data;
@@ -465,12 +691,12 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note is_pinned" note_id="${count_id}">
+											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多選項">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -489,18 +715,19 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
 				priority_note[priority_note_index] = message_block;
+				priority_jump += 1;
 			}
-			else if(!keyword_note_block[count_id]){
+			else if(!keyword_note_block[count_id - priority_jump]){
 				const message_block = document.createElement('div');
 				message_block.classList.add('windos_message_block');
 				
 				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note" note_id="${count_id}">
+											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 											   </svg>
 											 </button>
-											 <button class="more_options" note_id="${count_id}">
+											 <button class="more_options" note_id="${count_id}" title="更多選項">
 											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 											   </svg>
@@ -523,7 +750,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				display_KeywordNotes_copy.push(count_id);
 			}
 			else{
-				const exist_block = keyword_note_block[count_id];
+				const exist_block = keyword_note_block[count_id - priority_jump];
 				
 				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
 				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
@@ -532,7 +759,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
 				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
 				
-				display_KeywordNotes_copy[count_id] = count_id;
+				display_KeywordNotes_copy[count_id - priority_jump] = count_id;
 			}
 			
 			count_id += 1;
@@ -561,6 +788,10 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 	initial_EditTimestamp[1] = null;
 	
 	is_KeywordNewNoteEdit = null;
+	
+	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
+	is_First_SuggestionSearch = true;
+	current_SuggestionSearch = "";
 }
 
 function afterEditRefreshProcess(note_type, process_state, note_id, save_datetime){
@@ -590,12 +821,12 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 			}
 			
 			message_block.innerHTML = `<div class="interactive_block">
-										 <button class="${class_tag}" note_id="${note_id}">
+										 <button class="${class_tag}" note_id="${note_id}" title="釘選筆記">
 										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 											 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 										   </svg>
 										 </button>
-										 <button class="more_options" note_id="${note_id}">
+										 <button class="more_options" note_id="${note_id}" title="更多選項">
 										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 											 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 										   </svg>
@@ -651,12 +882,12 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 			}
 			
 			message_block.innerHTML = `<div class="interactive_block">
-										 <button class="${class_tag}" note_id="${note_id}">
+										 <button class="${class_tag}" note_id="${note_id}" title="釘選筆記">
 										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 											 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
 										   </svg>
 										 </button>
-										 <button class="more_options" note_id="${note_id}">
+										 <button class="more_options" note_id="${note_id}" title="更多選項">
 										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 											 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 										   </svg>
@@ -843,16 +1074,35 @@ function confirmNotificationMessage(message, type, senddata){
 	}
 	
 	chrome.notifications.create(options, function(notificationId) {
-		confirmnotifications_data[notificationId] = senddata;
+		confirmnotifications_Data[notificationId] = senddata;
 		
 		setTimeout(() => {
-			if (Boolean(confirmnotifications_data[notificationId])) {
-				delete confirmnotifications_data[notificationId];
+			if (Boolean(confirmnotifications_Data[notificationId])) {
+				delete confirmnotifications_Data[notificationId];
 				
 				chrome.notifications.clear(notificationId, (wasCleared) => {});
 			}
 		}, 10000);
 	});
+}
+
+function recordedKeywordsUpdate(update_recorded_keywords){
+	const keywords = Object.keys(recorded_Keywords);
+	let new_recorded_keywords = [];
+	
+	update_recorded_keywords.forEach((check_keyword) => {
+		if (!recorded_Keywords[check_keyword]){
+			new_recorded_keywords[check_keyword] = [[], false];
+		}
+		else{
+			new_recorded_keywords[check_keyword] = recorded_Keywords[check_keyword];
+		}
+	});
+	
+	//console.log(new_recorded_keywords);
+	//console.log(recorded_Keywords);
+	
+	recorded_Keywords = new_recorded_keywords;
 }
 
 // ====== 元素事件 ====== 
@@ -1025,9 +1275,16 @@ function url_delete_button_click(event){
 	const send_url_note_delete = {
 		notification_type: 'message',
 		event_name: 'send-url-note-delete',
-		host: host
+		host: host,
+		is_special_url: is_SpecialUrls
 	};
-	confirmNotificationMessage("你正在刪除與一個網址索引\n刪除後是無法找回該關鍵字相關聯的筆記\n是否繼續動作 ?", 'delete', send_url_note_delete);
+	
+	if (is_UrlNoteExist > 0){
+		confirmNotificationMessage("你正在刪除與一個網址索引\n刪除後是無法找回該關鍵字相關聯的筆記\n是否繼續動作 ?", 'delete', send_url_note_delete);
+	}
+	else{
+		triggerAlertWindow("你無法刪除未被紀錄的網址索引", 'warning');
+	}
 }
 
 // --- suggestion area keyword buttons ---
@@ -1037,40 +1294,99 @@ function suggestion_button_click(event){
 	if (trigger_keyword === 'none'){
 		return;
 	}
+	if (is_KeywordNewNoteEdit != null){
+		triggerAlertWindow('您仍有正在編輯的筆記\n請先儲存正在編輯的筆記再執行本操作', 'warning');
+		return;
+	}
 	
 	if (!(current_Keyword === trigger_keyword)){
-		chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: trigger_keyword}, (t) => {});
+		chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: trigger_keyword, is_first: false}, (t) => {});
 		current_Keyword = trigger_keyword;
 	}
 }
 function more_suggestion_button_click(event){
-	const more_suggestion_button_position = event.target.closest('button#more_suggestion').getBoundingClientRect() 
-	
 	const all_suggestion_popup = document.getElementById("all_suggestion_popup");
 	const popup_suggestion_container = all_suggestion_popup.querySelector(".popup_suggestion_container");
 	
-	all_suggestion_popup.style.top = `${more_suggestion_button_position.top + 45}px`;
+	if (all_suggestion_popup.classList.contains('popup_show')){
+		all_suggestion_popup.style.left = '';
+		all_suggestion_popup.style.top = '';
 	
-	let count_id = 0;
-	const suggestion_button = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
-	const keywords = Object.keys(recorded_Keywords);
-	
-	keywords.forEach(function (suggestion) {
-		if(!suggestion_button[count_id]){
-			const button_block = document.createElement('button');
-			button_block.classList.add('keyword_suggestion');
-			button_block.setAttribute('keyword', suggestion);
-									
-			button_block.innerText = `${suggestion}`;
-			button_block.addEventListener('click', suggestion_button_click, false);
-			popup_suggestion_container.appendChild(button_block);
-		}
-		else{
-			suggestion_button[count_id].innerText = `${suggestion}`;
-			suggestion_button[count_id].setAttribute('keyword', suggestion);
+		all_suggestion_popup.classList.remove('popup_show');
+		
+		if (is_First_SuggestionSearch){
+			popup_suggestion_container.innerHTML = "";
 		}
 		
-		count_id += 1;
+		return;
+	}
+	
+	const more_suggestion_button_position = event.target.closest('button#more_suggestion').getBoundingClientRect() 
+	
+	all_suggestion_popup.style.top = `${more_suggestion_button_position.top + 45}px`;
+	
+	if (is_First_SuggestionSearch){
+		let count_id = 0;
+		const suggestion_button = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
+		const keywords = Object.keys(recorded_Keywords);
+		
+		keywords.forEach(function (suggestion) {
+			if(!suggestion_button[count_id]){
+				const button_block = document.createElement('button');
+				button_block.classList.add('keyword_suggestion');
+				button_block.setAttribute('keyword', suggestion);
+										
+				button_block.innerText = `${suggestion}`;
+				button_block.addEventListener('click', suggestion_button_click, false);
+				popup_suggestion_container.appendChild(button_block);
+			}
+			else{
+				suggestion_button[count_id].innerText = `${suggestion}`;
+				suggestion_button[count_id].setAttribute('keyword', suggestion);
+			}
+			
+			count_id += 1;
+		});
+		
+		if(count_id < suggestion_button.length){
+			for (var i = count_id; i < suggestion_button.length; i++) {
+				popup_suggestion_container.removeChild(suggestion_button[i]);
+			}
+		}
+	}
+	
+	all_suggestion_popup.classList.add('popup_show');
+}
+function keywordSearchAlgorithmProcess(event){
+	if (is_SuggestionSearch_Composition){
+		return;
+	}
+	
+	const keywords = Object.keys(recorded_Keywords);
+	const search_string = event.target.value;
+	
+	const popup_suggestion_container = event.target.closest(".levitate_suggestion_contaner").querySelector(".popup_suggestion_container");
+	const suggestion_button = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
+	let count_id = 0;
+	
+	keywords.forEach(function (suggestion) {
+		if (suggestion.includes(search_string)){
+			if(!suggestion_button[count_id]){
+				const button_block = document.createElement('button');
+				button_block.classList.add('keyword_suggestion');
+				button_block.setAttribute('keyword', suggestion);
+										
+				button_block.innerText = `${suggestion}`;
+				button_block.addEventListener('click', suggestion_button_click, false);
+				popup_suggestion_container.appendChild(button_block);
+			}
+			else{
+				suggestion_button[count_id].innerText = `${suggestion}`;
+				suggestion_button[count_id].setAttribute('keyword', suggestion);
+			}
+			
+			count_id += 1;
+		}
 	});
 	
 	if(count_id < suggestion_button.length){
@@ -1079,7 +1395,12 @@ function more_suggestion_button_click(event){
 		}
 	}
 	
-	all_suggestion_popup.classList.add('popup_show');
+	if (search_string != ""){
+		is_First_SuggestionSearch = false;
+	}
+	else{
+		is_First_SuggestionSearch = true;
+	}
 }
 
 // --- keyword area title buttons ---
@@ -1087,10 +1408,16 @@ function keyword_previous_mark_button_click(event){
 	if (is_CurrentPageSearch){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-previous-mark', target_keyword: current_Keyword}, (t) => {});
 	}
+	else{
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+	}
 }
 function keyword_next_mark_button_click(event){
 	if (is_CurrentPageSearch){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-next-mark', target_keyword: current_Keyword}, (t) => {});
+	}
+	else{
+		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
 	}
 }
 function keyword_new_note_button_click(event){
@@ -1192,7 +1519,7 @@ function options_edit_button_click(event){
 		initial_EditPriority[0] = url_note_is_pinned;
 		
 		message_block.innerHTML = `<div class="interactive_block edit">
-								 <button class="more_options" note_id="${note_id}">
+								 <button class="more_options" note_id="${note_id}" title="更多選項">
 								   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 									 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 								   </svg>
@@ -1255,7 +1582,7 @@ function options_edit_button_click(event){
 		initial_EditPriority[1] = keyword_note_is_pinned;
 		
 		message_block.innerHTML = `<div class="interactive_block edit">
-								 <button class="more_options" note_id="${note_id}">
+								 <button class="more_options" note_id="${note_id}" title="更多選項">
 								   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
 									 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 								   </svg>
@@ -1314,6 +1641,7 @@ function options_copy_button_click(event){
 	more_options_popup.style.top = '';
 
 	more_options_popup.classList.remove('popup_show');
+	triggerAlertWindow('該功能功能處草稿階段', 'warning');
 }
 function options_delete_button_click(event){
 	const more_options_popup = event.target.closest('.levitate_options_popup');
@@ -1325,6 +1653,7 @@ function options_delete_button_click(event){
 		
 		
 		const send_url_notedata_delete = {
+			notification_type: 'message',
 			event_name: 'send-url-notedata-delete',
 			host: host,
 			note_id: note_id
@@ -1379,7 +1708,8 @@ function editor_save_button_click(event){
 			const send_url_note_add = {
 				event_name: 'send-url-note-add',
 				host: host,
-				notecontent: notecontent
+				notecontent: notecontent,
+				is_special_url: is_SpecialUrls
 			};
 			chrome.runtime.sendMessage(send_url_note_add, (t) => {});
 		}
@@ -1567,7 +1897,8 @@ function editor_ctrlS_press(index){
 			const send_url_note_add = {
 				event_name: 'send-url-note-add',
 				host: host,
-				notecontent: notecontent
+				notecontent: notecontent,
+				is_special_url: is_SpecialUrls
 			};
 			chrome.runtime.sendMessage(send_url_note_add, (t) => {});
 		}
@@ -1623,6 +1954,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			
 			refreshTitleArea(request.host, request.host_notedata, request.keywords_priority);
 			break;	
+		case 'response-special-url-notedata':
+			sendResponse({});
+			
+			refreshSpecialTitleArea(request.title, request.key_index, request.host_notedata, request.keywords_priority);
+			break;
+			
 		case 'response-keyword-notedata-sidepanel':
 			sendResponse({});
 			
@@ -1632,7 +1969,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			sendResponse({});
 			
 			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recorded_Keywords = response.recorded_keywords;
+				recordedKeywordsUpdate(response.recorded_keywords);
 				refreshSuggestionArea(false, null);
 			});
 			break;
@@ -1652,7 +1989,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			sendResponse({});
 			
 			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recorded_Keywords = response.recorded_keywords;
+				recordedKeywordsUpdate(response.recorded_keywords);
 				afterEditRefreshProcess('keyword', request.process_state, 0, request.save_datetime);
 			});
 			break;	
@@ -1660,13 +1997,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		case 'response-url-note-delete':
 			sendResponse({});
 			
-			refreshTitleArea(current_Host, null);
+			if (is_SpecialUrls){
+				refreshSpecialTitleArea(null, current_Host, null, null)
+			}
+			else{
+				refreshTitleArea(current_Host, null, null);
+			}
 			break;
 		case 'response-keyword-note-delete':
 			sendResponse({});
 			
 			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recorded_Keywords = response.recorded_keywords;
+				recordedKeywordsUpdate(response.recorded_keywords);
 				refreshKeywordArea(current_Keyword, null, []);
 				refreshSuggestionArea(false, null);
 			});
@@ -1720,12 +2062,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx) {
-    if (Boolean(confirmnotifications_data[notificationId])) {
-		switch (confirmnotifications_data[notificationId].notification_type){
+    if (Boolean(confirmnotifications_Data[notificationId])) {
+		switch (confirmnotifications_Data[notificationId].notification_type){
 			case 'message':
 				if (btnIdx === 0){
-					chrome.runtime.sendMessage(confirmnotifications_data[notificationId], (response) => {});
-					delete confirmnotifications_data[notificationId];
+					chrome.runtime.sendMessage(confirmnotifications_Data[notificationId], (response) => {});
+					delete confirmnotifications_Data[notificationId];
 				}
 				break;
 			case 'reconnect':
@@ -1831,13 +2173,24 @@ function runInitial(){
 	edit_options_popup.querySelector("button.save_note").addEventListener("click", editor_save_button_click);
 	edit_options_popup.querySelector("button.exit_note").addEventListener("click", editor_exit_button_click);
 	
-	all_suggestion_popup.addEventListener("mouseleave", levitate_popup_mouseleave_event);
+	all_suggestion_popup.addEventListener("mouseleave", composition_levitate_popup_mouseleave_event);
+	all_suggestion_popup.querySelector("input").addEventListener("compositionstart", () => {is_SuggestionSearch_Composition = true;});
+	all_suggestion_popup.querySelector("input").addEventListener("compositionend", (event) => {is_SuggestionSearch_Composition = false;keywordSearchAlgorithmProcess(event);});
+	all_suggestion_popup.querySelector("input").addEventListener("input", keywordSearchAlgorithmProcess);
 	
 	function levitate_popup_mouseleave_event(event){
 		this.style.left = '';
 		this.style.top = '';
 	
 		this.classList.remove('popup_show');
+	}
+	function composition_levitate_popup_mouseleave_event(event){
+		if (!is_SuggestionSearch_Composition){
+			this.style.left = '';
+			this.style.top = '';
+		
+			this.classList.remove('popup_show');
+		}
 	}
 
 	// ====== 請求設定資料 ====== 
@@ -1848,9 +2201,9 @@ function runInitial(){
 		
 		console.log(`${is_SwitchWithTab} ${current_Keyword}`);
 		chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-			recorded_Keywords = response.recorded_keywords;
+			recordedKeywordsUpdate(response.recorded_keywords);
 			if (Boolean(current_Keyword)){
-				chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword}, (t) => {});
+				chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword, is_first: true}, (t) => {});
 			}
 		});
 	});
