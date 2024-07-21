@@ -107,7 +107,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			}
 			
 			currentPagePageStatusUpdate(true, true, request.page_status);
-			chrome.action.setBadgeText({tabId: currentpage_TabId, text: `${request.process_keycount}`}, (t) => {});
 			break;
 			
 		case 'response-keyword-mark-show':
