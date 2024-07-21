@@ -146,6 +146,9 @@ div#center-area::-webkit-scrollbar{
 	display: none;
 }
 
+#center-area p{
+	line-height: 1.5em;
+}
 #center-area button {
     border-radius: 5px;
     border: none;
@@ -157,7 +160,7 @@ div#center-area::-webkit-scrollbar{
 	
 }
 #center-area button:hover {
-    font-weight: bold;
+    /*font-weight: bold;*/
     box-shadow: rgba(0, 0, 0, 0.2) 3px 3px 10px 0px;
 }
 
@@ -387,6 +390,23 @@ li.switch-content.on .switch-toggle .toggle-box::before{
 	border-radius: 5px;
 	width: calc(80% - 70px);
     min-width: 260px;
+}
+
+.google-account-block{
+	display: flex;
+}
+.google-account-block div{
+	margin-left: 8px;
+	font-size: 10px;
+}
+.google-account-block div p{
+	margin: 0;
+}
+.google-account-block .account-connect-button{
+	width: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
 }
 
 #center-area {
