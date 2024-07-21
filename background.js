@@ -74,7 +74,9 @@ function responseCurrentPageStatus(callback){
 					is_CurrentPageSearch = response.is_areadysearch;
 					callback(current_tab_info);
 					
-					chrome.action.setBadgeText({tabId: currentpage_TabId, text: ''}, (t) => {});
+					if (!is_CurrentPageSearch){
+						chrome.action.setBadgeText({tabId: currentpage_TabId, text: ''}, (t) => {});
+					}
 				}
 			});
 		}
@@ -1648,6 +1650,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			if (request.request_from == 'hotkey'){
 				sendResponse({});
 			}
+			
+			chrome.action.setBadgeText({tabId: currentpage_TabId, text: `${request.process_keycount}`}, (t) => {});
+			break;
+			
 	}
 	console.log(request.event_name);
 });
