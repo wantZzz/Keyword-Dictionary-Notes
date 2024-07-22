@@ -1243,17 +1243,11 @@ function checkGoogleAccount(callback){
 	})
 }
 
-function connectGoogleAccount(need_token, callback){
+function connectGoogleAccount(callback){
 	chrome.identity.getAuthToken({'interactive': true}, (result) => {
 		if(chrome.runtime.lastError){
 			setting['is_GoogleConnect'] = [false, ""];
-			callback([false, ""]);
-		}
-		else if (need_token){
-			checkGoogleAccount((account_info) => {
-				setting['is_GoogleConnect'] = [true, account_info.email];
-				callback(result);
-			});
+			callback(false);
 		}
 		else{
 			checkGoogleAccount((account_info) => {
@@ -1268,6 +1262,21 @@ function disconnectGoogleAccount(callback){
 	chrome.identity.clearAllCachedAuthTokens((result) => {
 		setting['is_GoogleConnect'] = [false, ""];
 		callback(true);
+	})
+}
+
+function getGoogleAccountToken(callback){
+	chrome.identity.getAuthToken({'interactive': false}, (result) => {
+		if(chrome.runtime.lastError){
+			setting['is_GoogleConnect'] = [false, ""];
+			callback("", false);
+		}
+		else{
+			checkGoogleAccount((account_info) => {
+				setting['is_GoogleConnect'] = [true, account_info.email];
+			});
+			callback(result, true);;
+		}
 	})
 }
 
@@ -1713,7 +1722,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			
 		case 'connect-account-google':
 			sendResponse({});
-			connectGoogleAccount(false, (process_state) => {
+			connectGoogleAccount((process_state) => {
 				const response_connect_account = {
 					event_name: 'response-connect-account-google',
 					process_state: process_state
@@ -1734,22 +1743,32 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			});
 			break;
 			
-		case 'test-create-docs-google':
+		case 'create-backup-docs-google':
 			sendResponse({});
 			getKeywordData(request.tag_name, (result, is_exist) => {
 				if (is_exist){
-					chrome.runtime.sendMessage({event_name: 'format-note2googledocs', tag_name: request.tag_name, note_data: result}, () => {});
+					if (setting['is_GoogleConnect'][0]){
+						chrome.runtime.sendMessage({event_name: 'format-note2googledocs', tag_name: request.tag_name, note_data: result}, () => {});
+					}
+					else{
+						triggerNotificationMessage("尚未登入 google 帳號，請至設定登入", 'warning');
+					}
 				}
 				else{
-					console.log('error');
+					triggerNotificationMessage("該關鍵字不存在", 'error');
 				}
 			});
 			break;
 		case 'response-format-note2googledocs':
 			sendResponse({});
 
-			connectGoogleAccount(true, (token) => {
-				remitNoteGoogleDocs(request.tag_name, request.output_requests, request.output_await_requests, request.process_state, token, () => {});
+			getGoogleAccountToken((token, process_state) => {
+				if (process_state){
+					remitNoteGoogleDocs(request.tag_name, request.output_requests, request.output_await_requests, request.process_state, token, () => {});
+				}
+				else{
+					triggerNotificationMessage("無法取得 google 帳號，請嘗試重新登入後再試", 'error');
+				}
 			});
 			break;
 	}
@@ -1949,14 +1968,22 @@ chrome.runtime.onStartup.addListener(() => {
 	questInitialSetting('is_SwitchWithTab', (response) => {
 		setting['is_SwitchWithTab'] = response;
 	});
-	checkGoogleAccount((account_info) => {
-		if (account_info.email || account_info.id){
-			setting['is_GoogleConnect'] = [true, account_info.email];
+	
+	chrome.identity.getAuthToken({'interactive': false}, (result) => {
+		if(chrome.runtime.lastError){
+			setting['is_GoogleConnect'] = [false, ""];
+			callback(false);
 		}
 		else{
-			setting['is_GoogleConnect'] = [false, ""];
+			setTimeout(() => {
+				triggerNotificationMessage("KDN 已與 google 帳號連接，可使用雲端服務", 'ok');
+				checkGoogleAccount((account_info) => {
+					setting['is_GoogleConnect'] = [true, account_info.email];
+					callback(true);
+				});
+			}, 2000);
 		}
-	})
+	});
 	
 	checkForNewRelease();
 	console.log('擴充功能初始化完成');
