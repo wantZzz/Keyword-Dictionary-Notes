@@ -3,6 +3,7 @@ function formatNote2GoogleDocs(tag_name, note_data, callback){
 	let await_requests = [];
 	let await_last_requests = [];
 	const bulletsTags = ["LI", "DT", "DD"];
+	const inlineTags = ["B", "STRONG", "I", "U", "S", "MARK", "A", "#text"];
 	
 	function contentExtracter(input_node, start_index, prefix_count, is_first = false){
 		let end_index = start_index;
@@ -12,7 +13,10 @@ function formatNote2GoogleDocs(tag_name, note_data, callback){
 			prefix_count += 1;
 		}
 		
-		if (input_node.nodeType === Node.ELEMENT_NODE){
+		if (input_node.nodeName === 'TABLE'){
+			end_index = insertTable(input_node, start_index);
+		}
+		else if (input_node.nodeType === Node.ELEMENT_NODE){
 			input_node.childNodes.forEach((child_node) => {
 				end_index = contentExtracter(child_node, end_index, prefix_count);
 			});
@@ -91,35 +95,35 @@ function formatNote2GoogleDocs(tag_name, note_data, callback){
 					update_text_style["updateTextStyle"]["textStyle"] = {"bold": true};
 					update_text_style["updateTextStyle"]["fields"] = "bold";
 
-					requests.push(update_text_style);
+					await_requests.push(update_text_style);
 					break;
 				case 'STRONG':
 					update_text_style["updateTextStyle"]["range"] = node_range;
 					update_text_style["updateTextStyle"]["textStyle"] = {"bold": true};
 					update_text_style["updateTextStyle"]["fields"] = "bold";
 
-					requests.push(update_text_style);
+					await_requests.push(update_text_style);
 					break;
 				case 'I':
 					update_text_style["updateTextStyle"]["range"] = node_range;
 					update_text_style["updateTextStyle"]["textStyle"] = {"italic": true};
 					update_text_style["updateTextStyle"]["fields"] = "italic";
 
-					requests.push(update_text_style);
+					await_requests.push(update_text_style);
 					break;
 				case 'U':
 					update_text_style["updateTextStyle"]["range"] = node_range;
 					update_text_style["updateTextStyle"]["textStyle"] = {"underline": true};
 					update_text_style["updateTextStyle"]["fields"] = "underline";
 
-					requests.push(update_text_style);
+					await_requests.push(update_text_style);
 					break;
 				case 'S':
 					update_text_style["updateTextStyle"]["range"] = node_range;
 					update_text_style["updateTextStyle"]["textStyle"] = {"strikethrough": true};
 					update_text_style["updateTextStyle"]["fields"] = "strikethrough";
 
-					requests.push(update_text_style);
+					await_requests.push(update_text_style);
 					break;
 				case 'MARK':
 					let color_output = {
@@ -164,7 +168,7 @@ function formatNote2GoogleDocs(tag_name, note_data, callback){
 					update_text_style["updateTextStyle"]["textStyle"] = {[field_name]: {"color": {"rgbColor": color_output}}};
 					update_text_style["updateTextStyle"]["fields"] = field_name;
 
-					requests.push(update_text_style);
+					await_requests.push(update_text_style);
 					break;
 					
 				case 'A':
@@ -172,7 +176,7 @@ function formatNote2GoogleDocs(tag_name, note_data, callback){
 					update_text_style["updateTextStyle"]["textStyle"] = {"link": {"url": input_node.getAttribute('href')}};
 					update_text_style["updateTextStyle"]["fields"] = "link";
 
-					requests.push(update_text_style);
+					await_requests.push(update_text_style);
 					break;
 					
 				case 'OL':
@@ -281,6 +285,135 @@ function formatNote2GoogleDocs(tag_name, note_data, callback){
 			
 		await_last_requests.push(update_image);
 	}
+	
+	function insertTable(input_node, start_index){
+		let end_index = start_index;
+		
+		let table_col = 0;
+		let table_row = 0;
+		let table_await_requests = [];
+		
+		const requests_table_insert = requests.length;
+		
+		const row_nodes = input_node.querySelectorAll('tbody tr');
+		table_row = row_nodes.length;
+		
+		row_nodes[0].querySelectorAll('td').forEach((col_node) => {
+			table_col += Boolean(col_node.getAttribute('colspan')) ? parseInt(col_node.getAttribute('colspan')) : 1;
+		});
+		
+		let table_index_jumper = new Array(table_row * table_col).fill(true);
+		let table_index_pointer = 0;
+		
+		end_index += 4;
+		let row_counter = 0;
+		for (let row_index = 0; row_index < row_nodes.length; row_index++){
+			const row_node = row_nodes[row_index];
+			const col_nodes = row_node.querySelectorAll('td');
+			
+			for (let col_index = 0; col_index < col_nodes.length; col_index++){
+				const col_node = col_nodes[col_index];
+				const nodes_in_col = col_node.childNodes;
+				
+				while(!table_index_jumper[table_index_pointer]){
+					end_index += 2;
+					table_index_pointer += 1;
+				}
+				
+				const insert_col_delimiter = {
+					"insertText": {
+						"location": {
+							"index": end_index
+						},
+						"text": '@'
+					}
+				};
+				requests.push(insert_col_delimiter);
+				
+				let is_previous_inline = inlineTags.includes(nodes_in_col[0].nodeName);
+				for (let i = 0; i < nodes_in_col.length; i++){
+					let need_newline = true;
+					if (Boolean(nodes_in_col[i + 1])){
+						const is_next_inline = inlineTags.includes(nodes_in_col[i + 1].nodeName);
+						need_newline = !(is_previous_inline && is_next_inline);
+						
+						is_previous_inline = is_next_inline;
+					}
+					else{
+						need_newline = false;
+					}
+
+					end_index = contentExtracter(nodes_in_col[i], end_index, -1, need_newline);
+				}
+				
+				const remove_col_delimiter = {
+					"deleteContentRange": {
+						"range": {
+							"startIndex": end_index,
+							"endIndex": end_index + 1
+						}
+					}
+				};
+				requests.push(remove_col_delimiter);
+				
+				if (col_node.getAttribute('colspan') || col_node.getAttribute('rowspan')){
+					const rowspan = Boolean(col_node.getAttribute('rowspan')) ? parseInt(col_node.getAttribute('rowspan')) : 1;
+					const colspan = Boolean(col_node.getAttribute('colspan')) ? parseInt(col_node.getAttribute('colspan')) : 1;
+					
+					for (let i = 1; i <= rowspan; i++){
+						for (let j = 1; j <= colspan; j++){
+							table_index_jumper[table_index_pointer + ((i - 1) * table_col) + (j - 1)] = false;
+						}
+					}
+					
+					const insert_col_delimiter = {
+						"mergeTableCells": {
+							"tableRange": {
+								"tableCellLocation": {
+									"tableStartLocation": {
+										"index": start_index + 1
+									},
+									"rowIndex": Math.floor(table_index_pointer / table_col),
+									"columnIndex": table_index_pointer % table_col
+								},
+								"rowSpan": rowspan,
+								"columnSpan": colspan
+							}
+						}
+					};
+					
+					table_await_requests.push(insert_col_delimiter);
+				}
+				
+				end_index += 2;
+				table_index_pointer += 1;
+			}
+			end_index += 1;
+		}
+		
+		await_requests.forEach((update_paragraph) => {
+			requests.push(update_paragraph);
+		});
+		table_await_requests.forEach((update_table) => {
+			requests.push(update_table);
+		});
+		await_requests = [];
+		
+		let insert_table = {
+			"insertTable":{
+				"location": {
+					"index": start_index
+				},
+				"columns": table_col,
+				"rows": table_row
+			}
+		};
+		
+		requests.splice(requests_table_insert, 0, insert_table);
+		
+		return (end_index - 1);
+	}
+	
 	
 	let note_contaner = document.createElement('div');
 	let start_index = 1;
