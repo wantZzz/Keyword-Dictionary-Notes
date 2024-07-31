@@ -19,6 +19,8 @@ var is_DarkMode = true;
 
 var is_FirstTrack = true;
 const track_Host = ['www.youtube.com', 'www.twitch.tv'];
+const excludeSearchNode = ['KEYWORDNOTE', 'TEXTAREA']
+
 //儲存資料
 var searched_KeywordNodes = [];// [node, is_showed, keywords_in_node]
 var searched_Keywords = {};//{keyword: count_in_page}
@@ -248,6 +250,9 @@ function searchKeywords(callback){
 		const recorded_keywords = response.recorded_keywords;
 		let keywords_searched_count = {};
 		
+		const windowHeight = (document.height !== undefined) ? document.height : document.body.offsetHeight;
+		const windowWidth = (document.width !== undefined) ? document.width : document.body.offsetWidth;
+		
 		recorded_keywords.forEach(function (Keyword) {
 			keywords_searched_count[Keyword] = 0;
 		});
@@ -260,7 +265,30 @@ function searchKeywords(callback){
 			}
 		}		
 		function isHidden(el) {
-			return (el.offsetParent === null)
+			try{
+				if (el.offsetHeight == 0 || el.offsetWidth == 0){
+					return true
+				}
+				return !el.checkVisibility()
+			}catch{
+				return (el.offsetParent === null)
+			}
+		}
+		function isHidden_hardCheck(el) {
+			rect = el.getBoundingClientRect();
+			
+			if (rect.bottom < 0 || rect.right < 0){
+				return true
+			}
+			else if (rect.top > windowHeight || rect.left > windowWidth){
+				return true
+			}
+			else{
+				//topElt = document.elementFromPoint(x,y);
+				
+				//return el.isSameNode(topElt)
+				return false
+			}
 		}
 		
 		function mergeOverlappingRanges(keywords_in_node){
@@ -329,6 +357,10 @@ function searchKeywords(callback){
 				const node_text = node.textContent;
 				let keywords_in_node = []
 				
+				if (isHidden_hardCheck(node.parentNode)){
+					return;
+				}
+				
 				for (const keyword of recorded_keywords) {
 					let start_index = 0, keyword_index;
 					
@@ -362,7 +394,7 @@ function searchKeywords(callback){
 				//delete node;
 				searched_KeywordNodes = searched_KeywordNodes.concat(new_keywordnode_list);
 			}
-			else if(node.nodeName === 'KEYWORDNOTE'){
+			else if(excludeSearchNode.includes(node.nodeName)){
 				return
 			}
 			else if (isKeywordSpan(node)){
@@ -631,6 +663,7 @@ function notedataUpdate(keyword, keyword_notedata, index){
 
 function scrollIntoPreviousMark(target_keyword){
 	const mark_length = searched_KeywordNodes.length
+	const current_KeywordNode = searched_KeywordNodes[scroll_IntoIndex][0]
 	
 	if (!is_AreadySearch){
 		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
@@ -646,7 +679,9 @@ function scrollIntoPreviousMark(target_keyword){
 			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[index];
 			
 			if (keywords_in_node.indexOf(target_keyword) > -1){
-				node.scrollIntoView();
+				node.scrollIntoView({ block: "center" });
+				current_KeywordNode.classList.remove('highlight-viewed');
+				node.classList.add('highlight-viewed');
 				
 				scroll_IntoIndex = index;
 				break;
@@ -656,6 +691,7 @@ function scrollIntoPreviousMark(target_keyword){
 }
 function scrollIntoNaxtMark(target_keyword){
 	const mark_length = searched_KeywordNodes.length
+	const current_KeywordNode = searched_KeywordNodes[scroll_IntoIndex][0]
 	
 	if (!is_AreadySearch){
 		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
@@ -671,7 +707,9 @@ function scrollIntoNaxtMark(target_keyword){
 			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[index];
 			
 			if (keywords_in_node.indexOf(target_keyword) > -1){
-				node.scrollIntoView();
+				node.scrollIntoView({ block: "center" });
+				current_KeywordNode.classList.remove('highlight-viewed');
+				node.classList.add('highlight-viewed');
 				
 				scroll_IntoIndex = index;
 				break;
@@ -764,7 +802,11 @@ function popupSidepanelShow(event){
 	
 	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
 		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (t) => {});
+			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (response) => {
+				if (response.is_allow){
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
+			});
 		}
 		else{
 			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: select_keyword}, (t) => {});

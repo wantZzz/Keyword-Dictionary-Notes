@@ -74,7 +74,10 @@ function responseCurrentPageStatus(callback){
 					is_CurrentPageSearch = response.is_areadysearch;
 					callback(current_tab_info);
 					
-					chrome.action.setBadgeText({tabId: currentpage_TabId, text: ''}, (t) => {});
+
+					if (!is_CurrentPageSearch){
+						chrome.action.setBadgeText({tabId: currentpage_TabId, text: ''}, (t) => {});
+					}
 				}
 			});
 		}
@@ -1298,14 +1301,17 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			break;
 			
 		case 'quest-open-sidePanel':
-			sendResponse({});
-		
 			if (request.select_keyword != null){
 				current_Keyword = request.select_keyword;
 			}
+			sendResponse({is_allow: !is_SidepanelON});
+			
+			/*
 			if (!is_SidepanelON){
 				chrome.sidePanel.open({tabId: currentpage_TabId});
 			}
+			*/
+			
 			break;
 		case 'quest-sidePanel-on':
 			responseSidepanelOn((response) => {
@@ -1648,6 +1654,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			if (request.request_from == 'hotkey'){
 				sendResponse({});
 			}
+			chrome.action.setBadgeText({tabId: currentpage_TabId, text: `${request.process_keycount}`}, (t) => {});
+			break;
+			
 	}
 	console.log(request.event_name);
 });

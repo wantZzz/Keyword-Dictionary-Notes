@@ -37,12 +37,22 @@ kw.highlight-keyword{
 	border: 0;
 }
 kw.highlight-keyword:not(.highlight-keyword-mutiple){
-	background: orange !important;
+	background: #FFD700 !important;
+	color: #4C4637 !important;
 	font-weight: bold;
 }
+kw.highlight-keyword.highlight-viewed:not(.highlight-keyword-mutiple){
+	background: #E34204 !important;
+	color: #FFFFFF !important;
+}
 kw.highlight-keyword.highlight-keyword-mutiple:not(:has(.highlight-keyword)) {
-    background: gold  !important;
+    background: #21E6C2  !important;
+	color: #354B45 !important;
 	font-weight: bold;
+}
+kw.highlight-keyword.highlight-keyword-mutiple.highlight-viewed:not(:has(.highlight-keyword)) {
+    background: #0052FF !important;
+	color: #FFFFFF !important;
 }
 
 /* 簡易關鍵字懸浮視窗樣式 */

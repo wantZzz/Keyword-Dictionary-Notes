@@ -45,7 +45,11 @@ function sendNewKeywordquest(newkeyword){
 		chrome.runtime.sendMessage(keyword_note_add, (t) => {});
 		
 		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: newkeyword}, (t) => {});
+			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: newkeyword}, (response) => {
+				if (response.is_allow){
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
+			});
 		}
 		else{
 			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: newkeyword}, (r) => {});
@@ -67,7 +71,11 @@ function triggerAlertWindow(message, type){
 function open_notebook_click(event){
 	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
 		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: null}, (t) => {});
+			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: null}, (response) => {
+				if (response.is_allow){
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
+			});
 		}
 	});
 }
@@ -107,7 +115,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			}
 			
 			currentPagePageStatusUpdate(true, true, request.page_status);
-			chrome.action.setBadgeText({tabId: currentpage_TabId, text: `${request.process_keycount}`}, (t) => {});
 			break;
 			
 		case 'response-keyword-mark-show':
