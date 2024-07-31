@@ -20,6 +20,7 @@ var is_DarkMode = true;
 var is_FirstTrack = true;
 const track_Host = ['www.youtube.com', 'www.twitch.tv'];
 const excludeSearchNode = ['KEYWORDNOTE', 'TEXTAREA']
+
 //儲存資料
 var searched_KeywordNodes = [];// [node, is_showed, keywords_in_node]
 var searched_Keywords = {};//{keyword: count_in_page}
