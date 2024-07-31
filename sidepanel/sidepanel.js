@@ -607,7 +607,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 	
 	const keyword_note_container = document.getElementById("keyword_note_container");
 	
-	const keyword_note_block = keyword_note_container.querySelectorAll(".windos_message_block");
+	const keyword_note_block = Array.from(keyword_note_container.querySelectorAll(".windos_message_block")).reverse();
 	
 	current_Keyword = keyword;
 	if (keyword_notedata === null){

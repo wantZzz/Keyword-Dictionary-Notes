@@ -1300,14 +1300,17 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			break;
 			
 		case 'quest-open-sidePanel':
-			sendResponse({});
-		
 			if (request.select_keyword != null){
 				current_Keyword = request.select_keyword;
 			}
+			sendResponse({is_allow: !is_SidepanelON});
+			
+			/*
 			if (!is_SidepanelON){
 				chrome.sidePanel.open({tabId: currentpage_TabId});
 			}
+			*/
+			
 			break;
 		case 'quest-sidePanel-on':
 			responseSidepanelOn((response) => {
