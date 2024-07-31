@@ -801,7 +801,11 @@ function popupSidepanelShow(event){
 	
 	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
 		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (t) => {});
+			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (response) => {
+				if (response.is_allow){
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
+			});
 		}
 		else{
 			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: select_keyword}, (t) => {});
