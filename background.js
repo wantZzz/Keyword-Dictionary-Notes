@@ -449,33 +449,33 @@ function triggerNotificationMessage(message, type){
 	const options = {
 	  type: "basic",
 	  iconUrl: "./images/icon.png",
-	  title: "❓ 未知通知類型",
+	  title: "",
 	  message: message
 	};
 	
 	switch (type) {
 		case 'error':
 			//alertContainer.style.backgroundColor = '#EA0000';
-			options.title = '✖ 執行中發生錯誤';
+			options.title = chrome.i18n.getMessage('trigger_notification_message_error');
 			break;
 
 		case 'nofound':
 			//alertContainer.style.backgroundColor = '#FFD306';
-			options.title = '! 找不到索要的目標資料';
+			options.title = chrome.i18n.getMessage('trigger_notification_message_nofound');
 			break;
 			
 		case 'warning':
 			//alertContainer.style.backgroundColor = '#FFD306';
-			options.title = '! 該操作觸發警告';
+			options.title = chrome.i18n.getMessage('trigger_notification_message_warning');
 			break;
 
 		case 'ok':
 			//alertContainer.style.backgroundColor = '#00A600';
-			options.title = '✔ 操作順利完成';
+			options.title = chrome.i18n.getMessage('trigger_notification_message_ok');
 			break;
 
 		default:
-			options.title = '❓ 未知通知類型';
+			options.title = chrome.i18n.getMessage('trigger_notification_message_default');
 	}
 	
 	chrome.notifications.create(options, (notificationId) => {
@@ -489,25 +489,25 @@ function confirmNotificationMessage(message, type, senddata){
 	const options = {
 	  type: "basic",
 	  iconUrl: "../images/icon.png",
-	  title: "! 執行動作前確認",
+	  title: "",
 	  message: message
 	};
 	
 	switch (type) {
 		case 'new_version':
-			options.title = "✔ 有新版本可用";
+			options.title = chrome.i18n.getMessage('confirm_notification_message_newVersion');
 			options.buttons = [{
-				title: "前往新版本下載"
+				title: chrome.i18n.getMessage('confirm_notification_message_newVersion_0confirm')
 			}, {
-				title: "下個版本再說吧"
+				title: chrome.i18n.getMessage('confirm_notification_message_newVersion_0cancel')
 			}];
 			break;
 		default:
-			options.title = "! 執行動作前確認";
+			options.title = chrome.i18n.getMessage('confirm_notification_message_default');
 			options.buttons = [{
-				title: "確認動作"
+				title: chrome.i18n.getMessage('confirm_notification_message_default_0confirm')
 			}, {
-				title: "取消動作"
+				title: chrome.i18n.getMessage('confirm_notification_message_default_0cancel')
 			}];
 	}
 	
@@ -808,19 +808,22 @@ function settingInitialSetting(setting_name, value, callback){
 
 function addNewKeyword(new_keyword, note, callback){
 	if(keyword_reserved_words.includes(new_keyword)){
-		triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
+		//triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
+		triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_reserved_error'), 'error');
 		callback(false, null);
 		return;
 	}
 	if(recorded_Keywords.includes(new_keyword)){
-		triggerNotificationMessage("該關鍵字已存在", 'error');
+		//triggerNotificationMessage("該關鍵字已存在", 'error');
+		triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_exist_error'), 'error');
 		callback(false, null);
 		return;
 	}
 
 	chrome.storage.local.get([new_keyword]).then((result) => {
 		if (result.hasOwnProperty(new_keyword)){
-			triggerNotificationMessage("該關鍵字已被占用或關鍵字為一段已記錄網址", 'error');
+			//triggerNotificationMessage("該關鍵字已被占用或關鍵字為一段已記錄網址", 'error');
+			triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_exist_storage_error'), 'error');
 			callback(false, null);
 			return;
 		}
@@ -843,7 +846,8 @@ function addNewKeyword(new_keyword, note, callback){
 				callback(true, new_datetime);
 				recorded_Keywords = recorded_Keywords_copy;
 				
-				triggerNotificationMessage("關鍵字索引已新增", 'ok');
+				//triggerNotificationMessage("關鍵字索引已新增", 'ok');
+				triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_finish'), 'ok');
 			});
 		});
 	});
@@ -851,12 +855,14 @@ function addNewKeyword(new_keyword, note, callback){
 
 function deleteKeyword(keyword, callback){
 	if(keyword_reserved_words.includes(keyword)){
-		triggerNotificationMessage("這個關鍵字為系統保留字，無法移除", 'error');
+		//triggerNotificationMessage("這個關鍵字為系統保留字，無法移除", 'error');
+		triggerNotificationMessage(chrome.i18n.getMessage('delete_new_keyword_reserved_error'), 'error');
 		callback(false);
 		return;
 	}
 	if(!recorded_Keywords.includes(keyword)){
-		triggerNotificationMessage("該關鍵字不存在", 'error');
+		//triggerNotificationMessage("該關鍵字不存在", 'error');
+		triggerNotificationMessage(chrome.i18n.getMessage('delete_keyword_notexist_error'), 'error');
 		callback(false);
 		return;
 	}
@@ -874,7 +880,8 @@ function deleteKeyword(keyword, callback){
 			callback(true);
 			recorded_Keywords = recorded_Keywords_copy;
 			
-			triggerNotificationMessage("關鍵字索引已刪除", 'ok');
+			//triggerNotificationMessage("關鍵字索引已刪除", 'ok');
+			triggerNotificationMessage(chrome.i18n.getMessage('delete_new_keyword_finish'), 'ok');
 		});
 	});
 	
@@ -909,7 +916,8 @@ function addNewUrl(new_host, note, is_special_url, callback){
 	let new_datetime = null;
 	
 	if(recorded_Keywords.includes(new_host)){
-		triggerNotificationMessage("該網址已被某個關鍵字占用", 'error');
+		//triggerNotificationMessage("該網址已被某個關鍵字占用", 'error');
+		triggerNotificationMessage(chrome.i18n.getMessage('add_new_url_exist_error'), 'error');
 		callback(false, null);
 		return;
 	}
@@ -925,7 +933,8 @@ function addNewUrl(new_host, note, is_special_url, callback){
 	chrome.storage.local.set({[new_host]: data}).then((result) => {
 		callback(true, new_datetime);
 		
-		triggerNotificationMessage("網址索引已新增", 'ok');
+		//triggerNotificationMessage("網址索引已新增", 'ok');
+		triggerNotificationMessage(chrome.i18n.getMessage('add_new_url_finish'), 'ok');
 	});
 	
 	addUrlIndex(new_host, is_special_url);
@@ -935,7 +944,8 @@ function deleteUrl(host, is_special_url, callback){
 	chrome.storage.local.remove([host]).then(() => {
 		callback(true);
 		
-		triggerNotificationMessage("網址索引已刪除", 'ok');
+		//triggerNotificationMessage("網址索引已刪除", 'ok');
+		triggerNotificationMessage(chrome.i18n.getMessage('delete_new_url_finish'), 'ok');
 	});
 	
 	chrome.storage.local.get(["KeywordsNotePriority"]).then((result) => {
@@ -952,12 +962,14 @@ function deleteUrl(host, is_special_url, callback){
 
 function editKeyword(new_keyword, old_keyword, callback){
 	if(keyword_reserved_words.includes(new_keyword)){
-		triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
+		//triggerNotificationMessage("這個關鍵字為系統保留字，無法該進行操作", 'error');
+		triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_reserved_error'), 'error');
 		callback(false);
 		return;
 	}
 	if(recorded_Keywords.includes(new_keyword)){
-		triggerNotificationMessage("該關鍵字已存在", 'error');
+		//triggerNotificationMessage("該關鍵字已存在", 'error');
+		triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_exist_error'), 'error');
 		callback(false);
 		return;
 	}
@@ -976,7 +988,8 @@ function editKeyword(new_keyword, old_keyword, callback){
 					callback(true);
 					recorded_Keywords = recorded_Keywords_copy;
 					
-					triggerNotificationMessage("關鍵字修改成功", 'ok');
+					//triggerNotificationMessage("關鍵字修改成功", 'ok');
+					triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_finish'), 'ok');
 				});
 			});
 		});
@@ -986,7 +999,8 @@ function editKeyword(new_keyword, old_keyword, callback){
 function addKeywordNote(keyword, note, callback){
 	chrome.storage.local.get([keyword]).then((result) => {
 		if(!result.hasOwnProperty(keyword)){
-			triggerNotificationMessage("無法儲存該筆記 錯誤: keyword does not exist", 'error');
+			//triggerNotificationMessage("無法儲存該筆記 錯誤: keyword does not exist", 'error');
+			triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_noexist_error'), 'error');
 			callback(false, null);
 			return;
 		}
@@ -998,12 +1012,14 @@ function addKeywordNote(keyword, note, callback){
 				new_keyword_data.push([note, new_datetime, false]);
 				
 				chrome.storage.local.set({[keyword]: new_keyword_data}).then(() => {
-					triggerNotificationMessage("筆記內容已儲存", 'ok');
+					//triggerNotificationMessage("筆記內容已儲存", 'ok');
+					triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_finish'), 'ok');
 
 					callback(true, new_datetime);
 				});
 			}catch(e){
-				triggerNotificationMessage("無法儲存該筆記 錯誤:" + e.name, 'error');
+				//triggerNotificationMessage("無法儲存該筆記 錯誤:" + e.name, 'error');
+				triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_execute_error') + e.name, 'error');
 				console.log(e)
 
 				callback(false, null);
@@ -1012,7 +1028,8 @@ function addKeywordNote(keyword, note, callback){
 		}
 	})
 	.catch((error) => {
-		triggerNotificationMessage("無法儲存該筆記 錯誤:" + error.name, 'error');
+		//triggerNotificationMessage("無法儲存該筆記 錯誤:" + error.name, 'error');
+		triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_execute_error') + e.name, 'error');
 		console.log(error)
 
 		callback(false, null);
@@ -1023,7 +1040,8 @@ function addKeywordNote(keyword, note, callback){
 function deleteKeywordNote(keyword, keyword_data_id, callback){
 	chrome.storage.local.get([keyword]).then((result) => {
 		if(!result.hasOwnProperty(keyword)){
-			triggerNotificationMessage("無法刪除該筆記 錯誤: keyword does not exist", 'error');
+			//triggerNotificationMessage("無法刪除該筆記 錯誤: keyword does not exist", 'error');
+			triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_execute_error'), 'error');
 			callback(false);
 			return;
 		}
@@ -1033,12 +1051,14 @@ function deleteKeywordNote(keyword, keyword_data_id, callback){
 				
 				new_keyword_data.splice(keyword_data_id, 1);
 				chrome.storage.local.set({[keyword]: new_keyword_data}).then(() => {
-					triggerNotificationMessage("筆記已刪除", 'ok');
+					//triggerNotificationMessage("筆記已刪除", 'ok');
+					triggerNotificationMessage(chrome.i18n.getMessage('delete_keyword_note_finish'), 'ok');
 
 					callback(true);
 				});
 			}catch(e){
-				triggerNotificationMessage("無法刪除該筆記 錯誤:" + e.name, 'error');
+				//triggerNotificationMessage("無法刪除該筆記 錯誤:" + e.name, 'error');
+				triggerNotificationMessage(chrome.i18n.getMessage('delete_keyword_note_execute_error') + e.name, 'error');
 				console.log(e)
 
 				callback(false);
@@ -1051,7 +1071,8 @@ function deleteKeywordNote(keyword, keyword_data_id, callback){
 function editKeywordNote(keyword, note, keyword_data_id, callback){
 	chrome.storage.local.get([keyword]).then((result) => {
 		if(!result.hasOwnProperty(keyword)){
-			triggerNotificationMessage("無法編輯該筆記 錯誤: keyword does not exist", 'error');
+			//triggerNotificationMessage("無法編輯該筆記 錯誤: keyword does not exist", 'error');
+			triggerNotificationMessage(chrome.i18n.getMessage('delete_keyword_note_execute_error'), 'error');
 			callback(false);
 			return;
 		}
@@ -1064,12 +1085,14 @@ function editKeywordNote(keyword, note, keyword_data_id, callback){
 				new_keyword_data[keyword_data_id][1] = new_datetime;
 				
 				chrome.storage.local.set({[keyword]: new_keyword_data}).then(() => {
-					triggerNotificationMessage("編輯內容已儲存", 'ok');
+					//triggerNotificationMessage("編輯內容已儲存", 'ok');
+					triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_note_finish'), 'ok');
 
 					callback(true);
 				});
 			}catch(e){
-				triggerNotificationMessage("無法編輯該筆記 錯誤:" + e.name, 'error');
+				//triggerNotificationMessage("無法編輯該筆記 錯誤:" + e.name, 'error');
+				triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_note_execute_error') + e.name, 'error');
 				console.log(e)
 
 				callback(false);
@@ -1353,14 +1376,18 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			break;
 			
 		case 'quest-open-sidePanel':
-			sendResponse({});
 		
 			if (request.select_keyword != null){
 				current_Keyword = request.select_keyword;
 			}
+			sendResponse({is_allow: !is_SidepanelON});
+			
+			/*
 			if (!is_SidepanelON){
 				chrome.sidePanel.open({tabId: currentpage_TabId});
 			}
+			*/
+			
 			break;
 		case 'quest-sidePanel-on':
 			responseSidepanelOn((response) => {
@@ -1801,7 +1828,8 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
 	switch (info.menuItemId) {
 		case 'KDN_keywordselect':
 			if (keyword_reserved_words.includes(info.selectionText)){
-				triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
+				//triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
+				triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_reserved_error'), 'error');
 			}
 			else if (info.selectionText != ""){
 				if (!is_SidepanelON){
@@ -1849,7 +1877,8 @@ chrome.commands.onCommand.addListener((command) => {
 			function quest_contentaction(tabid){
 				chrome.tabs.sendMessage(tabid, quest_tab_message, (response) => {
 					if(chrome.runtime.lastError){
-						triggerNotificationMessage("目前瀏覽網頁尚未初始化\n請重新載入", 'error');
+						//triggerNotificationMessage("目前瀏覽網頁尚未初始化\n請重新載入", 'error');
+						triggerNotificationMessage(chrome.i18n.getMessage('web_page_notinit_error'), 'error');
 					}
 					else if (!response.is_areadysearch){
 						chrome.tabs.sendMessage(tabid, {event_name: 'keyword-mark-search', from: 'hotkey'}, (t) => {});

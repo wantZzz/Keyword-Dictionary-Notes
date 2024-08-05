@@ -130,12 +130,12 @@ function insertPopupHtml(){
 											<div class="right_fade"></div>
 									  </div>
 									  <div class="keyword_button_container">
-											<button id="keyword_note_sidepanel_show" title="在側邊欄顯示">
+											<button id="keyword_note_sidepanel_show">
 												<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
 												<path fill="currentColor" d="M40 12a6.25 6.25 0 00-6-6h-24a6.25 6.25 0 00-5 6v22a6.25 6.25 0 005 5h24a6.25 6.25 0 006-5.25zm-30 24a3.75 3.75 0 01-2-2v-22a3.75 3.75 0 012-3h15v27z" />
 												</svg>
 											</button>
-											<button id="keyword_note_highlight" title="僅顯示此關鍵字">
+											<button id="keyword_note_highlight">
 												<i class="svg_icon">
 												<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24">
 													<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
@@ -161,7 +161,9 @@ function insertPopupHtml(){
 									  </div>
 									</div>
 								</div>`;
-			
+	keyword_container.querySelector("button#keyword_note_sidepanel_show").title = chrome.i18n.getMessage('keyword_note_sidepanel_show__title');
+	keyword_container.querySelector("button#keyword_note_highlight").title = chrome.i18n.getMessage('keyword_note_highlight__title');
+	
 	if (is_DarkMode){
 		keyword_container.classList.add('dark');
 	}
@@ -420,7 +422,7 @@ function searchKeywords(callback){
 		}
 		
 		if (searched_KeywordNodes.length > 0){
-			triggerAlertWindow(`網頁關鍵字內容已標記\n該網頁中找到 ${searched_KeywordNodes.length} 個關鍵字`, 'ok');
+			triggerAlertWindow(chrome.i18n.getMessage('content_script_found').replace('@', `${searched_KeywordNodes.length}`), 'ok');
 			
 			if (!is_AreadySearch){
 				insertPopupHtml();
@@ -440,7 +442,7 @@ function searchKeywords(callback){
 			searched_Keywords = keywords_searched_count;
 		}
 		else{
-			triggerAlertWindow("未能在目前網頁上找到關鍵字", 'nofound');
+			triggerAlertWindow(chrome.i18n.getMessage('content_script_notfound'), 'nofound');
 			
 			is_AreadySearch = false;
 			is_MarkHide = false;
@@ -589,12 +591,12 @@ function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
 	const keyword_title = popup_window.querySelector("span#keyword_title");
 	
 	if (keyword_notedata == null){
-		keyword_note_content.innerText = '你沒有此關鍵字的筆記喔，趕快紀錄些什麼吧!';
-		keyword_timestamp_container.innerText = '設計界面是件痛苦又耗腦細胞的事';
+		keyword_note_content.innerText = chrome.i18n.getMessage('windos_message_content_keyword_0noindex');
+		keyword_timestamp_container.innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0noindex');
 	}
 	else if(keyword_notedata.length == 0){
-		keyword_note_content.innerText = '你還沒有關於此關鍵字的筆記喔，趕快紀錄些什麼吧!';
-		keyword_timestamp_container.innerText = '寫程式是件既痛苦又樂在其中的事';
+		keyword_note_content.innerText = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
+		keyword_timestamp_container.innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
 	}
 	else{
 		const [note_content, note_timestamp, is_pinned] = keyword_notedata;
@@ -604,10 +606,10 @@ function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
 	}
 	
 	if (is_MutipleMark){
-		keyword_title.setAttribute('title', `滾動查看其他 ${current_PopupMark.length - 1} 個關鍵字`);
+		keyword_title.title = chrome.i18n.getMessage('popup_window_mutiplemark_keyword_title').replace('@', `${current_PopupMark.length - 1}`);
 	}
 	else{
-		keyword_title.setAttribute('title', "此位置的關鍵字");
+		keyword_title.title = chrome.i18n.getMessage('popup_window_singlemark_keyword_title');
 	}
 	
 	timeout_PopupMouseOn = setTimeout(function () {
@@ -643,12 +645,12 @@ function notedataUpdate(keyword, keyword_notedata, index){
 	
 	keyword_title.innerText = keyword;
 	if (keyword_notedata == null){
-		keyword_note_content.innerText = '你沒有此關鍵字的筆記喔，趕快紀錄些什麼吧!';
-		keyword_timestamp_container.innerText = '設計界面是件痛苦又耗腦細胞的事';
+		keyword_note_content.innerText = chrome.i18n.getMessage('windos_message_content_keyword_0noindex');
+		keyword_timestamp_container.innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0noindex');
 	}
 	else if(keyword_notedata.length == 0){
-		keyword_note_content.innerText = '你還沒有關於此關鍵字的筆記喔，趕快紀錄些什麼吧!';
-		keyword_timestamp_container.innerText = '寫程式是件既痛苦又樂在其中的事';
+		keyword_note_content.innerText = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
+		keyword_timestamp_container.innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
 	}
 	else{
 		const [note_content, note_timestamp, is_pinned] = keyword_notedata;
@@ -665,13 +667,13 @@ function scrollIntoPreviousMark(target_keyword){
 	const current_KeywordNode = searched_KeywordNodes[scroll_IntoIndex][0]
 	
 	if (!is_AreadySearch){
-		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('content_script_needsearch_warning'), 'warning');
 	}
 	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
-		triggerAlertWindow('當前單獨顯示的標記非所選關鍵字', 'error');
+		triggerAlertWindow(chrome.i18n.getMessage('content_script_notonlyshow_warning'), 'error');
 	}
 	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
-		triggerAlertWindow('當前顯示的標記不包含所選關鍵字', 'error');
+		triggerAlertWindow(chrome.i18n.getMessage('content_script_notonlyshow_warning'), 'error');
 	}
 	else{
 		for (let index = ((scroll_IntoIndex + mark_length - 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length - 1) % mark_length)) {
@@ -693,13 +695,13 @@ function scrollIntoNaxtMark(target_keyword){
 	const current_KeywordNode = searched_KeywordNodes[scroll_IntoIndex][0]
 	
 	if (!is_AreadySearch){
-		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('content_script_needsearch_warning'), 'warning');
 	}
 	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
-		triggerAlertWindow('當前單獨顯示的標記非所選關鍵字', 'error');
+		triggerAlertWindow(chrome.i18n.getMessage('content_script_notonlyshow_warning'), 'error');
 	}
 	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
-		triggerAlertWindow('當前顯示的標記不包含所選關鍵字', 'error');
+		triggerAlertWindow(chrome.i18n.getMessage('content_script_notonlyshow_warning'), 'error');
 	}
 	else{
 		for (let index = ((scroll_IntoIndex + mark_length + 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length + 1) % mark_length)) {
@@ -801,7 +803,11 @@ function popupSidepanelShow(event){
 	
 	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
 		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (t) => {});
+			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (response) => {
+				if (response.is_allow){
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
+			});
 		}
 		else{
 			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: select_keyword}, (t) => {});

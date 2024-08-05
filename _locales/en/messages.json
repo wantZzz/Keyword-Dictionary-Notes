@@ -1,0 +1,338 @@
+{
+	"windos_message_header_control_new_note__title": {
+		"message": "New note",
+		"description": "(sidepanel) Add a new note to the keyword or URL index displayed in the sidebar"
+	},
+	"windos_message_header_control_delete__title": {
+		"message": "Delete all notes and index",
+		"description": "(sidepanel) In the keyword or URL index displayed in the sidebar, delete all notes under the index and the index."
+	},
+	"windos_message_header_control_previous_mark__title": {
+		"message": "Previous keyword mark",
+		"description": "(sidepanel) Jump to the position of the previous keyword displayed in the sidebar in the currently searched web page"
+	},
+	"windos_message_header_control_next_mark__title": {
+		"message": "Next keyword mark",
+		"description": "(sidepanel) Jump to the next keyword currently displayed in the sidebar in the currently searched web page"
+	},
+	"suggestion_area_more_suggestion__title": {
+		"message": "More keywords",
+		"description": "(sidepanel) Open and display more recorded keywords and search floating windows"
+	},
+	"more_options_popup_edit": {
+		"message": "Edit note",
+		"description": "(sidepanel) Edit selected individual notes"
+	},
+	"more_options_popup_copy": {
+		"message": "Copy note",
+		"description": "(sidepanel) Copy selected individual notes"
+	},
+	"more_options_popup_delete": {
+		"message": "Delete note",
+		"description": "(sidepanel) Delete selected individual notes"
+	},
+	"more_options_popup_save": {
+		"message": "Save edits",
+		"description": "(sidepanel) Save editing of a note in progress"
+	},
+	"more_options_popup_exit": {
+		"message": "Cancel edit",
+		"description": "(sidepanel) Cancel editing of a note in progress"
+	},
+	"suggestion_popup_search_input__placeholder": {
+		"message": "Search keyword...",
+		"description": "(sidepanel) Input box prompt words in Search floating window"
+	},
+	"interactive_block_pinned_note__title": {
+		"message": "Pin note",
+		"description": "(sidepanel) Pin selected individual notes"
+	},
+	"interactive_block_more_options__title": {
+		"message": "More actions",
+		"description": "(sidepanel) Open more operation floating windows to operate on the selected single note"
+	},
+	"popup_bar_add_new_keyword": {
+		"message": "Add new keyword",
+		"description": "(popup) Add new keywords index"
+	},
+	"popup_bar_open_notebook": {
+		"message": "Open notebook",
+		"description": "(popup) Enable sidebar"
+	},
+	"popup_bar_research_keyword": {
+		"message": "Research keyword",
+		"description": "(popup) Re-search the keywords in the web page"
+	},
+	"popup_bar_setting": {
+		"message": "Setting",
+		"description": "(popup) Open the settings options page"
+	},
+	"keyword_note_sidepanel_show__title": {
+		"message": "View this keyword notes",
+		"description": "(content-script) Display all notes indexed by this keyword in the sidebar"
+	},
+	"keyword_note_highlight__title": {
+		"message": "Show only this keyword",
+		"description": "(content-script) Only display this keyword tag on this page"
+	},
+	"popup_window_singlemark_keyword_title": {
+		"message": "Keywords for this location",
+		"description": "(content-script) Subtitle of the floating window when viewing a single keyword tag"
+	},
+	"popup_window_mutiplemark_keyword_title": {
+		"message": "Scroll to see @ other keywords",
+		"description": "(content-script) The subtitle of the floating window when viewing a multi-keyword tag (@ is how many keywords there are for this tag)"
+	},
+	"content_script_needsearch_warning": {
+		"message": "Please search first before using this function",
+		"description": "(content-script) Warning: Requests to find other tags must be made after searching"
+	},
+	"content_script_notonlyshow_warning": {
+		"message": "Marks currently displayed individually are not selected keywords",
+		"description": "(content-script) Keywords currently displayed individually that mark non-requested searches"
+	},
+	"windos_message_content_url_0noindex": {
+		"message": "You have not taken notes in this domain\nLet's record something quickly!",
+		"description": "(sidepanel) Prompt words in the note area that do not exist in the URL index"
+	},
+	"windos_message_timestamp_url_0noindex": {
+		"message": "No information",
+		"description": "(sidepanel) Timestamp area prompt words that do not exist in the URL index"
+	},
+	"windos_message_content_url_0emptyindex": {
+		"message": "You have no notes in this domain yet\nLet's record something quickly!",
+		"description": "(sidepanel) Note area prompt words for empty URL index"
+	},
+	"windos_message_timestamp_url_0emptyindex": {
+		"message": "No information",
+		"description": "(sidepanel) Empty URL index does not exist timestamp area prompt words"
+	},
+	"windos_message_content_keyword_0noindex": {
+		"message": "You have no notes for this keyword\nLet's record something quickly!",
+		"description": "(sidepanel) Prompt words in the note area that do not exist in the keyword index"
+	},
+	"windos_message_timestamp_keyword_0noindex": {
+		"message": "No information",
+		"description": "(sidepanel) Timestamp area prompt words that do not exist in the keyword index"
+	},
+	"windos_message_content_keyword_0emptyindex": {
+		"message": "You have no notes about this keyword yet\nLet's record something quickly!",
+		"description": "(sidepanel) Note area prompt words for empty keyword index"
+	},
+	"windos_message_timestamp_keyword_0emptyindex": {
+		"message": "No information",
+		"description": "(sidepanel) Empty keyword index does not exist timestamp area prompt words"
+	},
+	"trigger_notification_message_error": {
+		"message": "✖ An error occurred during execution",
+		"description": "(background) Popup notification event occurs with _Error_ title"
+	},
+	"trigger_notification_message_nofound": {
+		"message": "! The requested data was not found",
+		"description": "(background) Popup notification event occurs with _nofound_ title"
+	},
+	"trigger_notification_message_warning": {
+		"message": "! This action triggers a warning",
+		"description": "(background) Popup notification event occurs with _warning_ title"
+	},
+	"trigger_notification_message_ok": {
+		"message": "✔ Requirements successfully completed",
+		"description": "(background) Popup notification event occurs with _ok_ title"
+	},
+	"trigger_notification_message_default": {
+		"message": "❓ Unknown type notification",
+		"description": "(background) Popup notification event occurs with _default_ title"
+	},
+	"confirm_notification_message_default": {
+		"message": "! Confirm before execution",
+		"description": "(background) Popup confirmation notification event occurs with _default_ title"
+	},
+	"confirm_notification_message_default_0confirm": {
+		"message": "✔ Confirm",
+		"description": "(background) Popup confirmation notification event occurs _default_ confirmation option"
+	},
+	"confirm_notification_message_default_0cancel": {
+		"message": "✖ Cancel",
+		"description": "(background) Popup confirmation notification event occurred _default_ Cancel option"
+	},
+	"confirm_notification_message_newVersion": {
+		"message": "✔ A new version is available",
+		"description": "(background) Popup confirmation notification event occurs with _new_version_ title"
+	},
+	"confirm_notification_message_newVersion_0confirm": {
+		"message": "Go to the new version download",
+		"description": "(background) Popup confirmation notification event occurs _new_version_ confirmation option"
+	},
+	"confirm_notification_message_newVersion_0cancel": {
+		"message": "Next version reminder",
+		"description": "(background) Popup confirmation notification event occurs _new_version_ Cancel option"
+	},
+	"confirm_notification_message_delete": {
+		"message": "! Perform delete confirmation",
+		"description": "(sidepanel) Popup confirmation notification event occurs with _delete_ title"
+	},
+	"confirm_notification_message_delete_0confirm": {
+		"message": "✔ Confirm",
+		"description": "(sidepanel) Popup confirmation notification event occurs _delete_ confirmation option"
+	},
+	"confirm_notification_message_delete_0cancel": {
+		"message": "✖ Cancel",
+		"description": "(sidepanel) Popup confirmation notification event occurred _delete_ Cancel option"
+	},
+	"confirm_notification_message_reconnect": {
+		"message": "! Reconnect background programs",
+		"description": "(sidepanel) Popup confirmation notification event occurs with _reconnect_ title"
+	},
+	"confirm_notification_message_reconnect_0confirm": {
+		"message": "Reconnect",
+		"description": "(sidepanel) Popup confirmation notification event occurs _reconnect_ confirmation option"
+	},
+	"confirm_notification_message_reconnect_0cancel": {
+		"message": "Close sidebar",
+		"description": "(sidepanel) Popup confirmation notification event occurred _reconnect_ Cancel option"
+	},
+	"web_page_notinit_error": {
+		"message": "The current web browsing page has not been initialized yet\nPlease reload",
+		"description": "(background) The webpage currently being browsed does not load the webpage background program of this extension, but the user requests to search for information about keyword events in the webpage."
+	},
+	"add_new_keyword_reserved_error": {
+		"message": "This keyword is a system reserved word and cannot be added.",
+		"description": "(background) A message indicating that the newly added keyword index is a reserved word event."
+	},
+	"add_new_keyword_exist_error": {
+		"message": "This keyword already exists",
+		"description": "(background) Request a message that the newly added keyword index already exists."
+	},
+	"add_new_keyword_exist_storage_error": {
+		"message": "This keyword is already occupied or the keyword is a recorded URL",
+		"description": "(background) Request message that the new keyword index already exists in the storage space event."
+	},
+	"add_new_keyword_finish": {
+		"message": "Keyword added",
+		"description": "(background) Request the newly added keyword index to store the message of successful event occurrence"
+	},
+	"delete_new_keyword_reserved_error": {
+		"message": "This keyword is a system reserved word and cannot be removed.",
+		"description": "(background) Message that the keyword index requested to be removed is a reserved word event."
+	},
+	"delete_keyword_notexist_error": {
+		"message": "This keyword does not exist",
+		"description": "(background) A message indicating that the keyword index requested to be removed does not exist."
+	},
+	"delete_new_keyword_finish": {
+		"message": "Keyword deleted",
+		"description": "(background) Message that the keyword index removal request was successfully removed"
+	},
+	"add_new_url_exist_error": {
+		"message": "The URL is already occupied by a keyword",
+		"description": "(background) Requesting a new URL index already contains information about the event."
+	},
+	"add_new_url_finish": {
+		"message": "URL added",
+		"description": "(background) Request the newly added URL index to store the message of the successful event."
+	},
+	"delete_new_url_finish": {
+		"message": "URL deleted",
+		"description": "(background) Message that the URL index removal request was successfully removed"
+	},
+	"edit_keyword_reserved_error": {
+		"message": "This keyword is a system reserved word and cannot be operated.",
+		"description": "(background) Message that the keyword index requested to be edited is a reserved word event."
+	},
+	"edit_keyword_exist_error": {
+		"message": "The keyword already exists",
+		"description": "(background) The keyword index requested to be edited already contains event information."
+	},
+	"edit_keyword_finish": {
+		"message": "Keyword modified successfully",
+		"description": "(background) Message that the keyword index editing request is successful."
+	},
+	"add_keyword_note_noexist_error": {
+		"message": "Unable to save this note\nError: keyword does not exist",
+		"description": "(background) A message indicating that a new keyword note was requested because the keyword index does not exist."
+	},
+	"add_keyword_note_execute_error": {
+		"message": "Unable to save this note\nError:",
+		"description": "(background) Request a message for the newly added keyword note due to an error event during execution."
+	},
+	"add_keyword_note_finish": {
+		"message": "Note content has been saved",
+		"description": "(background) Request the newly added keyword note to store the message of the successful event."
+	},
+	"delete_keyword_note_noexist_error": {
+		"message": "The note cannot be deleted\nError: keyword does not exist",
+		"description": "(background) A message indicating that the keyword note requested to be deleted does not exist in the keyword index."
+	},
+	"delete_keyword_note_finish": {
+		"message": "Note deleted",
+		"description": "(background) Message of successful deletion of the keyword note requested to be deleted"
+	},
+	"delete_keyword_note_execute_error": {
+		"message": "The note cannot be deleted\nError:",
+		"description": "(background) Message that an error occurred during execution of the keyword note requested to be deleted."
+	},
+	"edit_keyword_note_noexist_error": {
+		"message": "This note cannot be edited\nError: keyword does not exist",
+		"description": "(background) Message indicating that the keyword note requested to be edited does not exist in the keyword index."
+	},
+	"edit_keyword_note_finish": {
+		"message": "Note edited",
+		"description": "(background) Message that the keyword note requested to be edited is successfully edited."
+	},
+	"edit_keyword_note_execute_error": {
+		"message": "This note cannot be edited\nError:",
+		"description": "(background) Message that an error occurred during execution of the keyword note requested to be edited."
+	},
+	"port_with_background_reconnect": {
+		"message": "The linked update between the sidebar and the page is disconnected\nPlease save the existing progress and reconnect",
+		"description": "(background) Sidebar message requesting reconnection"
+	},
+	"sidepanel_unsaved_warning": {
+		"message": "You still have notes you are editing\nPlease save the notes you are editing before performing this operation",
+		"description": "(sidepanel) Warning: Save the note being edited first."
+	},
+	"sidepanel_unrecord_url_warning": {
+		"message": "You cannot delete unindexed URLs",
+		"description": "(sidepanel) Warning: Delete messages for unrecorded URL indexes"
+	},
+	"sidepanel_unsearched_warning": {
+		"message": "Please perform a keyword search before using this function",
+		"description": "(sidepanel) Warning: Messages without first searching the page for keywords"
+	},
+	"sidepanel_unfinished_function_warning": {
+		"message": "This feature is in draft stage",
+		"description": "(sidepanel) Warning: This feature is not yet complete."
+	},
+	"sidepanel_timeout_warning": {
+		"message": "The operation seems to have exceeded the time limit\nPlease try the operation again",
+		"description": "(sidepanel) Warning: Timed out request response message"
+	},
+	"options_delete_keyword": {
+		"message": "You are deleting a keyword index\nIt is impossible to retrieve the notes associated with the keyword after deletion\nDo you want to continue?",
+		"description": "(sidepanel) Requesting confirmation to delete keyword index"
+	},
+	"options_delete_url": {
+		"message": "You are deleting a URL index\nIt is impossible to retrieve the notes associated with the keyword after deletion\nDo you want to continue?",
+		"description": "(sidepanel) Requesting confirmation to delete URL index"
+	},
+	"options_delete_keyword_note": {
+		"message": "You are deleting a keyword note\nThe note cannot be retrieved after deletion\nDo you want to continue?",
+		"description": "(sidepanel) Request confirmation message to delete keyword notes"
+	},
+	"options_delete_url_note": {
+		"message": "You are deleting a URL note\nThe note cannot be retrieved after deletion\nDo you want to continue?",
+		"description": "(sidepanel) Request confirmation message to delete URL note"
+	},
+	"research_click_warning": {
+		"message": "Please search at least once before searching again",
+		"description": "(popup) Warning: Do not request a new search before performing the initial search."
+	},
+	"content_script_found": {
+		"message": "Keyword position marked\nand @ keywords were found.",
+		"description": "(content-script) There is information about keywords found in this webpage (@ is how many keywords were found)"
+	},
+	"content_script_notfound": {
+		"message": "The keyword could not be found on the current page",
+		"description": "(content-script) The message for the keyword cannot be found on this page"
+	}
+}

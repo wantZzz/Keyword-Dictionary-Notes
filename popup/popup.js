@@ -45,7 +45,11 @@ function sendNewKeywordquest(newkeyword){
 		chrome.runtime.sendMessage(keyword_note_add, (t) => {});
 		
 		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: newkeyword}, (t) => {});
+			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: newkeyword}, (response) => {
+				if (response.is_allow){
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
+			});
 		}
 		else{
 			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: newkeyword}, (r) => {});
@@ -67,7 +71,11 @@ function triggerAlertWindow(message, type){
 function open_notebook_click(event){
 	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
 		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: null}, (t) => {});
+			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: null}, (response) => {
+				if (response.is_allow){
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
+			});
 		}
 	});
 }
@@ -83,7 +91,7 @@ function popup_research_click(event){
 	const startup_Text = startup_Switch.querySelector(".keyword-text");
 	
 	if (startup_Text.innerText === "Start up"){
-		triggerAlertWindow('請先至少搜尋一次再重新搜尋', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('research_click_warning'), 'warning');
 	}
 	else{
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-research'}, (t) => {});
@@ -136,6 +144,18 @@ function runSetting(){
 }
 
 function runInitial(){
+	document.querySelectorAll('[data-i18n]').forEach((i18n_element) => {
+		const i18n_content = chrome.i18n.getMessage(i18n_element.dataset.i18n);
+		const insert_attribute = i18n_element.dataset.i18n.split('__')[1];
+		
+		if (Boolean(insert_attribute)){
+			i18n_element.setAttribute(insert_attribute, i18n_content);
+		}
+		else{
+			i18n_element.innerText = i18n_content;
+		}
+	});
+	
 	const popup_Bar = document.getElementById("popup-bar");
 	
 	// 搜尋與顯示標記滑桿

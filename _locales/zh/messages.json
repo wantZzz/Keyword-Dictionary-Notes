@@ -1,0 +1,338 @@
+{
+	"windos_message_header_control_new_note__title": {
+		"message": "新增筆記",
+		"description": "(sidepanel) 在側邊欄顯示的關鍵字或網址索引中為新增一筆筆記"
+	},
+	"windos_message_header_control_delete__title": {
+		"message": "刪除整個筆記",
+		"description": "(sidepanel) 在側邊欄顯示的關鍵字或網址索引中為刪除該索引下所有筆記與該索引"
+	},
+	"windos_message_header_control_previous_mark__title": {
+		"message": "上一個關鍵字位置",
+		"description": "(sidepanel) 在當前已搜尋的網頁中跳轉至上一個現側邊欄顯示的關鍵字的位置"
+	},
+	"windos_message_header_control_next_mark__title": {
+		"message": "下一個關鍵字位置",
+		"description": "(sidepanel) 在當前已搜尋的網頁中跳轉至下一個現側邊欄顯示的關鍵字的位置"
+	},
+	"suggestion_area_more_suggestion__title": {
+		"message": "更多關鍵字",
+		"description": "(sidepanel) 開啟並展示更多已記錄的關鍵字與搜尋浮動視窗"
+	},
+	"more_options_popup_edit": {
+		"message": "編輯筆記",
+		"description": "(sidepanel) 編輯所選的單個筆記"
+	},
+	"more_options_popup_copy": {
+		"message": "複製筆記",
+		"description": "(sidepanel) 複製所選的單個筆記"
+	},
+	"more_options_popup_delete": {
+		"message": "刪除筆記",
+		"description": "(sidepanel) 刪除所選的單個筆記"
+	},
+	"more_options_popup_save": {
+		"message": "儲存編輯",
+		"description": "(sidepanel) 儲存編輯所選的單個筆記"
+	},
+	"more_options_popup_exit": {
+		"message": "取消編輯",
+		"description": "(sidepanel) 取消編輯所選的單個筆記"
+	},
+	"suggestion_popup_search_input__placeholder": {
+		"message": "搜尋關鍵字...",
+		"description": "(sidepanel) 搜尋浮動視窗中的輸入框提示詞"
+	},
+	"interactive_block_pinned_note__title": {
+		"message": "釘選筆記",
+		"description": "(sidepanel) 釘選所選的單個筆記"
+	},
+	"interactive_block_more_options__title": {
+		"message": "更多操作",
+		"description": "(sidepanel) 開啟更多操作浮動視窗對所選的單個筆記進行操作"
+	},
+	"popup_bar_add_new_keyword": {
+		"message": "新增新關鍵字",
+		"description": "(popup) 新增新關鍵字"
+	},
+	"popup_bar_open_notebook": {
+		"message": "開啟側邊欄筆記",
+		"description": "(popup) 開啟側邊欄"
+	},
+	"popup_bar_research_keyword": {
+		"message": "重新搜尋關鍵字",
+		"description": "(popup) 重新搜尋網頁內的關鍵字"
+	},
+	"popup_bar_setting": {
+		"message": "設定",
+		"description": "(popup) 開啟設定選項頁"
+	},
+	"keyword_note_sidepanel_show__title": {
+		"message": "在側邊欄顯示",
+		"description": "(content-script) 在側邊欄顯示該關鍵字索引的所有筆記"
+	},
+	"keyword_note_highlight__title": {
+		"message": "僅顯示此關鍵字",
+		"description": "(content-script) 在該網頁只顯示該關鍵字標記"
+	},
+	"popup_window_singlemark_keyword_title": {
+		"message": "此位置的關鍵字",
+		"description": "(content-script) 檢視單關鍵字標記時懸浮視窗的小標題"
+	},
+	"popup_window_mutiplemark_keyword_title": {
+		"message": "滾動查看其他 @ 個關鍵字",
+		"description": "(content-script) 檢視多關鍵字標記時懸浮視窗的小標題(@ 為該標記還有多少關鍵字)"
+	},
+	"content_script_needsearch_warning": {
+		"message": "請先搜尋後在使用本功能",
+		"description": "(content-script) 警告查找其他標記的請求需在搜尋後"
+	},
+	"content_script_notonlyshow_warning": {
+		"message": "當前單獨顯示的標記非所選關鍵字",
+		"description": "(content-script) 當前單獨顯示的標記非請求查找的關鍵字"
+	},
+	"windos_message_content_url_0noindex": {
+		"message": "你沒有在此網域做過筆記喔\n趕快紀錄些什麼吧!",
+		"description": "(sidepanel) 網址索引不存在的筆記區域提示詞"
+	},
+	"windos_message_timestamp_url_0noindex": {
+		"message": "設計界面是件痛苦又耗腦細胞的事",
+		"description": "(sidepanel) 網址索引不存在的時間戳區域提示詞"
+	},
+	"windos_message_content_url_0emptyindex": {
+		"message": "你還沒有在此網域的筆記喔\n趕快紀錄些什麼吧!",
+		"description": "(sidepanel) 空網址索引的筆記區域提示詞"
+	},
+	"windos_message_timestamp_url_0emptyindex": {
+		"message": "寫程式是件既痛苦又樂在其中的事",
+		"description": "(sidepanel) 空網址索引不存在的時間戳區域提示詞"
+	},
+	"windos_message_content_keyword_0noindex": {
+		"message": "你沒有此關鍵字的筆記喔\n趕快紀錄些什麼吧!",
+		"description": "(sidepanel) 關鍵字索引不存在的筆記區域提示詞"
+	},
+	"windos_message_timestamp_keyword_0noindex": {
+		"message": "設計界面是件痛苦又耗腦細胞的事",
+		"description": "(sidepanel) 關鍵字索引不存在的時間戳區域提示詞"
+	},
+	"windos_message_content_keyword_0emptyindex": {
+		"message": "你還沒有關於此關鍵字的筆記喔\n趕快紀錄些什麼吧!",
+		"description": "(sidepanel) 空關鍵字索引的筆記區域提示詞"
+	},
+	"windos_message_timestamp_keyword_0emptyindex": {
+		"message": "寫程式是件既痛苦又樂在其中的事",
+		"description": "(sidepanel) 空關鍵字索引不存在的時間戳區域提示詞"
+	},
+	"trigger_notification_message_error": {
+		"message": "✖ 執行中發生錯誤",
+		"description": "(background) 彈出通知事件發生 錯誤 的標題"
+	},
+	"trigger_notification_message_nofound": {
+		"message": "! 找不到索要的目標資料",
+		"description": "(background) 彈出通知事件發生 找不到 的標題"
+	},
+	"trigger_notification_message_warning": {
+		"message": "! 該操作觸發警告",
+		"description": "(background) 彈出通知事件發生 警告 的標題"
+	},
+	"trigger_notification_message_ok": {
+		"message": "✔ 操作順利完成",
+		"description": "(background) 彈出通知事件發生 執行完成 的標題"
+	},
+	"trigger_notification_message_default": {
+		"message": "❓ 未知類型通知",
+		"description": "(background) 彈出通知事件發生 未知 的標題"
+	},
+	"confirm_notification_message_default": {
+		"message": "! 執行動作前確認",
+		"description": "(background) 彈出確認通知事件發生 未知 的標題"
+	},
+	"confirm_notification_message_default_0confirm": {
+		"message": "✔ 確認動作",
+		"description": "(background) 彈出確認通知事件發生 未知 的確認選項"
+	},
+	"confirm_notification_message_default_0cancel": {
+		"message": "✖ 取消動作",
+		"description": "(background) 彈出確認通知事件發生 未知 的取消選項"
+	},
+	"confirm_notification_message_newVersion": {
+		"message": "✔ 有新版本可用",
+		"description": "(background) 彈出確認通知事件發生 有新版本可用 的標題"
+	},
+	"confirm_notification_message_newVersion_0confirm": {
+		"message": "前往新版本下載",
+		"description": "(background) 彈出確認通知事件發生 有新版本可用 的確認選項"
+	},
+	"confirm_notification_message_newVersion_0cancel": {
+		"message": "下個版本再說吧",
+		"description": "(background) 彈出確認通知事件發生 有新版本可用 的取消選項"
+	},
+	"confirm_notification_message_delete": {
+		"message": "! 執行刪除確認",
+		"description": "(sidepanel) 彈出確認通知事件發生 刪除 的標題"
+	},
+	"confirm_notification_message_delete_0confirm": {
+		"message": "確認刪除",
+		"description": "(sidepanel) 彈出確認通知事件發生 刪除 的確認選項"
+	},
+	"confirm_notification_message_delete_0cancel": {
+		"message": "取消刪除",
+		"description": "(sidepanel) 彈出確認通知事件發生 刪除 的取消選項"
+	},
+	"confirm_notification_message_reconnect": {
+		"message": "! 重新連線背景程式",
+		"description": "(sidepanel) 彈出確認通知事件發生 側邊欄需重新連線 的標題"
+	},
+	"confirm_notification_message_reconnect_0confirm": {
+		"message": "重新連線",
+		"description": "(sidepanel) 彈出確認通知事件發生 側邊欄需重新連線 的確認選項"
+	},
+	"confirm_notification_message_reconnect_0cancel": {
+		"message": "關閉側邊欄",
+		"description": "(sidepanel) 彈出確認通知事件發生 側邊欄需重新連線 的取消選項"
+	},
+	"web_page_notinit_error": {
+		"message": "目前瀏覽網頁尚未初始化\n請重新載入",
+		"description": "(background) 目前瀏覽網頁沒載入本擴充的網頁背景程式但使用者請求搜尋網頁內關鍵字事件發生的訊息"
+	},
+	"add_new_keyword_reserved_error": {
+		"message": "這個關鍵字為系統保留字，無法新增",
+		"description": "(background) 請求新增的關鍵字索引是保留字事件發生的訊息"
+	},
+	"add_new_keyword_exist_error": {
+		"message": "該關鍵字已存在",
+		"description": "(background) 請求新增的關鍵字索引已經存在事件發生的訊息"
+	},
+	"add_new_keyword_exist_storage_error": {
+		"message": "該關鍵字已被占用或關鍵字為一段已記錄網址",
+		"description": "(background) 請求新增的關鍵字索引已經存在於儲存空間事件發生的訊息"
+	},
+	"add_new_keyword_finish": {
+		"message": "關鍵字索引已新增",
+		"description": "(background) 請求新增的關鍵字索引儲存成功事件發生的訊息"
+	},
+	"delete_new_keyword_reserved_error": {
+		"message": "這個關鍵字為系統保留字，無法移除",
+		"description": "(background) 請求移除的關鍵字索引是保留字事件發生的訊息"
+	},
+	"delete_keyword_notexist_error": {
+		"message": "該關鍵字不存在",
+		"description": "(background) 請求移除的關鍵字索引已經存在事件發生的訊息"
+	},
+	"delete_new_keyword_finish": {
+		"message": "關鍵字索引已刪除",
+		"description": "(background) 請求移除的關鍵字索引移除成功事件發生的訊息"
+	},
+	"add_new_url_exist_error": {
+		"message": "該網址已被某個關鍵字占用",
+		"description": "(background) 請求新增的網址索引已經存在事件發生的訊息"
+	},
+	"add_new_url_finish": {
+		"message": "網址索引已新增",
+		"description": "(background) 請求新增的網址索引儲存成功事件發生的訊息"
+	},
+	"delete_new_url_finish": {
+		"message": "網址索引已刪除",
+		"description": "(background) 請求移除的網址索引移除成功事件發生的訊息"
+	},
+	"edit_keyword_reserved_error": {
+		"message": "這個關鍵字為系統保留字，無法該進行操作",
+		"description": "(background) 請求編輯的關鍵字索引是保留字事件發生的訊息"
+	},
+	"edit_keyword_exist_error": {
+		"message": "該關鍵字已存在",
+		"description": "(background) 請求編輯的關鍵字索引已經存在事件發生的訊息"
+	},
+	"edit_keyword_finish": {
+		"message": "關鍵字修改成功",
+		"description": "(background) 請求編輯的關鍵字索引編輯成功事件發生的訊息"
+	},
+	"add_keyword_note_noexist_error": {
+		"message": "無法儲存該筆記 錯誤: keyword does not exist",
+		"description": "(background) 請求新增的關鍵字筆記因關鍵字索引不存在事件發生的訊息"
+	},
+	"add_keyword_note_execute_error": {
+		"message": "無法儲存該筆記 錯誤:",
+		"description": "(background) 請求新增的關鍵字筆記因執行中發生錯誤事件發生的訊息"
+	},
+	"add_keyword_note_finish": {
+		"message": "筆記內容已儲存",
+		"description": "(background) 請求新增的關鍵字筆記儲存成功事件發生的訊息"
+	},
+	"delete_keyword_note_noexist_error": {
+		"message": "無法刪除該筆記 錯誤: keyword does not exist",
+		"description": "(background) 請求刪除的關鍵字筆記因關鍵字索引不存在事件發生的訊息"
+	},
+	"delete_keyword_note_finish": {
+		"message": "筆記已刪除",
+		"description": "(background) 請求刪除的關鍵字筆記刪除成功事件發生的訊息"
+	},
+	"delete_keyword_note_execute_error": {
+		"message": "無法刪除該筆記 錯誤:",
+		"description": "(background) 請求刪除的關鍵字筆記因執行中發生錯誤事件發生的訊息"
+	},
+	"edit_keyword_note_noexist_error": {
+		"message": "無法編輯該筆記 錯誤: keyword does not exist",
+		"description": "(background) 請求編輯的關鍵字筆記因關鍵字索引不存在事件發生的訊息"
+	},
+	"edit_keyword_note_finish": {
+		"message": "筆記已編輯",
+		"description": "(background) 請求編輯的關鍵字筆記編輯成功事件發生的訊息"
+	},
+	"edit_keyword_note_execute_error": {
+		"message": "無法編輯該筆記 錯誤:",
+		"description": "(background) 請求編輯的關鍵字筆記因執行中發生錯誤事件發生的訊息"
+	},
+	"port_with_background_reconnect": {
+		"message": "側邊欄與頁面的連動更新斷線\n請儲存現有進度並重新連線",
+		"description": "(sidepanel) 側邊欄請求重新連線的訊息"
+	},
+	"sidepanel_unsaved_warning": {
+		"message": "您仍有正在編輯的筆記\n請先儲存正在編輯的筆記再執行本操作",
+		"description": "(sidepanel) 側邊欄警告 先儲存正在編輯的筆記 的訊息"
+	},
+	"sidepanel_unrecord_url_warning": {
+		"message": "你無法刪除未被紀錄的網址索引",
+		"description": "(sidepanel) 側邊欄警告 刪除未被紀錄網址索引 的訊息"
+	},
+	"sidepanel_unsearched_warning": {
+		"message": "請先搜尋後在使用本功能",
+		"description": "(sidepanel) 側邊欄警告 未先搜尋網頁關鍵字 的訊息"
+	},
+	"sidepanel_unfinished_function_warning": {
+		"message": "該功能處草稿階段",
+		"description": "(sidepanel) 側邊欄警告 該功能未完成 的訊息"
+	},
+	"sidepanel_timeout_warning": {
+		"message": "該操作似乎超過時間限制了\n請嘗試重新該操作",
+		"description": "(sidepanel) 側邊欄警告 超時的請求回應 的訊息"
+	},
+	"options_delete_keyword": {
+		"message": "你正在刪除與一個關鍵字索引\n刪除後是無法找回該關鍵字相關聯的筆記\n是否繼續動作 ?",
+		"description": "(sidepanel) 請求確認 刪除關鍵字索引 的訊息"
+	},
+	"options_delete_url": {
+		"message": "你正在刪除與一個網址索引\n刪除後是無法找回該關鍵字相關聯的筆記\n是否繼續動作 ?",
+		"description": "(sidepanel) 請求確認 刪除網址索引 的訊息"
+	},
+	"options_delete_keyword_note": {
+		"message": "你正在刪除一則關鍵字筆記\n刪除後是無法找回該筆記\n是否繼續動作 ?",
+		"description": "(sidepanel) 請求確認 刪除關鍵字筆記 的訊息"
+	},
+	"options_delete_url_note": {
+		"message": "你正在刪除一則網址筆記\n刪除後是無法找回該筆記\n是否繼續動作 ?",
+		"description": "(sidepanel) 請求確認 刪除網址筆記 的訊息"
+	},
+	"research_click_warning": {
+		"message": "請先至少搜尋一次再重新搜尋",
+		"description": "(popup) 警告未執行初始搜尋前 不可請求重新搜尋"
+	},
+	"content_script_found": {
+		"message": "網頁關鍵字內容已標記\n該網頁中找到 @ 個關鍵字",
+		"description": "(content-script) 該網頁中有找到關鍵字的訊息(@ 為找到多少關鍵字)"
+	},
+	"content_script_notfound": {
+		"message": "未能在目前網頁上找到關鍵字",
+		"description": "(content-script) 該網頁中找不到關鍵字的訊息"
+	}
+}

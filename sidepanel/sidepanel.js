@@ -106,16 +106,13 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
-									 你沒有在此網域做過筆記喔，<br>
-									 趕快紀錄些什麼吧!
-								   </div>
+								   <div class="windos_message_content"></div>
 								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp">
-									   設計界面是件痛苦又耗腦細胞的事
-								     </div>
+								     <div class="windos_message_timestamp"></div>
 								   </div>`
-								
+		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0noindex');
+		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0noindex');
+		
 		url_note_container.innerHTML = "";
 		url_note_container.appendChild(message_block);
 		
@@ -128,16 +125,13 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
-									 你還沒有在此網域的筆記喔，<br>
-									 趕快紀錄些什麼吧!
-								   </div>
+								   <div class="windos_message_content"></div>
 								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp">
-									   寫程式是件既痛苦又樂在其中的事
-								     </div>
+								     <div class="windos_message_timestamp"></div>
 								   </div>`;
-								
+		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0emptyindex');
+		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0emptyindex');
+		
 		url_note_container.innerHTML = "";
 		url_note_container.appendChild(message_block);
 		
@@ -161,6 +155,9 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 														   </svg>
 														 </button>`;
 														 
+			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+			first_message_interactive_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+			
 			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 			first_message_interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 			
@@ -172,6 +169,9 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		const priority_note = new Array(keywords_priority.length);
 		const priority_count = keywords_priority.length;
 		let priority_jump = 0;
+		
+		const pinned_note_i18n = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+		const more_options_i18n = chrome.i18n.getMessage('interactive_block_more_options__title');
 		
 		host_notedata.forEach(function (note_data) {
 			const [note_content, note_timestamp, undefind_value] = note_data;
@@ -201,7 +201,9 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 											   ${note_timestamp}
 											 </div>
 										   </div>`;
-										   
+				message_block.querySelector(".interactive_block button.pinned_note").title = pinned_note_i18n;
+				message_block.querySelector(".interactive_block button.more_options").title = more_options_i18n;
+				
 				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
@@ -232,7 +234,9 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 											   ${note_timestamp}
 											 </div>
 										   </div>`;
-										   
+				message_block.querySelector(".interactive_block button.pinned_note").title = pinned_note_i18n;
+				message_block.querySelector(".interactive_block button.more_options").title = more_options_i18n;
+				
 				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
@@ -308,15 +312,12 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
-									 你沒有在此網域做過筆記喔，<br>
-									 趕快紀錄些什麼吧!
-								   </div>
+								   <div class="windos_message_content"></div>
 								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp">
-									   設計界面是件痛苦又耗腦細胞的事
-								     </div>
+								     <div class="windos_message_timestamp"></div>
 								   </div>`
+		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0noindex');
+		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0noindex');
 								
 		url_note_container.innerHTML = "";
 		url_note_container.appendChild(message_block);
@@ -330,15 +331,12 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
-									 你還沒有在此網域的筆記喔，<br>
-									 趕快紀錄些什麼吧!
-								   </div>
+								   <div class="windos_message_content"></div>
 								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp">
-									   寫程式是件既痛苦又樂在其中的事
-								     </div>
+								     <div class="windos_message_timestamp"></div>
 								   </div>`;
+		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0emptyindex');
+		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0emptyindex');
 								
 		url_note_container.innerHTML = "";
 		url_note_container.appendChild(message_block);
@@ -362,7 +360,9 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 														   </svg>
 														 </button>`;
-														 
+			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+			first_message_interactive_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+			
 			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 			first_message_interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 			
@@ -403,7 +403,9 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 											   ${note_timestamp}
 											 </div>
 										   </div>`;
-										   
+				message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+				message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+				
 				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
@@ -434,7 +436,9 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 											   ${note_timestamp}
 											 </div>
 										   </div>`;
-										   
+				message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+				message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+				
 				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
@@ -607,7 +611,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 	
 	const keyword_note_container = document.getElementById("keyword_note_container");
 	
-	const keyword_note_block = keyword_note_container.querySelectorAll(".windos_message_block");
+	const keyword_note_block = Array.from(keyword_note_container.querySelectorAll(".windos_message_block")).reverse();
 	
 	current_Keyword = keyword;
 	if (keyword_notedata === null){
@@ -616,16 +620,13 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
-									 你沒有此關鍵字的筆記喔，<br>
-									 趕快紀錄些什麼吧!
-								   </div>
+								   <div class="windos_message_content"></div>
 								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp">
-									   設計界面是件痛苦又耗腦細胞的事
-								     </div>
-								   </div>`
-								
+								     <div class="windos_message_timestamp"></div>
+								   </div>`;
+		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_keyword_0noindex');
+		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0noindex');
+		
 		keyword_note_container.innerHTML = "";
 		keyword_note_container.appendChild(message_block);
 		
@@ -638,15 +639,12 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
-									   你還沒有關於此關鍵字的筆記喔，<br>
-									   趕快紀錄些什麼吧!
-								   </div>
+								   <div class="windos_message_content"></div>
 								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp">
-									   寫程式是件既痛苦又樂在其中的事
-								     </div>
+								     <div class="windos_message_timestamp"></div>
 								   </div>`;
+		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
+		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
 								
 		keyword_note_container.innerHTML = "";
 		keyword_note_container.appendChild(message_block);
@@ -670,6 +668,8 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
 														   </svg>
 														 </button>`;
+			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+			first_message_interactive_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
 			
 			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 			first_message_interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
@@ -710,7 +710,9 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 											   ${note_timestamp}
 											 </div>
 										   </div>`;
-										   
+				message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+				message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+				
 				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
@@ -741,7 +743,9 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 											   ${note_timestamp}
 											 </div>
 										   </div>`;
-										   
+				message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+				message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+				
 				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 					   
@@ -840,7 +844,9 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 										   ${save_datetime}
 										 </div>
 									   </div>`;
-									   
+			message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+			message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+			
 			message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 			message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				   
@@ -901,7 +907,9 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 										   ${save_datetime}
 										 </div>
 									   </div>`;
-									   
+			message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+			message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+			
 			message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 			message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 				
@@ -946,16 +954,13 @@ function afterDeleteRefreshProcess(note_type, process_state, target_id){
 				
 				message_block.innerHTML = `<div class="interactive_block">
 										   </div>
-										   <div class="windos_message_content">
-											 你還沒有在此網域的筆記喔，<br>
-											 趕快紀錄些什麼吧!
-										   </div>
+										   <div class="windos_message_content"></div>
 										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp">
-											   寫程式是件既痛苦又樂在其中的事
-											 </div>
+											 <div class="windos_message_timestamp"></div>
 										   </div>`;
-										
+				message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0emptyindex');
+				message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0emptyindex');
+				
 				url_note_container.innerHTML = "";
 				url_note_container.appendChild(message_block);
 				
@@ -993,16 +998,13 @@ function afterDeleteRefreshProcess(note_type, process_state, target_id){
 				
 				message_block.innerHTML = `<div class="interactive_block">
 										   </div>
-										   <div class="windos_message_content">
-											   你還沒有關於此關鍵字的筆記喔，<br>
-											   趕快紀錄些什麼吧!
-										   </div>
+										   <div class="windos_message_content"></div>
 										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp">
-											   寫程式是件既痛苦又樂在其中的事
-											 </div>
+											 <div class="windos_message_timestamp"></div>
 										   </div>`;
-										
+				message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
+				message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
+				
 				keyword_note_container.innerHTML = "";
 				keyword_note_container.appendChild(message_block);
 				
@@ -1043,33 +1045,33 @@ function confirmNotificationMessage(message, type, senddata){
 	const options = {
 	  type: "basic",
 	  iconUrl: "../images/icon.png",
-	  title: "! 執行動作前確認",
+	  title: "",
 	  message: message
 	};
 	
 	switch (type) {
 		case 'delete':
-			options.title = "! 執行刪除確認";
+			options.title = chrome.i18n.getMessage('confirm_notification_message_delete');
 			options.buttons = [{
-				title: "確認刪除"
+				title: chrome.i18n.getMessage('confirm_notification_message_delete_0confirm')
 			}, {
-				title: "取消刪除"
+				title: chrome.i18n.getMessage('confirm_notification_message_delete_0cancel')
 			}];
 			break;
 		case 'reconnect':
-			options.title = "! 重新連線背景程式";
+			options.title = chrome.i18n.getMessage('confirm_notification_message_reconnect');
 			options.buttons = [{
-				title: "重新連線"
+				title: chrome.i18n.getMessage('confirm_notification_message_reconnect_0confirm')
 			}, {
-				title: "關閉側邊欄"
+				title: chrome.i18n.getMessage('confirm_notification_message_reconnect_0cancel')
 			}];
 			break;
 		default:
-			options.title = "! 執行動作前確認";
+			options.title = chrome.i18n.getMessage('confirm_notification_message_default');
 			options.buttons = [{
-				title: "確認動作"
+				title: chrome.i18n.getMessage('confirm_notification_message_default_0confirm')
 			}, {
-				title: "取消動作"
+				title: chrome.i18n.getMessage('confirm_notification_message_default_0cancel')
 			}];
 	}
 	
@@ -1211,7 +1213,7 @@ function more_editoptions_button_click(event){
 // --- title area title buttons ---
 function url_new_note_button_click(event){
 	if (is_UrlNewNoteEdit != null){
-		triggerAlertWindow('您仍有正在編輯的筆記\n請先儲存正在編輯的筆記再執行本操作', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 		return;
 	}
 	
@@ -1236,7 +1238,8 @@ function url_new_note_button_click(event){
 								   <svg class="ck ck-icon ck-reset_all-excluded" viewBox="0 0 53 10" style="width: 53px; height: 10px;"><path fill="#1C2331" d="M31.724 1.492a15.139 15.139 0 0 0 .045 1.16 2.434 2.434 0 0 0-.687-.34 3.68 3.68 0 0 0-1.103-.166 2.332 2.332 0 0 0-1.14.255 1.549 1.549 0 0 0-.686.87c-.15.41-.225.98-.225 1.712 0 .939.148 1.659.444 2.161.297.503.792.754 1.487.754.452.015.9-.094 1.294-.316.296-.174.557-.4.771-.669l.14.852h1.282V.007h-1.623v1.485ZM31 6.496a1.77 1.77 0 0 1-.494.061.964.964 0 0 1-.521-.127.758.758 0 0 1-.296-.466 3.984 3.984 0 0 1-.093-.992 4.208 4.208 0 0 1 .098-1.052.753.753 0 0 1 .307-.477 1.08 1.08 0 0 1 .55-.122c.233-.004.466.026.69.089l.483.144v2.553c-.11.076-.213.143-.307.2a1.73 1.73 0 0 1-.417.189ZM35.68 0l-.702.004c-.322.002-.482.168-.48.497l.004.581c.002.33.164.493.486.49l.702-.004c.322-.002.481-.167.48-.496L36.165.49c-.002-.33-.164-.493-.486-.491ZM36.145 2.313l-1.612.01.034 5.482 1.613-.01-.035-5.482ZM39.623.79 37.989.8 38 2.306l-.946.056.006 1.009.949-.006.024 2.983c.003.476.143.844.419 1.106.275.26.658.39 1.148.387.132 0 .293-.01.483-.03.19-.02.38-.046.57-.08.163-.028.324-.068.482-.119l-.183-1.095-.702.004a.664.664 0 0 1-.456-.123.553.553 0 0 1-.14-.422l-.016-2.621 1.513-.01-.006-1.064-1.514.01-.01-1.503ZM46.226 2.388c-.41-.184-.956-.274-1.636-.27-.673.004-1.215.101-1.627.29-.402.179-.72.505-.888.91-.18.419-.268.979-.264 1.68.004.688.1 1.24.285 1.655.172.404.495.724.9.894.414.18.957.268 1.63.264.68-.004 1.224-.099 1.632-.284.4-.176.714-.501.878-.905.176-.418.263-.971.258-1.658-.004-.702-.097-1.261-.28-1.677a1.696 1.696 0 0 0-.888-.9Zm-.613 3.607a.77.77 0 0 1-.337.501 1.649 1.649 0 0 1-1.317.009.776.776 0 0 1-.343-.497 4.066 4.066 0 0 1-.105-1.02 4.136 4.136 0 0 1 .092-1.03.786.786 0 0 1 .337-.507 1.59 1.59 0 0 1 1.316-.008.79.79 0 0 1 .344.502c.078.337.113.683.105 1.03.012.343-.019.685-.092 1.02ZM52.114 2.07a2.67 2.67 0 0 0-1.128.278c-.39.191-.752.437-1.072.73l-.157-.846-1.273.008.036 5.572 1.623-.01-.024-3.78c.35-.124.646-.22.887-.286.26-.075.53-.114.8-.118l.45-.003.144-1.546-.286.001ZM22.083 7.426l-1.576-2.532a2.137 2.137 0 0 0-.172-.253 1.95 1.95 0 0 0-.304-.29.138.138 0 0 1 .042-.04 1.7 1.7 0 0 0 .328-.374l1.75-2.71c.01-.015.025-.028.024-.048-.01-.01-.021-.007-.031-.007L20.49 1.17a.078.078 0 0 0-.075.045l-.868 1.384c-.23.366-.46.732-.688 1.099a.108.108 0 0 1-.112.06c-.098-.005-.196-.001-.294-.002-.018 0-.038.006-.055-.007.002-.02.002-.039.005-.058a4.6 4.6 0 0 0 .046-.701V1.203c0-.02-.009-.032-.03-.03h-.033L16.93 1.17c-.084 0-.073-.01-.073.076v6.491c-.001.018.006.028.025.027h1.494c.083 0 .072.007.072-.071v-2.19c0-.055-.003-.11-.004-.166a3.366 3.366 0 0 0-.05-.417h.06c.104 0 .209.002.313-.002a.082.082 0 0 1 .084.05c.535.913 1.07 1.824 1.607 2.736a.104.104 0 0 0 .103.062c.554-.003 1.107-.002 1.66-.002l.069-.003-.019-.032-.188-.304ZM27.112 6.555c-.005-.08-.004-.08-.082-.08h-2.414c-.053 0-.106-.003-.159-.011a.279.279 0 0 1-.246-.209.558.558 0 0 1-.022-.15c0-.382 0-.762-.002-1.143 0-.032.007-.049.042-.044h2.504c.029.003.037-.012.034-.038V3.814c0-.089.013-.078-.076-.078h-2.44c-.07 0-.062.003-.062-.06v-.837c0-.047.004-.093.013-.14a.283.283 0 0 1 .241-.246.717.717 0 0 1 .146-.011h2.484c.024.002.035-.009.036-.033l.003-.038.03-.496c.01-.183.024-.365.034-.548.005-.085.003-.087-.082-.094-.218-.018-.437-.038-.655-.05a17.845 17.845 0 0 0-.657-.026 72.994 72.994 0 0 0-1.756-.016 1.7 1.7 0 0 0-.471.064 1.286 1.286 0 0 0-.817.655c-.099.196-.149.413-.145.633v3.875c0 .072.003.144.011.216a1.27 1.27 0 0 0 .711 1.029c.228.113.48.167.734.158.757-.005 1.515.002 2.272-.042.274-.016.548-.034.82-.053.03-.002.043-.008.04-.041-.008-.104-.012-.208-.019-.312a69.964 69.964 0 0 1-.05-.768ZM16.14 7.415l-.127-1.075c-.004-.03-.014-.04-.044-.037a13.125 13.125 0 0 1-.998.073c-.336.01-.672.02-1.008.016-.116-.001-.233-.014-.347-.039a.746.746 0 0 1-.45-.262c-.075-.1-.132-.211-.167-.33a3.324 3.324 0 0 1-.126-.773 9.113 9.113 0 0 1-.015-.749c0-.285.022-.57.065-.852.023-.158.066-.312.127-.46a.728.728 0 0 1 .518-.443 1.64 1.64 0 0 1 .397-.048c.628-.001 1.255.003 1.882.05.022.001.033-.006.036-.026l.003-.031.06-.55c.019-.177.036-.355.057-.532.004-.034-.005-.046-.04-.056a5.595 5.595 0 0 0-1.213-.21 10.783 10.783 0 0 0-.708-.02c-.24-.003-.48.01-.719.041a3.477 3.477 0 0 0-.625.14 1.912 1.912 0 0 0-.807.497c-.185.2-.33.433-.424.688a4.311 4.311 0 0 0-.24 1.096c-.031.286-.045.572-.042.86-.006.43.024.86.091 1.286.04.25.104.497.193.734.098.279.26.53.473.734.214.205.473.358.756.446.344.11.702.17 1.063.177a8.505 8.505 0 0 0 1.578-.083 6.11 6.11 0 0 0 .766-.18c.03-.008.047-.023.037-.057a.157.157 0 0 1-.003-.025Z"></path><path fill="#AFE229" d="M6.016 6.69a1.592 1.592 0 0 0-.614.21c-.23.132-.422.32-.56.546-.044.072-.287.539-.287.539l-.836 1.528.009.006c.038.025.08.046.123.063.127.046.26.07.395.073.505.023 1.011-.007 1.517-.003.29.009.58.002.869-.022a.886.886 0 0 0 .395-.116.962.962 0 0 0 .312-.286c.056-.083.114-.163.164-.249.24-.408.48-.816.718-1.226.075-.128.148-.257.222-.386l.112-.192a1.07 1.07 0 0 0 .153-.518l-1.304.023s-1.258-.005-1.388.01Z"></path><path fill="#771BFF" d="m2.848 9.044.76-1.39.184-.352c-.124-.067-.245-.14-.367-.21-.346-.204-.706-.384-1.045-.6a.984.984 0 0 1-.244-.207c-.108-.134-.136-.294-.144-.46-.021-.409-.002-.818-.009-1.227-.003-.195 0-.39.003-.585.004-.322.153-.553.427-.713l.833-.488c.22-.13.44-.257.662-.385.05-.029.105-.052.158-.077.272-.128.519-.047.76.085l.044.028c.123.06.242.125.358.196.318.178.635.357.952.537.095.056.187.117.275.184.194.144.254.35.266.578.016.284.007.569.006.853-.001.28.004.558 0 .838.592-.003 1.259 0 1.259 0l.723-.013c-.003-.292-.007-.584-.007-.876 0-.524.015-1.048-.016-1.571-.024-.42-.135-.8-.492-1.067a5.02 5.02 0 0 0-.506-.339A400.52 400.52 0 0 0 5.94.787C5.722.664 5.513.524 5.282.423 5.255.406 5.228.388 5.2.373 4.758.126 4.305-.026 3.807.21c-.097.046-.197.087-.29.14A699.896 699.896 0 0 0 .783 1.948c-.501.294-.773.717-.778 1.31-.004.36-.009.718-.001 1.077.016.754-.017 1.508.024 2.261.016.304.07.6.269.848.127.15.279.28.448.382.622.4 1.283.734 1.92 1.11l.183.109Z"></path></svg>
 								 </div>
 							   </div>`;
-							   
+	message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+	
 	url_note_container.insertBefore(message_block, url_note_container.firstChild);
 	display_UrlNotes.splice(0, 0, 'e');
 	//url_note_container.appendChild(message_block);
@@ -1280,10 +1283,10 @@ function url_delete_button_click(event){
 	};
 	
 	if (is_UrlNoteExist > 0){
-		confirmNotificationMessage("你正在刪除與一個網址索引\n刪除後是無法找回該關鍵字相關聯的筆記\n是否繼續動作 ?", 'delete', send_url_note_delete);
+		confirmNotificationMessage(chrome.i18n.getMessage('options_delete_url'), 'delete', send_url_note_delete);
 	}
 	else{
-		triggerAlertWindow("你無法刪除未被紀錄的網址索引", 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_url_warning'), 'warning');
 	}
 }
 
@@ -1295,7 +1298,7 @@ function suggestion_button_click(event){
 		return;
 	}
 	if (is_KeywordNewNoteEdit != null){
-		triggerAlertWindow('您仍有正在編輯的筆記\n請先儲存正在編輯的筆記再執行本操作', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 		return;
 	}
 	
@@ -1409,7 +1412,7 @@ function keyword_previous_mark_button_click(event){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-previous-mark', target_keyword: current_Keyword}, (t) => {});
 	}
 	else{
-		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsearched_warning'), 'warning');
 	}
 }
 function keyword_next_mark_button_click(event){
@@ -1417,12 +1420,12 @@ function keyword_next_mark_button_click(event){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-next-mark', target_keyword: current_Keyword}, (t) => {});
 	}
 	else{
-		triggerAlertWindow('請先搜尋後在使用本功能', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsearched_warning'), 'warning');
 	}
 }
 function keyword_new_note_button_click(event){
 	if (is_KeywordNewNoteEdit != null){
-		triggerAlertWindow('您仍有正在編輯的筆記\n請先儲存正在編輯的筆記再執行本操作', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 		return;
 	}
 	
@@ -1447,7 +1450,8 @@ function keyword_new_note_button_click(event){
 								   <svg class="ck ck-icon ck-reset_all-excluded" viewBox="0 0 53 10" style="width: 53px; height: 10px;"><path fill="#1C2331" d="M31.724 1.492a15.139 15.139 0 0 0 .045 1.16 2.434 2.434 0 0 0-.687-.34 3.68 3.68 0 0 0-1.103-.166 2.332 2.332 0 0 0-1.14.255 1.549 1.549 0 0 0-.686.87c-.15.41-.225.98-.225 1.712 0 .939.148 1.659.444 2.161.297.503.792.754 1.487.754.452.015.9-.094 1.294-.316.296-.174.557-.4.771-.669l.14.852h1.282V.007h-1.623v1.485ZM31 6.496a1.77 1.77 0 0 1-.494.061.964.964 0 0 1-.521-.127.758.758 0 0 1-.296-.466 3.984 3.984 0 0 1-.093-.992 4.208 4.208 0 0 1 .098-1.052.753.753 0 0 1 .307-.477 1.08 1.08 0 0 1 .55-.122c.233-.004.466.026.69.089l.483.144v2.553c-.11.076-.213.143-.307.2a1.73 1.73 0 0 1-.417.189ZM35.68 0l-.702.004c-.322.002-.482.168-.48.497l.004.581c.002.33.164.493.486.49l.702-.004c.322-.002.481-.167.48-.496L36.165.49c-.002-.33-.164-.493-.486-.491ZM36.145 2.313l-1.612.01.034 5.482 1.613-.01-.035-5.482ZM39.623.79 37.989.8 38 2.306l-.946.056.006 1.009.949-.006.024 2.983c.003.476.143.844.419 1.106.275.26.658.39 1.148.387.132 0 .293-.01.483-.03.19-.02.38-.046.57-.08.163-.028.324-.068.482-.119l-.183-1.095-.702.004a.664.664 0 0 1-.456-.123.553.553 0 0 1-.14-.422l-.016-2.621 1.513-.01-.006-1.064-1.514.01-.01-1.503ZM46.226 2.388c-.41-.184-.956-.274-1.636-.27-.673.004-1.215.101-1.627.29-.402.179-.72.505-.888.91-.18.419-.268.979-.264 1.68.004.688.1 1.24.285 1.655.172.404.495.724.9.894.414.18.957.268 1.63.264.68-.004 1.224-.099 1.632-.284.4-.176.714-.501.878-.905.176-.418.263-.971.258-1.658-.004-.702-.097-1.261-.28-1.677a1.696 1.696 0 0 0-.888-.9Zm-.613 3.607a.77.77 0 0 1-.337.501 1.649 1.649 0 0 1-1.317.009.776.776 0 0 1-.343-.497 4.066 4.066 0 0 1-.105-1.02 4.136 4.136 0 0 1 .092-1.03.786.786 0 0 1 .337-.507 1.59 1.59 0 0 1 1.316-.008.79.79 0 0 1 .344.502c.078.337.113.683.105 1.03.012.343-.019.685-.092 1.02ZM52.114 2.07a2.67 2.67 0 0 0-1.128.278c-.39.191-.752.437-1.072.73l-.157-.846-1.273.008.036 5.572 1.623-.01-.024-3.78c.35-.124.646-.22.887-.286.26-.075.53-.114.8-.118l.45-.003.144-1.546-.286.001ZM22.083 7.426l-1.576-2.532a2.137 2.137 0 0 0-.172-.253 1.95 1.95 0 0 0-.304-.29.138.138 0 0 1 .042-.04 1.7 1.7 0 0 0 .328-.374l1.75-2.71c.01-.015.025-.028.024-.048-.01-.01-.021-.007-.031-.007L20.49 1.17a.078.078 0 0 0-.075.045l-.868 1.384c-.23.366-.46.732-.688 1.099a.108.108 0 0 1-.112.06c-.098-.005-.196-.001-.294-.002-.018 0-.038.006-.055-.007.002-.02.002-.039.005-.058a4.6 4.6 0 0 0 .046-.701V1.203c0-.02-.009-.032-.03-.03h-.033L16.93 1.17c-.084 0-.073-.01-.073.076v6.491c-.001.018.006.028.025.027h1.494c.083 0 .072.007.072-.071v-2.19c0-.055-.003-.11-.004-.166a3.366 3.366 0 0 0-.05-.417h.06c.104 0 .209.002.313-.002a.082.082 0 0 1 .084.05c.535.913 1.07 1.824 1.607 2.736a.104.104 0 0 0 .103.062c.554-.003 1.107-.002 1.66-.002l.069-.003-.019-.032-.188-.304ZM27.112 6.555c-.005-.08-.004-.08-.082-.08h-2.414c-.053 0-.106-.003-.159-.011a.279.279 0 0 1-.246-.209.558.558 0 0 1-.022-.15c0-.382 0-.762-.002-1.143 0-.032.007-.049.042-.044h2.504c.029.003.037-.012.034-.038V3.814c0-.089.013-.078-.076-.078h-2.44c-.07 0-.062.003-.062-.06v-.837c0-.047.004-.093.013-.14a.283.283 0 0 1 .241-.246.717.717 0 0 1 .146-.011h2.484c.024.002.035-.009.036-.033l.003-.038.03-.496c.01-.183.024-.365.034-.548.005-.085.003-.087-.082-.094-.218-.018-.437-.038-.655-.05a17.845 17.845 0 0 0-.657-.026 72.994 72.994 0 0 0-1.756-.016 1.7 1.7 0 0 0-.471.064 1.286 1.286 0 0 0-.817.655c-.099.196-.149.413-.145.633v3.875c0 .072.003.144.011.216a1.27 1.27 0 0 0 .711 1.029c.228.113.48.167.734.158.757-.005 1.515.002 2.272-.042.274-.016.548-.034.82-.053.03-.002.043-.008.04-.041-.008-.104-.012-.208-.019-.312a69.964 69.964 0 0 1-.05-.768ZM16.14 7.415l-.127-1.075c-.004-.03-.014-.04-.044-.037a13.125 13.125 0 0 1-.998.073c-.336.01-.672.02-1.008.016-.116-.001-.233-.014-.347-.039a.746.746 0 0 1-.45-.262c-.075-.1-.132-.211-.167-.33a3.324 3.324 0 0 1-.126-.773 9.113 9.113 0 0 1-.015-.749c0-.285.022-.57.065-.852.023-.158.066-.312.127-.46a.728.728 0 0 1 .518-.443 1.64 1.64 0 0 1 .397-.048c.628-.001 1.255.003 1.882.05.022.001.033-.006.036-.026l.003-.031.06-.55c.019-.177.036-.355.057-.532.004-.034-.005-.046-.04-.056a5.595 5.595 0 0 0-1.213-.21 10.783 10.783 0 0 0-.708-.02c-.24-.003-.48.01-.719.041a3.477 3.477 0 0 0-.625.14 1.912 1.912 0 0 0-.807.497c-.185.2-.33.433-.424.688a4.311 4.311 0 0 0-.24 1.096c-.031.286-.045.572-.042.86-.006.43.024.86.091 1.286.04.25.104.497.193.734.098.279.26.53.473.734.214.205.473.358.756.446.344.11.702.17 1.063.177a8.505 8.505 0 0 0 1.578-.083 6.11 6.11 0 0 0 .766-.18c.03-.008.047-.023.037-.057a.157.157 0 0 1-.003-.025Z"></path><path fill="#AFE229" d="M6.016 6.69a1.592 1.592 0 0 0-.614.21c-.23.132-.422.32-.56.546-.044.072-.287.539-.287.539l-.836 1.528.009.006c.038.025.08.046.123.063.127.046.26.07.395.073.505.023 1.011-.007 1.517-.003.29.009.58.002.869-.022a.886.886 0 0 0 .395-.116.962.962 0 0 0 .312-.286c.056-.083.114-.163.164-.249.24-.408.48-.816.718-1.226.075-.128.148-.257.222-.386l.112-.192a1.07 1.07 0 0 0 .153-.518l-1.304.023s-1.258-.005-1.388.01Z"></path><path fill="#771BFF" d="m2.848 9.044.76-1.39.184-.352c-.124-.067-.245-.14-.367-.21-.346-.204-.706-.384-1.045-.6a.984.984 0 0 1-.244-.207c-.108-.134-.136-.294-.144-.46-.021-.409-.002-.818-.009-1.227-.003-.195 0-.39.003-.585.004-.322.153-.553.427-.713l.833-.488c.22-.13.44-.257.662-.385.05-.029.105-.052.158-.077.272-.128.519-.047.76.085l.044.028c.123.06.242.125.358.196.318.178.635.357.952.537.095.056.187.117.275.184.194.144.254.35.266.578.016.284.007.569.006.853-.001.28.004.558 0 .838.592-.003 1.259 0 1.259 0l.723-.013c-.003-.292-.007-.584-.007-.876 0-.524.015-1.048-.016-1.571-.024-.42-.135-.8-.492-1.067a5.02 5.02 0 0 0-.506-.339A400.52 400.52 0 0 0 5.94.787C5.722.664 5.513.524 5.282.423 5.255.406 5.228.388 5.2.373 4.758.126 4.305-.026 3.807.21c-.097.046-.197.087-.29.14A699.896 699.896 0 0 0 .783 1.948c-.501.294-.773.717-.778 1.31-.004.36-.009.718-.001 1.077.016.754-.017 1.508.024 2.261.016.304.07.6.269.848.127.15.279.28.448.382.622.4 1.283.734 1.92 1.11l.183.109Z"></path></svg>
 								 </div>
 							   </div>`;
-							   
+	message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+	
 	keyword_note_container.insertBefore(message_block, keyword_note_container.firstChild);
 	display_KeywordNotes.splice(0, 0, 'e');
 	//keyword_note_container.appendChild(message_block);
@@ -1487,7 +1491,7 @@ function keyword_delete_button_click(event){
 		event_name: 'send-keyword-note-delete',
 		keyword: keyword
 	};
-	confirmNotificationMessage("你正在刪除與一個關鍵字索引\n刪除後是無法找回該關鍵字相關聯的筆記\n是否繼續動作 ?", 'delete', send_keyword_note_delete);
+	confirmNotificationMessage(chrome.i18n.getMessage('options_delete_keyword'), 'delete', send_keyword_note_delete);
 }
 
 // --- more_options_popup buttons ---
@@ -1501,7 +1505,7 @@ function options_edit_button_click(event){
 	
 	if (trigger_type === 'url'){
 		if (is_UrlNewNoteEdit != null){
-			triggerAlertWindow('您仍有正在編輯的筆記\n請先儲存正在編輯的筆記再執行本操作', 'warning');
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 			return;
 		}
 		
@@ -1533,7 +1537,8 @@ function options_edit_button_click(event){
 								   ${url_note_timestamp}
 								 </div>
 							   </div>`;
-							   
+		message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+		
 		url_note_block[note_index].replaceWith(message_block);
 		display_UrlNotes[note_index] = 'e';
 		
@@ -1564,7 +1569,7 @@ function options_edit_button_click(event){
 	}
 	else if (trigger_type === 'keyword'){
 		if (is_KeywordNewNoteEdit != null){
-			triggerAlertWindow('您仍有正在編輯的筆記\n請先儲存正在編輯的筆記再執行本操作', 'warning');
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 			return;
 		}
 		
@@ -1596,7 +1601,8 @@ function options_edit_button_click(event){
 								   ${keyword_note_timestamp}
 								 </div>
 							   </div>`;
-							   
+		message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+		
 		keyword_note_block[note_index].replaceWith(message_block);
 		display_KeywordNotes[note_index] = 'e';
 		
@@ -1641,7 +1647,7 @@ function options_copy_button_click(event){
 	more_options_popup.style.top = '';
 
 	more_options_popup.classList.remove('popup_show');
-	triggerAlertWindow('該功能功能處草稿階段', 'warning');
+	triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unfinished_function_warning'), 'warning');
 }
 function options_delete_button_click(event){
 	const more_options_popup = event.target.closest('.levitate_options_popup');
@@ -1659,7 +1665,7 @@ function options_delete_button_click(event){
 			note_id: note_id
 		};
 		
-		confirmNotificationMessage("你正在刪除一則網址筆記\n刪除後是無法找回該筆記\n是否繼續動作 ?", 'delete', send_url_notedata_delete);
+		confirmNotificationMessage(chrome.i18n.getMessage('options_delete_url_note'), 'delete', send_url_notedata_delete);
 	}
 	else if (trigger_type === 'keyword'){
 		const keyword = current_Keyword;
@@ -1670,7 +1676,7 @@ function options_delete_button_click(event){
 			keyword: keyword,
 			note_id: note_id
 		};
-		confirmNotificationMessage("你正在刪除一則關鍵字筆記\n刪除後是無法找回該筆記\n是否繼續動作 ?", 'delete', send_keyword_notedata_delete);
+		confirmNotificationMessage(chrome.i18n.getMessage('options_delete_keyword_note'), 'delete', send_keyword_notedata_delete);
 	}
 	
 	more_options_popup.style.left = '';
@@ -1788,7 +1794,9 @@ function editor_exit_button_click(event){
 										   ${initial_EditTimestamp[0]}
 										 </div>
 									   </div>`;
-									   
+			message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+			message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+			
 			message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 			message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 			
@@ -1842,7 +1850,9 @@ function editor_exit_button_click(event){
 										   ${initial_EditTimestamp[1]}
 										 </div>
 									   </div>`;
-									   
+			message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+			message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+			
 			message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
 			message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
 			
@@ -2081,7 +2091,7 @@ chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx
 		}
     }
 	else{
-		triggerAlertWindow("該操作似乎超過時間限制了\n請嘗試重新該操作", 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_timeout_warning'), 'warning');
 	}
 });
 
@@ -2114,7 +2124,7 @@ portWithBackground.onDisconnect.addListener(async () => {
 				const reconnect_data = {
 					notification_type: 'reconnect'
 				};
-				confirmNotificationMessage("側邊欄與頁面的連動更新斷線\n請儲存現有進度並重新連線", 'reconnect', reconnect_data);
+				confirmNotificationMessage(chrome.i18n.getMessage('port_with_background_reconnect'), 'reconnect', reconnect_data);
 			}
 		}, 10000);
 		setTimeout(() => {
@@ -2136,6 +2146,18 @@ function runSetting(){
 }
 
 function runInitial(){
+	document.querySelectorAll('[data-i18n]').forEach((i18n_element) => {
+		const i18n_content = chrome.i18n.getMessage(i18n_element.dataset.i18n);
+		const insert_attribute = i18n_element.dataset.i18n.split('__')[1];
+		
+		if (Boolean(insert_attribute)){
+			i18n_element.setAttribute(insert_attribute, i18n_content);
+		}
+		else{
+			i18n_element.innerText = i18n_content;
+		}
+	});
+	
 	const title_area = document.getElementById("title_area");
 	title_area.querySelector('.control_url_area button.new_note').addEventListener('click', url_new_note_button_click, false);
 	title_area.querySelector('.control_url_area button.delete_keyword').addEventListener('click', url_delete_button_click, false);
