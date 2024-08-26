@@ -505,6 +505,19 @@ div.levitate_suggestion_popup .suggestion_search_box input{
 	margin: 5px 0px;
 }
 
+.ck-block-toolbar-button {
+	transform: translateX( 6px );
+}
+.ck-block-toolbar-button.ck-off:not(:hover) {
+	background-color: rgba(240, 240, 240, 10%) !important;
+}
+.ck-balloon-panel {
+	transform: translateX( 9px );
+}
+.ck.ck-balloon-panel.ck-balloon-panel_with-arrow:after, 
+.ck.ck-balloon-panel.ck-balloon-panel_with-arrow:before{
+	transform: translateX( -10px );
+}
 .ck-editor__editable .ck-list-bogus-paragraph {
 	display: unset !important;
 }

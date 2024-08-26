@@ -4,116 +4,82 @@
  */
 
 import { BalloonEditor } from '@ckeditor/ckeditor5-editor-balloon';
-
-import { Alignment } from '@ckeditor/ckeditor5-alignment';
-import { Bold, Italic, Underline } from '@ckeditor/ckeditor5-basic-styles';
-import { CodeBlock } from '@ckeditor/ckeditor5-code-block';
-import type { EditorConfig } from '@ckeditor/ckeditor5-core';
-import { Essentials } from '@ckeditor/ckeditor5-essentials';
-import { FindAndReplace } from '@ckeditor/ckeditor5-find-and-replace';
-import { Heading } from '@ckeditor/ckeditor5-heading';
-import { Highlight } from '@ckeditor/ckeditor5-highlight';
-import {
-	AutoImage,
-	Image,
-	ImageCaption,
-	ImageInsert,
-	ImageResize,
-	ImageStyle,
-	ImageToolbar,
-	ImageUpload
-} from '@ckeditor/ckeditor5-image';
-import { Indent } from '@ckeditor/ckeditor5-indent';
-import { AutoLink, Link, LinkImage } from '@ckeditor/ckeditor5-link';
-import { List, TodoList } from '@ckeditor/ckeditor5-list';
-import { Paragraph } from '@ckeditor/ckeditor5-paragraph';
-import { PasteFromOffice } from '@ckeditor/ckeditor5-paste-from-office';
-import { RemoveFormat } from '@ckeditor/ckeditor5-remove-format';
-import { Table, TableCaption, TableColumnResize, TableToolbar } from '@ckeditor/ckeditor5-table';
 import { BlockToolbar } from '@ckeditor/ckeditor5-ui';
-import { Undo } from '@ckeditor/ckeditor5-undo';
-import { WordCount } from '@ckeditor/ckeditor5-word-count';
+import type { EditorConfig } from '@ckeditor/ckeditor5-core';
+
+import AccessibilityHelp from '@ckeditor/ckeditor5-ui/src/editorui/accessibilityhelp/accessibilityhelp';
+import AutoLink from '@ckeditor/ckeditor5-link/src/autolink';
+import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
+import CodeBlock from '@ckeditor/ckeditor5-code-block/src/codeblock';
+import Essentials from '@ckeditor/ckeditor5-essentials/src/essentials';
+import Heading from '@ckeditor/ckeditor5-heading/src/heading';
+import Highlight from '@ckeditor/ckeditor5-highlight/src/highlight';
+import { Image, ImageResize, ImageInsertViaUrl } from '@ckeditor/ckeditor5-image';
+import Italic from '@ckeditor/ckeditor5-basic-styles/src/italic';
+import Link from '@ckeditor/ckeditor5-link/src/link';
+import List from '@ckeditor/ckeditor5-list/src/list';
+import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
+import { Table, TableCaption, TableColumnResize, TableToolbar } from '@ckeditor/ckeditor5-table';
+import Undo from '@ckeditor/ckeditor5-undo/src/undo';
+import Underline from "@ckeditor/ckeditor5-basic-styles/src/underline";
+import TodoList from "@ckeditor/ckeditor5-list/src/todolist";
 
 // You can read more about extending the build with additional plugins in the "Installing plugins" guide.
 // See https://ckeditor.com/docs/ckeditor5/latest/installation/plugins/installing-plugins.html for details.
 
 class Editor extends BalloonEditor {
 	public static override builtinPlugins = [
-		Alignment,
-		AutoImage,
-		AutoLink,
-		BlockToolbar,
-		Bold,
-		CodeBlock,
-		Essentials,
-		FindAndReplace,
-		Heading,
-		Highlight,
-		Image,
-		ImageCaption,
-		ImageInsert,
-		ImageResize,
-		ImageStyle,
-		ImageToolbar,
-		ImageUpload,
-		Indent,
-		Italic,
-		Link,
-		LinkImage,
-		List,
-		Paragraph,
-		PasteFromOffice,
-		RemoveFormat,
-		Table,
-		TableCaption,
-		TableColumnResize,
-		TableToolbar,
-		TodoList,
-		Underline,
-		Undo,
-		WordCount
+		AccessibilityHelp,
+    AutoLink,
+    Bold,
+    BlockToolbar,
+    CodeBlock,
+    Essentials,
+    Heading,
+    Highlight,
+    Image,
+    ImageInsertViaUrl,
+    ImageResize,
+    Italic,
+    Link,
+    List,
+    Paragraph,
+    Table,
+    TableToolbar,
+    TableCaption,
+    TableColumnResize,
+    TodoList,
+    Undo,
+    Underline,
 	];
 
 	public static override defaultConfig: EditorConfig = {
 		toolbar: {
 			items: [
-				'bold',
-				'italic',
-				'underline',
-				'removeFormat',
-				'highlight',
-				'link',
-				'|',
-				'bulletedList',
-				'numberedList',
-				'todoList'
-			]
+        'bold',
+        'italic',
+        'underline',
+        'highlight',
+        'link',
+        '|',
+        'undo',
+        'redo',
+        '|',
+        'bulletedList',
+        'numberedList',
+        'todoList',
+        '|',
+        'heading',
+        '|',
+        'accessibilityHelp'
+      ]
 		},
+    blockToolbar: [
+      'insertImage',
+      'codeBlock',
+      'insertTable'
+    ],
 		language: 'zh',
-		blockToolbar: [
-			'heading',
-			'|',
-			'alignment',
-			'outdent',
-			'indent',
-			'|',
-			'imageInsert',
-			'insertTable',
-			'codeBlock',
-			'findAndReplace',
-			'undo',
-			'redo'
-		],
-		image: {
-			toolbar: [
-				'imageTextAlternative',
-				'toggleImageCaption',
-				'imageStyle:inline',
-				'imageStyle:block',
-				'imageStyle:side',
-				'linkImage'
-			]
-		},
 		table: {
 			contentToolbar: [
 				'tableColumn',
