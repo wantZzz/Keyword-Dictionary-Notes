@@ -8,9 +8,9 @@
 		"is_DarkMode": true,
 		"is_SwitchWithTab": true,
 		"note_version": 2,
-		"extension_version": "v0.0.0-beta.3",
+		"extension_version": "v0.1.0-beta.0",
 		"github_": {
-			"version": "v0.0.0-beta.3",
+			"version": "v0.1.0-beta.0",
 			"notify_time": -1
 		}
 	},
