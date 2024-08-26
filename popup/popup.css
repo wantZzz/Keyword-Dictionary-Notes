@@ -317,3 +317,38 @@ body:not(.dark) #popup-bar div.button.folded-target #new-keyword-submit div:hove
 	transition: height 0s;
 }
 
+.ck-block-toolbar-button.ck-off:not(:hover) {
+	background-color: rgba(240, 240, 240, 10%) !important;
+}
+.ck-balloon-panel {
+	transform: translateX( 9px );
+}
+.ck.ck-balloon-panel.ck-balloon-panel_with-arrow:after, 
+.ck.ck-balloon-panel.ck-balloon-panel_with-arrow:before{
+	transform: translateX( -10px );
+}
+.ck-editor__editable .ck-list-bogus-paragraph {
+	display: unset !important;
+}
+.ck-editor__editable.ck-content .todo-list .todo-list__label>span[contenteditable=false]>input {
+	margin-left: 25px !important;
+	background: var(--popup-color);
+}
+ul.todo-list {
+    list-style-position: outside;
+    overflow: hidden;
+}
+ul.todo-list input[type="checkbox"] {
+    margin-right: 5px;
+}
+img.image_resized {
+    width: auto;
+    height: auto;
+}
+figcaption {
+	font-size: .75em;
+    text-align: center;
+}
+code {
+    font-family: courier, monospace;
+}

@@ -247,8 +247,13 @@ div.windos_message_content img{
     max-width: 100%;
     height: auto;
 }
-div.windos_message_content ol {
-  padding-inline-start: 0;
+div.windos_message_content ol,
+div.windos_message_content ul{
+	padding-inline-start: 1em;
+}
+div.windos_message_content > ol,
+div.windos_message_content > ul{
+	padding-inline-start: 0;
 }
 div.windos_timestamp_container {
   display: flex;
@@ -341,8 +346,13 @@ div.windos_content_editor {
 div.windos_content_editor::-webkit-scrollbar{
 	display: none;
 }
-div.windos_content_editor ol {
-  padding-inline-start: 0;
+div.windos_content_editor ol,
+div.windos_content_editor ul{
+	padding-inline-start: 1em;
+}
+div.windos_content_editor > ol,
+div.windos_content_editor > ul{
+	padding-inline-start: 0;
 }
 div.interactive_block.edit{
 	justify-content: flex-end
@@ -495,6 +505,19 @@ div.levitate_suggestion_popup .suggestion_search_box input{
 	margin: 5px 0px;
 }
 
+.ck-block-toolbar-button {
+	transform: translateX( 6px );
+}
+.ck-block-toolbar-button.ck-off:not(:hover) {
+	background-color: rgba(240, 240, 240, 10%) !important;
+}
+.ck-balloon-panel {
+	transform: translateX( 9px );
+}
+.ck.ck-balloon-panel.ck-balloon-panel_with-arrow:after, 
+.ck.ck-balloon-panel.ck-balloon-panel_with-arrow:before{
+	transform: translateX( -10px );
+}
 .ck-editor__editable .ck-list-bogus-paragraph {
 	display: unset !important;
 }
@@ -545,6 +568,9 @@ code {
     top: -1px;
     white-space: nowrap;
     position: absolute;
+}
+a {
+	color: cornflowerblue;
 }
 
 .windos_message_content:not(.ck) pre:has(code.language-c):after {

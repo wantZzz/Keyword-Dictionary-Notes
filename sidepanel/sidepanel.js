@@ -26,6 +26,7 @@ var is_First_SuggestionSearch = true;
 var current_SuggestionSearch = "";
 //編輯器控制項
 var current_EditingEditor = [null, null];
+const language_Code = chrome.i18n.getUILanguage();
 
 var initial_EditContent = [null, null];
 var initial_EditPriority = [null, null];
@@ -106,7 +107,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content"></div>
+								   <div class="windos_message_content ck-content"></div>
 								   <div class="windos_timestamp_container">
 								     <div class="windos_message_timestamp"></div>
 								   </div>`
@@ -125,7 +126,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content"></div>
+								   <div class="windos_message_content ck-content"></div>
 								   <div class="windos_timestamp_container">
 								     <div class="windos_message_timestamp"></div>
 								   </div>`;
@@ -193,7 +194,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -226,7 +227,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -312,7 +313,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content"></div>
+								   <div class="windos_message_content ck-content"></div>
 								   <div class="windos_timestamp_container">
 								     <div class="windos_message_timestamp"></div>
 								   </div>`
@@ -331,7 +332,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content"></div>
+								   <div class="windos_message_content ck-content"></div>
 								   <div class="windos_timestamp_container">
 								     <div class="windos_message_timestamp"></div>
 								   </div>`;
@@ -395,7 +396,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -428,7 +429,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -620,7 +621,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content"></div>
+								   <div class="windos_message_content ck-content"></div>
 								   <div class="windos_timestamp_container">
 								     <div class="windos_message_timestamp"></div>
 								   </div>`;
@@ -639,7 +640,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content"></div>
+								   <div class="windos_message_content ck-content"></div>
 								   <div class="windos_timestamp_container">
 								     <div class="windos_message_timestamp"></div>
 								   </div>`;
@@ -702,7 +703,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -735,7 +736,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											   ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -836,7 +837,7 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 										   </svg>
 										 </button>
 									   </div>
-									   <div class="windos_message_content">
+									   <div class="windos_message_content ck-content">
 										   ${note_content}
 									   </div>
 									   <div class="windos_timestamp_container">
@@ -899,7 +900,7 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 										   </svg>
 										 </button>
 									   </div>
-									   <div class="windos_message_content">
+									   <div class="windos_message_content ck-content">
 										   ${note_content}
 									   </div>
 									   <div class="windos_timestamp_container">
@@ -954,7 +955,7 @@ function afterDeleteRefreshProcess(note_type, process_state, target_id){
 				
 				message_block.innerHTML = `<div class="interactive_block">
 										   </div>
-										   <div class="windos_message_content"></div>
+										   <div class="windos_message_content ck-content"></div>
 										   <div class="windos_timestamp_container">
 											 <div class="windos_message_timestamp"></div>
 										   </div>`;
@@ -998,7 +999,7 @@ function afterDeleteRefreshProcess(note_type, process_state, target_id){
 				
 				message_block.innerHTML = `<div class="interactive_block">
 										   </div>
-										   <div class="windos_message_content"></div>
+										   <div class="windos_message_content ck-content"></div>
 										   <div class="windos_timestamp_container">
 											 <div class="windos_message_timestamp"></div>
 										   </div>`;
@@ -1247,7 +1248,20 @@ function url_new_note_button_click(event){
 	const BalloonEditor = window.BalloonEditor;
 	
 	BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-			placeholder: 'Enter new note here'
+			placeholder: 'Enter new note here',
+			language: language_Code,
+			link: {
+				decorators: {
+					addTargetToExternalLinks: {
+						mode: 'automatic',
+						callback: url => true,
+						attributes: {
+							target: '_blank',
+							rel: 'noopener noreferrer'
+						}
+					}
+				}
+			}
 		})
 		.then( editor => {
 			function windos_message_KeyPress(e) {
@@ -1459,7 +1473,20 @@ function keyword_new_note_button_click(event){
 	const BalloonEditor = window.BalloonEditor;
 	
 	BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-			placeholder: 'Enter new note here'
+			placeholder: 'Enter new note here',
+			language: language_Code,
+			link: {
+				decorators: {
+					addTargetToExternalLinks: {
+						mode: 'automatic',
+						callback: url => true,
+						attributes: {
+							target: '_blank',
+							rel: 'noopener noreferrer'
+						}
+					}
+				}
+			}
 		})
 		.then( editor => {
 			function windos_message_KeyPress(e) {
@@ -1545,7 +1572,20 @@ function options_edit_button_click(event){
 		const BalloonEditor = window.BalloonEditor;
 	
 		BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-				placeholder: 'Enter new note here'
+				placeholder: 'Enter new note here',
+				language: language_Code,
+				link: {
+					decorators: {
+						addTargetToExternalLinks: {
+							mode: 'automatic',
+							callback: url => true,
+							attributes: {
+								target: '_blank',
+								rel: 'noopener noreferrer'
+							}
+						}
+					}
+				}
 			})
 			.then( editor => {
 				function windos_message_KeyPress(e) {
@@ -1609,7 +1649,20 @@ function options_edit_button_click(event){
 		const BalloonEditor = window.BalloonEditor;
 	
 		BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-				placeholder: 'Enter new note here'
+				placeholder: 'Enter new note here',
+				language: language_Code,
+				link: {
+					decorators: {
+						addTargetToExternalLinks: {
+							mode: 'automatic',
+							callback: url => true,
+							attributes: {
+								target: '_blank',
+								rel: 'noopener noreferrer'
+							}
+						}
+					}
+				}
 			})
 			.then( editor => {
 				function windos_message_KeyPress(e) {
@@ -1786,7 +1839,7 @@ function editor_exit_button_click(event){
 										   </svg>
 										 </button>
 									   </div>
-									   <div class="windos_message_content">
+									   <div class="windos_message_content ck-content">
 										 ${initial_EditContent[0]}
 									   </div>
 									   <div class="windos_timestamp_container">
@@ -1842,7 +1895,7 @@ function editor_exit_button_click(event){
 										   </svg>
 										 </button>
 									   </div>
-									   <div class="windos_message_content">
+									   <div class="windos_message_content ck-content">
 										   ${initial_EditContent[1]}
 									   </div>
 									   <div class="windos_timestamp_container">
@@ -1882,7 +1935,7 @@ function editor_ctrlS_press(index){
 	const note_id = parseInt(current_EditingEditor[index].closest('.windos_message_block').querySelector(".interactive_block button.more_options").getAttribute('note_id'));
 	const trigger_type = current_EditingEditor[index].closest('.windos_message_container').id;
 	
-	const notecontent = current_EditingEditor.getData();
+	const notecontent = current_EditingEditor[index].getData();
 	
 	if (trigger_type === 'url_note_container'){
 		const notecontent = current_EditingEditor[0].getData();
@@ -2134,6 +2187,29 @@ portWithBackground.onDisconnect.addListener(async () => {
 });
 
 // ====== 初始化 ====== 
+function importCKeditorLanguageFile(){
+	const can_inportLanguage = ['en', 'ja']
+	
+	if (can_inportLanguage.includes(language_Code)){
+		import(`../ckeditor5-41.2.0/build/translations/${language_Code}.js`)
+		.then((module) => {
+			console.log(`*-> ckeditor5 language: [${language_Code}] import sucess`);
+		})
+		.catch(error => {
+			console.log(`*-> ckeditor5 language: [${language_Code}] import fail`);
+		});
+	}
+	else if (can_inportLanguage.includes(language_Code.split('-')[0])){
+		import(`../ckeditor5-41.2.0/build/translations/${language_Code.split('-')[0]}.js`)
+		.then((module) => {
+			console.log(`*-> ckeditor5 language: [${language_Code.split('-')[0]}] import sucess`);
+		})
+		.catch(error => {
+			console.log(`*-> ckeditor5 language: [${language_Code.split('-')[0]}] import fail`);
+		});
+	}
+}
+
 function runSetting(){
 	const body = document.body;
 	
@@ -2228,10 +2304,12 @@ function runInitial(){
 				chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword, is_first: true}, (t) => {});
 			}
 		});
+		
+		runSetting();
 	});
 }
 	
-runSetting();
+importCKeditorLanguageFile();
 runInitial();
 
 setTimeout(() => {
