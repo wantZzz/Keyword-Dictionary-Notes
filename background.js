@@ -1700,7 +1700,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			});
 			break;
 		//修改儲存資料
-		case 'send-keyword-note-add-popup':
+		case 'send-keyword-note-add-popup'://預計廢棄
 			sendResponse({});
 			
 			addNewKeyword(request.keyword, "", (process_state, save_datetime) => {
@@ -2139,7 +2139,15 @@ chrome.commands.onCommand.addListener((command) => {
 			
 		case 'KDN_Sidepanel':
 			if (!is_SidepanelON){
-				chrome.sidePanel.open({tabId: currentpage_TabId});
+				if (currentpage_TabId == null){
+					chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+						currentpage_TabId = tabs[0].id;
+						chrome.sidePanel.open({tabId: currentpage_TabId});
+					});
+				}
+				else{
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
 			}
 	}
 });
@@ -2185,13 +2193,14 @@ chrome.runtime.onInstalled.addListener(function (details){
 		questInitialSetting('is_SwitchWithTab', (response) => {
 			setting['is_SwitchWithTab'] = response;
 		});
+		settingInitialSetting('extension_version', 'v0.1.0-beta.0', () => {});
 		
 		questInitialSetting('note_version', (note_version) => {
 			if (note_version != 2){
 				switch (note_version) {
 					case 0:
 						const setting_github_init = {
-							version: "v0.0.0-beta.3",
+							version: "v0.1.0-beta.0",
 							notify_time: 100
 						}
 						
@@ -2236,14 +2245,12 @@ chrome.runtime.onStartup.addListener(() => {
 	chrome.identity.getAuthToken({'interactive': false}, (result) => {
 		if(chrome.runtime.lastError){
 			setting['is_GoogleConnect'] = [false, ""];
-			callback(false);
 		}
 		else{
 			setTimeout(() => {
 				triggerNotificationMessage(chrome.i18n.getMessage('check_can_connect_google'), 'ok');
 				checkGoogleAccount((account_info) => {
 					setting['is_GoogleConnect'] = [true, account_info.email];
-					callback(true);
 				});
 			}, 2000);
 		}

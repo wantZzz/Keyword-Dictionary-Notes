@@ -266,17 +266,35 @@ body.dark #popup-bar .button:hover .keyword-text{
 }
 #popup-bar div.button.folded-target #newkeyword_input{
 	position: absolute;
-	top: 50px;
-	left: 50px;
+	top: 55px;
+	left: 20px;
 	border-radius: 5px;
 	background: var(--popup-color);
 	color: var(--text-color);
-	width: 223px;
+	width: 255px;
 	height: 30px;
-	font-weight: 500;
 	border: none;
-	padding: 0 5px;
+	padding: 0 8px;
 	font-weight: bold;
+}
+#popup-bar div.button.folded-target #note_content_editor{
+	position: absolute;
+	top: 90px;
+	left: 20px;
+	border-radius: 5px;
+	background: var(--popup-color);
+	color: var(--text-color);
+	width: 255px;
+	height: 100px;
+	border: none;
+	padding: 0 8px;
+}
+#popup-bar div.button.folded-target #note_content_editor::-webkit-scrollbar{
+	display: none;
+}
+#popup-bar div.button.folded-target #note_content_editor ol,
+#popup-bar div.button.folded-target #note_content_editor ul {
+  padding-inline-start: 1em;
 }
 #popup-bar div.button.folded-target #new-keyword-submit{
 	height: 25px;
@@ -309,6 +327,7 @@ body:not(.dark) #popup-bar div.button.folded-target #new-keyword-submit div:hove
 
 #popup-bar div.button:not(.folded-target) #note_mode,
 #popup-bar div.button:not(.folded-target) #newkeyword_input,
+#popup-bar div.button:not(.folded-target) #note_content_editor,
 #popup-bar div.button:not(.folded-target) #new-keyword-submit{
 	height: 0;
 	opacity: 0;

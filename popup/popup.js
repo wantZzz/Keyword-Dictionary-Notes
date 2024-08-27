@@ -4,6 +4,11 @@ var is_NewKeywordFolded = false;
 //通用設定資料
 var is_DarkMode = true;
 
+//編輯器控制項
+var is_EditorLoad = false;
+var editing_Editor = null;
+const language_Code = chrome.i18n.getUILanguage();
+
 // ====== 資料處理 ====== 
 function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 	const startup_Switch = document.getElementById("start-up");
@@ -38,9 +43,12 @@ function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 
 function sendNewKeywordquest(newkeyword){
 	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
+		const notecontent = Boolean(editing_Editor) ? editing_Editor.getData() : "";
+		
 		const keyword_note_add = {
-			event_name: 'send-keyword-note-add-popup',
-			keyword: newkeyword
+			event_name: 'send-keyword-note-add',
+			keyword: newkeyword,
+			notecontent: notecontent
 		};
 		chrome.runtime.sendMessage(keyword_note_add, (t) => {});
 		
@@ -68,6 +76,73 @@ function triggerAlertWindow(message, type){
 	chrome.runtime.sendMessage(notification, (t) => {});
 }
 
+function startup_toggle_click(event){
+	const startup_Switch = document.getElementById("start-up");
+	const startup_Text = startup_Switch.querySelector(".keyword-text");
+	
+	startup_Switch.classList.toggle("on");
+	
+	if (startup_Text.innerText === "Start up"){
+		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-search', from: 'popup'}, (t) => {});
+	}
+	else if (startup_Switch.classList.contains("on")) {
+		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-show', from: 'popup'}, (t) => {});
+	} 
+	else{
+		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-hide', from: 'popup'}, (t) => {});
+	}
+}
+
+function newkeyword_button_click(event){
+	const popup_bar = document.getElementById("popup-bar");
+	const buttons_div = popup_bar.querySelectorAll('div.button');
+	this.parentNode.classList.toggle("folded-target");
+	
+	for (const button_div of buttons_div){
+		button_div.classList.toggle("folded");
+	}
+	
+	if (!is_EditorLoad){
+		BalloonEditor.create(document.getElementById('note_content_editor'), {
+				placeholder: 'Enter new note here',
+				language: language_Code
+			})
+			.then( editor => {
+				editing_Editor = editor;
+			} )
+			.catch( error => {
+				console.error( error );
+			} );
+		
+		is_EditorLoad = true;
+	}
+}
+
+function newkeyword_submit_button_click(event){
+	const newkeyword_Input = document.getElementById("newkeyword_input");
+	const newkeyword = newkeyword_Input.value;
+	
+	if (newkeyword != ""){
+		sendNewKeywordquest(newkeyword);
+		
+		const popup_bar = document.getElementById("popup-bar");
+		const buttons_div = popup_bar.querySelectorAll('div.button');
+		newkeyword_Button.parentNode.classList.toggle("folded-target");
+		
+		for (const button_div of buttons_div){
+			button_div.classList.toggle("folded");
+		}
+		
+		newkeyword_Input.value = "";
+		if (Boolean(editing_Editor)){
+			editing_Editor.setData("");
+		}
+	}
+	else{
+		triggerAlertWindow(chrome.i18n.getMessage('submit_newkeyword_click_warning'), 'warning');
+	}
+}
+
 function open_notebook_click(event){
 	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
 		if (!response.is_sidepanelon){
@@ -82,8 +157,6 @@ function open_notebook_click(event){
 
 function popup_setting_click(event){
 	window.open(chrome.runtime.getURL('setting_page/setting.html'));
-	
-	//triggerAlertWindow('功能不足，設定頁待做', 'warning');
 }
 
 function popup_research_click(event){
@@ -132,6 +205,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // ====== 初始化 ====== 
+function importCKeditorLanguageFile(){
+	const can_inportLanguage = ['en', 'ja']
+	
+	if (can_inportLanguage.includes(language_Code)){
+		import(`../ckeditor5-41.2.0/build/translations/${language_Code}.js`)
+		.then((module) => {
+			console.log(`*-> ckeditor5 language: [${language_Code}] import sucess`);
+		})
+		.catch(error => {
+			console.log(`*-> ckeditor5 language: [${language_Code}] import fail`);
+		});
+	}
+	else if (can_inportLanguage.includes(language_Code.split('-')[0])){
+		import(`../ckeditor5-41.2.0/build/translations/${language_Code.split('-')[0]}.js`)
+		.then((module) => {
+			console.log(`*-> ckeditor5 language: [${language_Code.split('-')[0]}] import sucess`);
+		})
+		.catch(error => {
+			console.log(`*-> ckeditor5 language: [${language_Code.split('-')[0]}] import fail`);
+		});
+	}
+}
+
 function runSetting(){
 	const body = document.body;
 	
@@ -156,65 +252,24 @@ function runInitial(){
 		}
 	});
 	
-	const popup_Bar = document.getElementById("popup-bar");
-	
 	// 搜尋與顯示標記滑桿
 	const startup_Switch_ = document.getElementById("start-up");
 	const startup_Toggle = startup_Switch_.querySelector(".switch-toggle");
 
 	chrome.runtime.sendMessage({event_name: 'quest-current-tab-popup'}, (t) => {});
 
-	startup_Toggle.addEventListener("click", function (event) {
-		const startup_Switch = document.getElementById("start-up");
-		const startup_Text = startup_Switch.querySelector(".keyword-text");
-		
-		startup_Switch.classList.toggle("on");
-		
-		if (startup_Text.innerText === "Start up"){
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-search', from: 'popup'}, (t) => {});
-		}
-		else if (startup_Switch.classList.contains("on")) {
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-show', from: 'popup'}, (t) => {});
-		} 
-		else{
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-hide', from: 'popup'}, (t) => {});
-		}
-	});
+	startup_Toggle.addEventListener("click", startup_toggle_click);
 	
 	// 開闔新增關鍵字筆記
 	const newkeyword_Button = document.getElementById("popup-new-keyword");
 
-	newkeyword_Button.addEventListener("click", function (event) {
-		const buttons_div = popup_Bar.querySelectorAll('div.button');
-		this.parentNode.classList.toggle("folded-target");
-		
-		for (const button_div of buttons_div){
-			button_div.classList.toggle("folded");
-		}
-	});
+	newkeyword_Button.addEventListener("click", newkeyword_button_click);
 	
 	// 確認新增關鍵字筆記
 	const newkeyword_Submit = document.getElementById("new-keyword-submit");
 
-	newkeyword_Submit.addEventListener("click", function (event) {
-		const newkeyword_Input = document.getElementById("newkeyword_input");
-		const newkeyword = newkeyword_Input.value;
-		
-		if (newkeyword != ""){
-			sendNewKeywordquest(newkeyword);
-			
-			const buttons_div = popup_Bar.querySelectorAll('div.button');
-			newkeyword_Button.parentNode.classList.toggle("folded-target");
-			
-			for (const button_div of buttons_div){
-				button_div.classList.toggle("folded");
-			}
-			
-			newkeyword_Input.value = "";
-		}
-	});	
+	newkeyword_Submit.addEventListener("click", newkeyword_submit_button_click);	
 
-	document.getElementById("popup-open-notebook").addEventListener("click", open_notebook_click);
 	document.getElementById("popup-open-notebook").addEventListener("click", open_notebook_click);
 	document.getElementById("popup-setting").addEventListener("click", popup_setting_click);
 	document.getElementById("popup-research").addEventListener("click", popup_research_click);
@@ -226,4 +281,5 @@ function runInitial(){
 	});
 }
 
+importCKeditorLanguageFile();
 runInitial();
