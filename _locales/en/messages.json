@@ -1,4 +1,8 @@
 {
+	"manifest_description": {
+		"message": "A browser extension for taking notes across web pages",
+		"description": "Description for manifest.json"
+	},
 	"windos_message_header_control_new_note__title": {
 		"message": "New note",
 		"description": "(sidepanel) Add a new note to the keyword or URL index displayed in the sidebar"
@@ -283,6 +287,26 @@
 		"message": "This note cannot be edited\nError:",
 		"description": "(background) Message that an error occurred during execution of the keyword note requested to be edited."
 	},
+	"inport_backupdata_finish": {
+		"message": "Import backup successfully",
+		"description": "(background) Message of successful event of importing backup data."
+	},
+	"backup_docs_google_unlogin_error": {
+		"message": "Not logged in to google account yet\nplease go to Settings to log in",
+		"description": "(background) Message that occurs due to non-login event when requesting backup"
+	},
+	"backup_docs_google_notexist_error": {
+		"message": "This keyword does not exist",
+		"description": "(background) Message that the keyword does not exist when requesting backup."
+	},
+	"backup_docs_google_cantgettoken_error": {
+		"message": "Unable to obtain google account\nplease try to log in again and try again",
+		"description": "(background) Message that occurred due to the inability to obtain the token event when requesting backup"
+	},
+	"check_can_connect_google": {
+		"message": "KDN is connected to google account\nCloud services now available",
+		"description": "(background) There is a message to log in to google during initialization"
+	},
 	"port_with_background_reconnect": {
 		"message": "The linked update between the sidebar and the page is disconnected\nPlease save the existing progress and reconnect",
 		"description": "(background) Sidebar message requesting reconnection"
@@ -323,13 +347,17 @@
 		"message": "You are deleting a URL note\nThe note cannot be retrieved after deletion\nDo you want to continue?",
 		"description": "(sidepanel) Request confirmation message to delete URL note"
 	},
+	"submit_newkeyword_click_warning": {
+		"message": "Please enter the keywords you want to add",
+		"description": "(popup) Warning: New keywords must not be empty"
+	},
 	"research_click_warning": {
 		"message": "Please search at least once before searching again",
 		"description": "(popup) Warning: Do not request a new search before performing the initial search."
 	},
 	"content_script_found": {
-		"message": "Keyword position marked\nand @ keywords were found.",
-		"description": "(content-script) There is information about keywords found in this webpage (@ is how many keywords were found)"
+		"message": "Keyword position marked\nKeyword found in @ locations on this page",
+		"description": "(content-script) There is information about keywords found in this webpage (@ is the number of positions where the keyword is found)"
 	},
 	"content_script_notfound": {
 		"message": "The keyword could not be found on the current page",

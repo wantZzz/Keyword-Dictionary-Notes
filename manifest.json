@@ -1,8 +1,9 @@
 {
     "manifest_version": 3,
     "name": "Keyword Dictionary Notes",
-    "version": "0.0.0",
-    "description": "A browser extension that can record notes based on keywords on various websites",
+    "version": "0.1.0",
+    "description": "__MSG_manifest_description__",
+	"default_locale": "zh",
     "permissions": [
 		"activeTab",
         "storage",

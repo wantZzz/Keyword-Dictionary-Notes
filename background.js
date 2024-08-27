@@ -1259,6 +1259,224 @@ function getInitTagFileData(callback){
 	});
 }
 
+function exportBackupData(callback){
+	let note_indexs = [];
+	let backup_output = {};
+	
+	function exporturl_index(Recorded_url_indexs){
+		const Recorded_host_indexs = Object.keys(Recorded_url_indexs)
+		for (var i = 0; i < Recorded_host_indexs.length; i++){
+			const host_data = Recorded_url_indexs[Recorded_host_indexs[i]]
+			
+			if (host_data.main){
+				note_indexs.push(Recorded_host_indexs[i])
+			}
+			
+			for (var j = 0; j < host_data.sub.length; j++){
+				note_indexs.push((Recorded_keyword_indexs[i] + ':' + host_data.sub[j]))
+			}
+		}
+	}
+	
+	reloadKeywordlist((new_recorded_keywords) => {
+		note_indexs = new_recorded_keywords;
+		
+		chrome.storage.local.get(["RecordedUrls"]).then((result) => {
+			exporturl_index(result.RecordedUrls);
+			
+			chrome.storage.local.get(keyword_reserved_words).then((result) => {
+				backup_output = result;
+				
+				chrome.storage.local.get(note_indexs).then((result) => {
+					backup_output['note_datas'] = result;
+					callback(backup_output);
+				});
+			});
+		});
+	});
+}
+
+function inportBackupJsonData(import_data, is_overwrite){
+	function exporturl_index(Recorded_url_indexs){
+		let note_indexs = [];
+		const Recorded_host_indexs = Object.keys(Recorded_url_indexs)
+		for (var i = 0; i < Recorded_host_indexs.length; i++){
+			const host_data = Recorded_url_indexs[Recorded_host_indexs[i]]
+			
+			if (host_data.main){
+				note_indexs.push(Recorded_host_indexs[i])
+			}
+			
+			for (var j = 0; j < host_data.sub.length; j++){
+				note_indexs.push((Recorded_keyword_indexs[i] + ':' + host_data.sub[j]))
+			}
+		}
+		
+		return note_indexs;
+	}
+
+	chrome.storage.local.get(["KeywordsSetting"]).then((keywords_settings) => {
+		const update_keywords_settings = Object.keys(import_data["KeywordsSetting"]);
+		
+		for (var i = 0; i < update_keywords_settings.length; i++){
+			keywords_settings[update_keywords_settings[i]] = import_data[update_keywords_settings[i]];
+		}
+		
+		if (is_overwrite){
+			const control_data = {
+				"RecordedKeywords": import_data.RecordedKeywords,
+				"RecordedUrls": import_data.RecordedUrls,
+				"AutoTriggerUrl": import_data.AutoTriggerUrl,
+				"KeywordsDisplayCRF": import_data.KeywordsDisplayCRF,
+				"KeywordsNotePriority": import_data.KeywordsNotePriority,
+				"KeywordsSetting": keywords_settings
+			}
+			
+			chrome.storage.local.get(["RecordedUrls"]).then((result) => {
+				const remove_url_indexs = exporturl_index(result.RecordedUrls);
+				const remove_indexs = remove_url_indexs.concat(recorded_Keywords);
+				
+				chrome.storage.local.remove(remove_indexs).then(() => {
+					chrome.storage.local.set(control_data).then(() => {
+						chrome.storage.local.set(import_data['note_datas']).then(() => {
+							recorded_Keywords = control_data.RecordedKeywords;
+							current_Keyword = control_data.RecordedKeywords.includes(current_Keyword) ? current_Keyword : import_data.RecordedKeywords[0];
+							
+							triggerNotificationMessage(chrome.i18n.getMessage('inport_backupdata_finish'), 'ok');
+							if (Boolean(portWithSidepanel)){
+								responseSidepanelKeywordsNoteData(current_Keyword, request.is_first, (keyword_notedata, keywords_priority) => {
+									const response_keyword_notedata = {
+										event_name: 'response-keyword-notedata-sidepanel',
+										keyword: quest_keyword_side,
+										keyword_notedata: keyword_notedata,
+										keywords_priority: keywords_priority
+									};
+									
+									if (is_SidepanelON){
+										chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
+										current_Keyword = quest_keyword_side;
+									}
+								});
+							}
+						});
+					});
+				});
+			});
+		}
+		else{
+			let add_indexs = [];
+			let update_indexs = [];
+			
+			chrome.storage.local.get(keyword_reserved_words).then((reserved_result) => {
+				for (var i = 0; i < import_data['RecordedKeywords'].length; i++){
+					if (!reserved_result.RecordedKeywords.includes(import_data['RecordedKeywords'][i])){
+						add_indexs.push(import_data['RecordedKeywords'][i]);
+					}
+					else{
+						update_indexs.push(import_data['RecordedKeywords'][i]);
+					}
+				}
+				
+				const keyword_add_indexs = add_indexs;
+
+				let update_url_indexs = reserved_result.RecordedUrls;
+				const import_url_indexs = Object.keys(import_data['RecordedUrls']);
+				for (var i = 0; i < import_url_indexs.length; i++){
+					const recorded_host_data = update_url_indexs[import_url_indexs[i]];
+					const import_host_data = import_data['RecordedUrls'][import_url_indexs[i]];
+					
+					if (!Boolean(recorded_host_data)){
+						if (import_host_data.main){
+							add_indexs.push(import_url_indexs[i]);
+						}
+						
+						for (var j = 0; j < import_host_data.sub.length; j++){
+							add_indexs.push((import_url_indexs[i] + ':' + import_host_data.sub[j]))
+						}
+						
+						update_url_indexs[import_url_indexs[i]] = import_host_data;
+					}
+					else{
+						if (import_host_data.main){
+							if (recorded_host_data.main){
+								update_indexs.push(import_url_indexs[i]);
+							}
+							else{
+								add_indexs.push(import_url_indexs[i]);
+							}
+							update_url_indexs[import_url_indexs[i]].main = true;
+						}
+						
+						for (var j = 0; j < import_host_data.sub.length; j++){
+							if (recorded_host_data.sub.includes(import_host_data.sub[j])){
+								update_indexs.push((import_url_indexs[i] + ':' + import_host_data.sub[j]));
+							}
+							else{
+								add_indexs.push((import_url_indexs[i] + ':' + import_host_data.sub[j]));
+							}
+							update_url_indexs[import_url_indexs[i]].sub.push(import_host_data.sub[j]);
+						}
+					}
+				}
+				
+				const note_priority_indexs = Object.keys(import_data['KeywordsNotePriority']);
+				const update_note_priority = reserved_result.KeywordsNotePriority;
+				for (var i = 0; i < note_priority_indexs.length; i++){
+					const recored_note_priority = update_note_priority[note_priority_indexs[i]];
+					const add_note_priority = import_data['KeywordsNotePriority'][note_priority_indexs[i]]
+					
+					update_note_priority[note_priority_indexs[i]] = Boolean(recored_note_priority) ? recored_note_priority.concat(add_note_priority) : add_note_priority;
+				}
+				
+				chrome.storage.local.get(update_indexs).then((update_notedatas) => {
+					for (var i = 0; i < update_indexs.length; i++){
+						const add_notes = import_data['note_datas'][update_indexs[i]];
+						
+						update_notedatas[update_indexs[i]] = update_notedatas[update_indexs[i]].concat((Boolean(add_notes) ? add_notes : []));
+					}
+					
+					for (var i = 0; i < add_indexs.length; i++){
+						update_notedatas[add_indexs[i]] = import_data['note_datas'][add_indexs[i]];
+					}
+					
+					const control_data = {
+						"RecordedKeywords": reserved_result.RecordedKeywords.concat(keyword_add_indexs),
+						"RecordedUrls": update_url_indexs,
+						"AutoTriggerUrl": reserved_result.AutoTriggerUrl,
+						"KeywordsDisplayCRF": reserved_result.KeywordsDisplayCRF,
+						"KeywordsNotePriority": update_note_priority,
+						"KeywordsSetting": keywords_settings
+					}
+					
+					chrome.storage.local.set(control_data).then(() => {
+						chrome.storage.local.set(update_notedatas).then(() => {
+							recorded_Keywords = control_data.RecordedKeywords;
+							current_Keyword = control_data.RecordedKeywords.includes(current_Keyword) ? current_Keyword : import_data.RecordedKeywords[0];
+							
+							triggerNotificationMessage(chrome.i18n.getMessage('inport_backupdata_finish'), 'ok');
+							if (Boolean(portWithSidepanel)){
+								responseSidepanelKeywordsNoteData(current_Keyword, request.is_first, (keyword_notedata, keywords_priority) => {
+									const response_keyword_notedata = {
+										event_name: 'response-keyword-notedata-sidepanel',
+										keyword: quest_keyword_side,
+										keyword_notedata: keyword_notedata,
+										keywords_priority: keywords_priority
+									};
+									
+									if (is_SidepanelON){
+										chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
+										current_Keyword = quest_keyword_side;
+									}
+								});
+							}
+						});
+					});
+				});
+			});
+		}
+	});
+}
+
 // ====== 網路功能 ======
 function checkGoogleAccount(callback){
 	chrome.identity.getProfileUserInfo({accountStatus: 'ANY'}, (result) => {
@@ -1770,6 +1988,23 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			});
 			break;
 			
+		//備份資料
+		case 'quest-backupdata-export':
+			sendResponse({});
+			exportBackupData((backup_output) => {
+				const response_backupdata_export = {
+					event_name: 'response-backupdata-export',
+					backup_data: backup_output
+				};
+					
+				chrome.runtime.sendMessage(response_backupdata_export, (t) => {});
+			});
+			break;
+		case 'quest-backupdata-inport':
+			sendResponse({});
+			inportBackupJsonData(request.json_data, request.is_overwrite);
+			break;
+			
 		case 'create-backup-docs-google':
 			sendResponse({});
 			getKeywordData(request.tag_name, (result, is_exist) => {
@@ -1778,11 +2013,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 						chrome.runtime.sendMessage({event_name: 'format-note2googledocs', tag_name: request.tag_name, note_data: result}, () => {});
 					}
 					else{
-						triggerNotificationMessage("尚未登入 google 帳號，請至設定登入", 'warning');
+						triggerNotificationMessage(chrome.i18n.getMessage('backup_docs_google_unlogin_error'), 'warning');
 					}
 				}
 				else{
-					triggerNotificationMessage("該關鍵字不存在", 'error');
+					triggerNotificationMessage(chrome.i18n.getMessage('backup_docs_google_notexist_error'), 'error');
 				}
 			});
 			break;
@@ -1794,7 +2029,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 					remitNoteGoogleDocs(request.tag_name, request.output_requests, request.output_await_requests, request.process_state, token, () => {});
 				}
 				else{
-					triggerNotificationMessage("無法取得 google 帳號，請嘗試重新登入後再試", 'error');
+					triggerNotificationMessage(chrome.i18n.getMessage('backup_docs_google_cantgettoken_error'), 'error');
 				}
 			});
 			break;
@@ -2005,7 +2240,7 @@ chrome.runtime.onStartup.addListener(() => {
 		}
 		else{
 			setTimeout(() => {
-				triggerNotificationMessage("KDN 已與 google 帳號連接，可使用雲端服務", 'ok');
+				triggerNotificationMessage(chrome.i18n.getMessage('check_can_connect_google'), 'ok');
 				checkGoogleAccount((account_info) => {
 					setting['is_GoogleConnect'] = [true, account_info.email];
 					callback(true);

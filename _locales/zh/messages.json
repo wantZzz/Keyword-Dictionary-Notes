@@ -1,4 +1,8 @@
 {
+	"manifest_description": {
+		"message": "以關鍵字紀錄跨網頁筆記的瀏覽器擴充功能",
+		"description": "擴充功能於 manifest.json 的說明"
+	},
 	"windos_message_header_control_new_note__title": {
 		"message": "新增筆記",
 		"description": "(sidepanel) 在側邊欄顯示的關鍵字或網址索引中為新增一筆筆記"
@@ -283,6 +287,26 @@
 		"message": "無法編輯該筆記 錯誤:",
 		"description": "(background) 請求編輯的關鍵字筆記因執行中發生錯誤事件發生的訊息"
 	},
+	"inport_backupdata_finish": {
+		"message": "匯入成功",
+		"description": "(background) 匯入備份資料成功事件發生的訊息"
+	},
+	"backup_docs_google_unlogin_error": {
+		"message": "尚未登入 google 帳號，請至設定登入",
+		"description": "(background) 請求備份時因未登入事件發生的訊息"
+	},
+	"backup_docs_google_notexist_error": {
+		"message": "該關鍵字不存在",
+		"description": "(background) 請求備份時因關鍵字不存在事件發生的訊息"
+	},
+	"backup_docs_google_cantgettoken_error": {
+		"message": "無法取得 google 帳號，請嘗試重新登入後再試",
+		"description": "(background) 請求備份時因無法取得 token 事件發生的訊息"
+	},
+	"check_can_connect_google": {
+		"message": "KDN 已與 google 帳號連接，可使用雲端服務",
+		"description": "(background) 初始化時已有登入 google 的訊息"
+	},
 	"port_with_background_reconnect": {
 		"message": "側邊欄與頁面的連動更新斷線\n請儲存現有進度並重新連線",
 		"description": "(sidepanel) 側邊欄請求重新連線的訊息"
@@ -323,13 +347,17 @@
 		"message": "你正在刪除一則網址筆記\n刪除後是無法找回該筆記\n是否繼續動作 ?",
 		"description": "(sidepanel) 請求確認 刪除網址筆記 的訊息"
 	},
+	"submit_newkeyword_click_warning": {
+		"message": "請輸入要新增的關鍵字",
+		"description": "(popup) 警告要新增關鍵字不可為空"
+	},
 	"research_click_warning": {
 		"message": "請先至少搜尋一次再重新搜尋",
 		"description": "(popup) 警告未執行初始搜尋前 不可請求重新搜尋"
 	},
 	"content_script_found": {
-		"message": "網頁關鍵字內容已標記\n該網頁中找到 @ 個關鍵字",
-		"description": "(content-script) 該網頁中有找到關鍵字的訊息(@ 為找到多少關鍵字)"
+		"message": "網頁關鍵字內容已標記\n在該網頁的 @ 個位置中找到關鍵字",
+		"description": "(content-script) 該網頁中有找到關鍵字的訊息(@ 為在多少個位置找到關鍵字)"
 	},
 	"content_script_notfound": {
 		"message": "未能在目前網頁上找到關鍵字",

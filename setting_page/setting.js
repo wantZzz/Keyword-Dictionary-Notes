@@ -63,6 +63,37 @@ function UpdateAccountGoogleInfo(){
 	google_account_button.disabled = false;
 }
 
+function exportJsonData(backup_output){
+	const jsonData = JSON.stringify(backup_output);
+	const note_version = backup_output['KeywordsSetting']['note_version'];
+	
+	let currentdate = new Date();
+	const datetime = currentdate.getFullYear() + (currentdate.getMonth()+1).toString().padStart(2,'0') + currentdate.getDate().toString().padStart(2,'0');
+	
+	var a = document.createElement("a");
+	var file = new Blob([jsonData], {type: "application/json;charset=utf-8"});
+	a.href = URL.createObjectURL(file);
+	a.download = `KDN_${datetime}_note${note_version}ver.json`;
+	a.click();
+}
+
+function noteVersionUpdate(data, note_version){
+	switch (note_version) {
+		case 0:
+			const setting_github_init = {
+				version: "v0.1.0-beta.0",
+				notify_time: 100
+			}
+			
+			data['github_'] = setting_github_init;
+			data['note_version'] = 1;
+		case 1:
+			data['RecordedUrls'] = {};
+			data['note_version'] = 2;
+	}
+	
+	return data;
+}
 // ====== 元素事件 ====== 
 function triggerAlertWindow(message, type){
 	notification = {
@@ -203,6 +234,74 @@ function changeInputDisabled(event){
 	}
 }
 
+function exportBackupJsonData(event){
+	chrome.runtime.sendMessage({event_name: 'quest-backupdata-export'}, (response) => {});
+}
+
+function inportADDJsonData(event){
+	var reader = new FileReader();
+	const input_backupfile = document.getElementById("input_backupfile").files[0];
+	
+	reader.onload = function(event) {
+		try{
+			var jsonObj = JSON.parse(event.target.result);
+			if (jsonObj['KeywordsSetting']['note_version'] < 2){
+				jsonObj = noteVersionUpdate(jsonObj, jsonObj['KeywordsSetting']['note_version'])
+			}
+			
+			if (jsonObj['KeywordsSetting']['note_version'] > 2){
+				triggerAlertWindow('該備份資料版本高於當前版本，無法匯入', 'error');
+			}
+			else{
+				//chrome.runtime.sendMessage({event_name: 'quest-backupdata-inport', is_overwrite:false, json_data: jsonObj}, (response) => {});
+				console.log(jsonObj);
+			}
+			
+		}catch{
+			triggerAlertWindow('錯誤檔案類型', 'error');
+		}
+	}
+	
+	if (Boolean(input_backupfile)){
+		reader.readAsText(input_backupfile);
+	}
+	else{
+		triggerAlertWindow('未選取檔案', 'warning');
+	}
+}
+
+function inportCoverJsonData(event){
+	var reader = new FileReader();
+	const input_backupfile = document.getElementById("input_backupfile").files[0];
+	
+	reader.onload = function(event) {
+		try{
+			var jsonObj = JSON.parse(event.target.result);
+			if (jsonObj['KeywordsSetting']['note_version'] < 2){
+				jsonObj = noteVersionUpdate(jsonObj, jsonObj['KeywordsSetting']['note_version'])
+			}
+			
+			if (jsonObj['KeywordsSetting']['note_version'] > 2){
+				triggerAlertWindow('該備份資料版本高於當前版本，無法匯入', 'error');
+			}
+			else{
+				//chrome.runtime.sendMessage({event_name: 'quest-backupdata-inport', is_overwrite:true, json_data: jsonObj}, (response) => {});
+				console.log(jsonObj);
+			}
+			
+		}catch{
+			triggerAlertWindow('錯誤檔案類型', 'error');
+		}
+	}
+	
+	if (Boolean(input_backupfile)){
+		reader.readAsText(input_backupfile);
+	}
+	else{
+		triggerAlertWindow('未選取檔案', 'warning');
+	}
+}
+
 function connectGoogleAccount(event){
 	const google_account_button = event.target.closest('button');
 	google_account_button.querySelector('span').innerText = "處理中...";
@@ -255,6 +354,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			});
 			break;
 			
+		case 'response-backupdata-export':
+			sendResponse({});
+			exportJsonData(request.backup_data);
+			
 		case 'format-note2googledocs':
 			formatNote2GoogleDocs(request.tag_name, request.note_data, (output_requests, output_await_requests, process_state) => {
 				const response_note2_googledocs = {
@@ -302,6 +405,11 @@ function runInitial(){
 		urlrule_rows[i].querySelector('i.remove-rule-conditions svg').addEventListener('click', removeUrlRule);
 		urlrule_rows[i].querySelector('select[classify="mode"]').addEventListener('change', changeInputDisabled);
 	};
+	
+	const account_tab = document.getElementById('account-tab');
+	account_tab.querySelector('button.export-jsondata-button').addEventListener('click', exportBackupJsonData);
+	account_tab.querySelector('button.cover-jsondata-button').addEventListener('click', inportCoverJsonData);
+	account_tab.querySelector('button.add-jsondata-button').addEventListener('click', inportADDJsonData);
 	
 	chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
 		settings['is_DarkMode'][0] = response.is_darkmode;

@@ -313,6 +313,43 @@
 			  </div>
             </div>
             <div class="option-container">
+				<h1 class="page-title">匯出與匯入</h1>
+				<p>
+					匯出匯入擴充功能筆記明碼備份檔案，包含設定與筆記索引<br>
+					<b>建議更新前進行備份，以免更新後儲存格式不合遺失筆記資料</b>
+				</p>
+				
+				<div class="export-backup-block">
+					<button class="export-jsondata-button" title="包含設定、各類型筆記索引與其索引下的筆記" style="width: 130px;">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path fill="currentColor" d="M8.505 1c.422-.003.844.17 1.166.516l1.95 2.05c.213.228.213.6 0 .828a.52.52 0 0 1-.771 0L9 2.451v7.993c0 .307-.224.556-.5.556s-.5-.249-.5-.556v-7.96l-1.82 1.91a.52.52 0 0 1-.77 0a.617.617 0 0 1 0-.829l1.95-2.05A1.58 1.58 0 0 1 8.5 1zM4.18 7c-.473 0-.88.294-.972.703l-1.189 5.25a1 1 0 0 0-.019.172c0 .483.444.875.99.875h11.02q.098 0 .194-.017c.537-.095.885-.556.778-1.03l-1.19-5.25C13.7 7.294 13.293 7 12.822 7zM6 6v1h5V6h1.825c.946 0 1.76.606 1.946 1.447l1.19 5.4c.215.975-.482 1.923-1.556 2.118a2 2 0 0 1-.39.035H2.985C1.888 15 1 14.194 1 13.2q0-.179.039-.353l1.19-5.4C2.414 6.606 3.229 6 4.174 6z" />
+						</svg>
+						<span>
+							備份匯出
+						</span>
+					</button>
+					
+				</div>
+				<div class="import-backup-block">
+					<input type="file" accept="application/json" id="input_backupfile">
+					<button class="cover-jsondata-button" title="覆蓋現有的所有資料與設定" style="width: 190px;" disabled>
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path fill="currentColor" d="m9 10.114l1.85-1.943a.52.52 0 0 1 .77 0c.214.228.214.6 0 .829l-1.95 2.05a1.55 1.55 0 0 1-2.31 0L5.41 9a.617.617 0 0 1 0-.829a.52.52 0 0 1 .77 0L8 10.082V1.556C8 1.249 8.224 1 8.5 1s.5.249.5.556zM4.18 6a.99.99 0 0 0-.972.804l-1.189 6Q2 12.9 2 13c0 .552.444 1 .99 1h11.02q.098 0 .194-.02a1 1 0 0 0 .778-1.176l-1.19-6a.99.99 0 0 0-.97-.804zM6 5v1h5V5h1.825c.946 0 1.76.673 1.946 1.608l1.19 6A2 2 0 0 1 14.016 15H2.984a1.992 1.992 0 0 1-1.945-2.392l1.19-6C2.414 5.673 3.229 5 4.174 5z" />
+						</svg>
+						<span>
+							以覆蓋方式匯入備份
+						</span>
+					</button>
+					<button class="add-jsondata-button" title="新加入備份資料至現有的各類型筆記索引，不更改設定" style="width: 190px;" disabled>
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path fill="currentColor" d="m9 10.114l1.85-1.943a.52.52 0 0 1 .77 0c.214.228.214.6 0 .829l-1.95 2.05a1.55 1.55 0 0 1-2.31 0L5.41 9a.617.617 0 0 1 0-.829a.52.52 0 0 1 .77 0L8 10.082V1.556C8 1.249 8.224 1 8.5 1s.5.249.5.556zM4.18 6a.99.99 0 0 0-.972.804l-1.189 6Q2 12.9 2 13c0 .552.444 1 .99 1h11.02q.098 0 .194-.02a1 1 0 0 0 .778-1.176l-1.19-6a.99.99 0 0 0-.97-.804zM6 5v1h5V5h1.825c.946 0 1.76.673 1.946 1.608l1.19 6A2 2 0 0 1 14.016 15H2.984a1.992 1.992 0 0 1-1.945-2.392l1.19-6C2.414 5.673 3.229 5 4.174 5z" />
+						</svg>
+						<span>
+							以添加方式匯入備份
+						</span>
+					</button>
+				</div>
+				<div class="bottom-line"></div>
 				<h1 class="page-title">備份至雲端帳戶</h1>
 				<div class="google-account-block">
 					<button class="account-connect-button" disabled>
@@ -342,7 +379,7 @@
 					</a>
 					結合使用效果更佳
 				</p>
-				
+				<div class="bottom-line"></div>
 				<h1 class="page-title">重點整理 AI 設定</h1>
 				<i>*本功能處構想階段，待開發</i>
             </div>
