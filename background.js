@@ -16,7 +16,7 @@ var setting = {
 
 var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
 //儲存資料
-const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'max_KeywordDisplay'];
+const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'RecordedUrls'];
 const keyword_special_urls = ['www.google.com', 'www.bing.com', 'www.youtube.com', 'www.twitch.tv', 'forum.gamer.com.tw', 'home.gamer.com.tw'];
 
 var recorded_Keywords = [];
@@ -1315,11 +1315,12 @@ function inportBackupJsonData(import_data, is_overwrite){
 		return note_indexs;
 	}
 
-	chrome.storage.local.get(["KeywordsSetting"]).then((keywords_settings) => {
+	chrome.storage.local.get(["KeywordsSetting"]).then((result) => {
 		const update_keywords_settings = Object.keys(import_data["KeywordsSetting"]);
+		const keywords_settings = result.KeywordsSetting;
 		
 		for (var i = 0; i < update_keywords_settings.length; i++){
-			keywords_settings[update_keywords_settings[i]] = import_data[update_keywords_settings[i]];
+			keywords_settings[update_keywords_settings[i]] = import_data["KeywordsSetting"][update_keywords_settings[i]];
 		}
 		
 		if (is_overwrite){
@@ -1344,18 +1345,18 @@ function inportBackupJsonData(import_data, is_overwrite){
 							
 							triggerNotificationMessage(chrome.i18n.getMessage('inport_backupdata_finish'), 'ok');
 							if (Boolean(portWithSidepanel)){
-								responseSidepanelKeywordsNoteData(current_Keyword, request.is_first, (keyword_notedata, keywords_priority) => {
+								responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
 									const response_keyword_notedata = {
 										event_name: 'response-keyword-notedata-sidepanel',
-										keyword: quest_keyword_side,
+										keyword: current_Keyword,
 										keyword_notedata: keyword_notedata,
 										keywords_priority: keywords_priority
 									};
 									
 									if (is_SidepanelON){
 										chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-										current_Keyword = quest_keyword_side;
 									}
+									chrome.runtime.sendMessage({event_name: 'reload-recorded-Keywords'}, (t) => {});
 								});
 							}
 						});
@@ -1455,17 +1456,16 @@ function inportBackupJsonData(import_data, is_overwrite){
 							
 							triggerNotificationMessage(chrome.i18n.getMessage('inport_backupdata_finish'), 'ok');
 							if (Boolean(portWithSidepanel)){
-								responseSidepanelKeywordsNoteData(current_Keyword, request.is_first, (keyword_notedata, keywords_priority) => {
+								responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
 									const response_keyword_notedata = {
 										event_name: 'response-keyword-notedata-sidepanel',
-										keyword: quest_keyword_side,
+										keyword: current_Keyword,
 										keyword_notedata: keyword_notedata,
 										keywords_priority: keywords_priority
 									};
 									
 									if (is_SidepanelON){
 										chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-										current_Keyword = quest_keyword_side;
 									}
 								});
 							}
