@@ -68,6 +68,55 @@ function triggerAlertWindow(message, type){
 	chrome.runtime.sendMessage(notification, (t) => {});
 }
 
+function startup_toggle_click(event){
+	const startup_Switch = document.getElementById("start-up");
+	const startup_Text = startup_Switch.querySelector(".keyword-text");
+	
+	startup_Switch.classList.toggle("on");
+	
+	if (startup_Text.innerText === "Start up"){
+		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-search', from: 'popup'}, (t) => {});
+	}
+	else if (startup_Switch.classList.contains("on")) {
+		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-show', from: 'popup'}, (t) => {});
+	} 
+	else{
+		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-hide', from: 'popup'}, (t) => {});
+	}
+}
+
+function newkeyword_button_click(event){
+	const popup_bar = document.getElementById("popup-bar");
+	const buttons_div = popup_bar.querySelectorAll('div.button');
+	this.parentNode.classList.toggle("folded-target");
+	
+	for (const button_div of buttons_div){
+		button_div.classList.toggle("folded");
+	}
+}
+
+function newkeyword_submit_button_click(event){
+	const newkeyword_Input = document.getElementById("newkeyword_input");
+	const newkeyword = newkeyword_Input.value;
+	
+	if (newkeyword != ""){
+		sendNewKeywordquest(newkeyword);
+		
+		const popup_bar = document.getElementById("popup-bar");
+		const buttons_div = popup_bar.querySelectorAll('div.button');
+		newkeyword_Button.parentNode.classList.toggle("folded-target");
+		
+		for (const button_div of buttons_div){
+			button_div.classList.toggle("folded");
+		}
+		
+		newkeyword_Input.value = "";
+	}
+	else{
+		triggerAlertWindow("請輸入要新增的關鍵字", 'warning');
+	}
+}
+
 function open_notebook_click(event){
 	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
 		if (!response.is_sidepanelon){
@@ -82,8 +131,6 @@ function open_notebook_click(event){
 
 function popup_setting_click(event){
 	window.open(chrome.runtime.getURL('setting_page/setting.html'));
-	
-	//triggerAlertWindow('功能不足，設定頁待做', 'warning');
 }
 
 function popup_research_click(event){
@@ -144,65 +191,24 @@ function runSetting(){
 }
 
 function runInitial(){
-	const popup_Bar = document.getElementById("popup-bar");
-	
 	// 搜尋與顯示標記滑桿
 	const startup_Switch_ = document.getElementById("start-up");
 	const startup_Toggle = startup_Switch_.querySelector(".switch-toggle");
 
 	chrome.runtime.sendMessage({event_name: 'quest-current-tab-popup'}, (t) => {});
 
-	startup_Toggle.addEventListener("click", function (event) {
-		const startup_Switch = document.getElementById("start-up");
-		const startup_Text = startup_Switch.querySelector(".keyword-text");
-		
-		startup_Switch.classList.toggle("on");
-		
-		if (startup_Text.innerText === "Start up"){
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-search', from: 'popup'}, (t) => {});
-		}
-		else if (startup_Switch.classList.contains("on")) {
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-show', from: 'popup'}, (t) => {});
-		} 
-		else{
-			chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-mark-hide', from: 'popup'}, (t) => {});
-		}
-	});
+	startup_Toggle.addEventListener("click", startup_toggle_click);
 	
 	// 開闔新增關鍵字筆記
 	const newkeyword_Button = document.getElementById("popup-new-keyword");
 
-	newkeyword_Button.addEventListener("click", function (event) {
-		const buttons_div = popup_Bar.querySelectorAll('div.button');
-		this.parentNode.classList.toggle("folded-target");
-		
-		for (const button_div of buttons_div){
-			button_div.classList.toggle("folded");
-		}
-	});
+	newkeyword_Button.addEventListener("click", newkeyword_button_click);
 	
 	// 確認新增關鍵字筆記
 	const newkeyword_Submit = document.getElementById("new-keyword-submit");
 
-	newkeyword_Submit.addEventListener("click", function (event) {
-		const newkeyword_Input = document.getElementById("newkeyword_input");
-		const newkeyword = newkeyword_Input.value;
-		
-		if (newkeyword != ""){
-			sendNewKeywordquest(newkeyword);
-			
-			const buttons_div = popup_Bar.querySelectorAll('div.button');
-			newkeyword_Button.parentNode.classList.toggle("folded-target");
-			
-			for (const button_div of buttons_div){
-				button_div.classList.toggle("folded");
-			}
-			
-			newkeyword_Input.value = "";
-		}
-	});	
+	newkeyword_Submit.addEventListener("click", newkeyword_submit_button_click);	
 
-	document.getElementById("popup-open-notebook").addEventListener("click", open_notebook_click);
 	document.getElementById("popup-open-notebook").addEventListener("click", open_notebook_click);
 	document.getElementById("popup-setting").addEventListener("click", popup_setting_click);
 	document.getElementById("popup-research").addEventListener("click", popup_research_click);

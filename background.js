@@ -13,7 +13,7 @@ var setting = {
 
 var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
 //儲存資料
-const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'max_KeywordDisplay'];
+const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'RecordedUrls'];
 const keyword_special_urls = ['www.google.com', 'www.bing.com', 'www.youtube.com', 'www.twitch.tv', 'forum.gamer.com.tw', 'home.gamer.com.tw'];
 
 var recorded_Keywords = [];
@@ -74,7 +74,6 @@ function responseCurrentPageStatus(callback){
 					is_CurrentPageSearch = response.is_areadysearch;
 					callback(current_tab_info);
 					
-
 					if (!is_CurrentPageSearch){
 						chrome.action.setBadgeText({tabId: currentpage_TabId, text: ''}, (t) => {});
 					}
@@ -1761,7 +1760,15 @@ chrome.commands.onCommand.addListener((command) => {
 			
 		case 'KDN_Sidepanel':
 			if (!is_SidepanelON){
-				chrome.sidePanel.open({tabId: currentpage_TabId});
+				if (currentpage_TabId == null){
+					chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+						currentpage_TabId = tabs[0].id;
+						chrome.sidePanel.open({tabId: currentpage_TabId});
+					});
+				}
+				else{
+					chrome.sidePanel.open({tabId: currentpage_TabId});
+				}
 			}
 	}
 });
@@ -1807,13 +1814,14 @@ chrome.runtime.onInstalled.addListener(function (details){
 		questInitialSetting('is_SwitchWithTab', (response) => {
 			setting['is_SwitchWithTab'] = response;
 		});
+		settingInitialSetting('extension_version', 'v0.0.2', () => {});														
 		
 		questInitialSetting('note_version', (note_version) => {
 			if (note_version != 2){
 				switch (note_version) {
 					case 0:
 						const setting_github_init = {
-							version: "v0.0.0-beta.3",
+							version: "v0.0.2",
 							notify_time: 100
 						}
 						
