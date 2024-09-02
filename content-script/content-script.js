@@ -66,7 +66,7 @@ function trackHostEventBuild(host){
 }
 
 function trackHostListener(){
-	chrome.runtime.sendMessage({event_name: 'special-url-page-updated'}, (t) => {});
+	chrome.runtime.sendMessage({event_name: 'webapp-url-page-updated'}, (t) => {});
 }
 // ====== 資料處理 ====== 
 function insertPopupHtml(){
