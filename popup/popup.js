@@ -100,6 +100,8 @@ function newkeyword_submit_button_click(event){
 	const newkeyword = newkeyword_Input.value;
 	
 	if (newkeyword != ""){
+		const newkeyword_Button = document.getElementById("popup-new-keyword");
+		
 		sendNewKeywordquest(newkeyword);
 		
 		const popup_bar = document.getElementById("popup-bar");
