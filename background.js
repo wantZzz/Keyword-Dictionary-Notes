@@ -1487,6 +1487,7 @@ function inportBackupJsonData(import_data, is_overwrite){
 									if (is_SidepanelON){
 										chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
 									}
+									chrome.runtime.sendMessage({event_name: 'reload-recorded-Keywords'}, (t) => {});
 								});
 							}
 						});
