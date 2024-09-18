@@ -575,7 +575,7 @@ function checkForNewRelease(){
 	});
 }
 
-function compareVersion(v1, v2, callback){
+function compareVersion(v1, v2){
 	const parseVersion = (version) => {
 		if (version.startsWith('v')){
 			version = version.slice(1);
@@ -592,7 +592,6 @@ function compareVersion(v1, v2, callback){
 	
 	if (v1_parses.major !== v2_parses.major) {
 		return v1_parses.major > v2_parses.major ? 1 : -1;
-		return
 	}
 	if (v1_parses.minor !== v2_parses.minor) {
 		return v1_parses.minor > v2_parses.minor ? 1 : -1;
@@ -615,8 +614,6 @@ function compareVersion(v1, v2, callback){
 	else if(isBetaOrAlpha(v1) || isBetaOrAlpha(v2)){
 		return isBetaOrAlpha(v2) ? 1 : -1;
 	}
-	
-	callback(0);
 }
 
 function reloadKeywordlist(callback){
