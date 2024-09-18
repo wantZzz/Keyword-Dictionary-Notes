@@ -240,6 +240,10 @@ function exportBackupJsonData(event){
 	chrome.runtime.sendMessage({event_name: 'quest-backupdata-export'}, (response) => {});
 }
 
+function initializationData(event){
+	chrome.runtime.sendMessage({event_name: 'quest-initialization-data'}, (response) => {});
+}
+
 function inportADDJsonData(event){
 	var reader = new FileReader();
 	const input_backupfile = document.getElementById("input_backupfile").files[0];
@@ -255,8 +259,8 @@ function inportADDJsonData(event){
 				triggerAlertWindow('該備份資料版本高於當前版本，無法匯入', 'error');
 			}
 			else{
-				//chrome.runtime.sendMessage({event_name: 'quest-backupdata-inport', is_overwrite:false, json_data: jsonObj}, (response) => {});
-				console.log(jsonObj);
+				chrome.runtime.sendMessage({event_name: 'quest-backupdata-inport', is_overwrite:false, json_data: jsonObj}, (response) => {});
+				//console.log(jsonObj);
 			}
 			
 		}catch{
@@ -287,8 +291,8 @@ function inportCoverJsonData(event){
 				triggerAlertWindow('該備份資料版本高於當前版本，無法匯入', 'error');
 			}
 			else{
-				//chrome.runtime.sendMessage({event_name: 'quest-backupdata-inport', is_overwrite:true, json_data: jsonObj}, (response) => {});
-				console.log(jsonObj);
+				chrome.runtime.sendMessage({event_name: 'quest-backupdata-inport', is_overwrite:true, json_data: jsonObj}, (response) => {});
+				//console.log(jsonObj);
 			}
 			
 		}catch{
@@ -359,6 +363,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 		case 'response-backupdata-export':
 			sendResponse({});
 			exportJsonData(request.backup_data);
+			break;
 			
 		case 'format-note2googledocs':
 			formatNote2GoogleDocs(request.tag_name, request.note_data, (output_requests, output_await_requests, process_state) => {
@@ -410,6 +415,7 @@ function runInitial(){
 	
 	const account_tab = document.getElementById('account-tab');
 	account_tab.querySelector('button.export-jsondata-button').addEventListener('click', exportBackupJsonData);
+	account_tab.querySelector('button.initialization-data-button').addEventListener('click', initializationData);
 	account_tab.querySelector('button.cover-jsondata-button').addEventListener('click', inportCoverJsonData);
 	account_tab.querySelector('button.add-jsondata-button').addEventListener('click', inportADDJsonData);
 	

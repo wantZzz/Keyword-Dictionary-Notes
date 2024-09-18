@@ -1041,7 +1041,7 @@ function exportBackupData(callback){
 			}
 			
 			for (var j = 0; j < host_data.sub.length; j++){
-				note_indexs.push((Recorded_keyword_indexs[i] + ':' + host_data.sub[j]))
+				note_indexs.push((Recorded_host_indexs[i] + ':' + host_data.sub[j]))
 			}
 		}
 	}
@@ -1064,6 +1064,55 @@ function exportBackupData(callback){
 	});
 }
 
+function initialDataProcess(){
+	getInitTagFileData((initial_data) => {
+		function exporturl_index(Recorded_url_indexs){
+			let note_indexs = [];
+			const Recorded_host_indexs = Object.keys(Recorded_url_indexs)
+			for (var i = 0; i < Recorded_host_indexs.length; i++){
+				const host_data = Recorded_url_indexs[Recorded_host_indexs[i]]
+				
+				if (host_data.main){
+					note_indexs.push(Recorded_host_indexs[i])
+				}
+				
+				for (var j = 0; j < host_data.sub.length; j++){
+					note_indexs.push((Recorded_host_indexs[i] + ':' + host_data.sub[j]))
+				}
+			}
+			
+			return note_indexs;
+		}
+
+		const remove_url_indexs = exporturl_index(initial_data.RecordedUrls);
+		const remove_indexs = remove_url_indexs.concat(recorded_Keywords);
+					
+		chrome.storage.local.remove(remove_indexs).then(() => {
+			chrome.storage.local.set(initial_data).then(() => {
+				recorded_Keywords = ['標籤', '無標籤'];
+				current_Keyword = '標籤';
+				
+				triggerNotificationMessage('已成功初始化筆記', 'ok');
+				if (Boolean(portWithSidepanel)){
+					responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
+						const response_keyword_notedata = {
+							event_name: 'response-keyword-notedata-sidepanel',
+							keyword: current_Keyword,
+							keyword_notedata: keyword_notedata,
+							keywords_priority: keywords_priority
+						};
+						
+						if (is_SidepanelON){
+							chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
+						}
+						chrome.runtime.sendMessage({event_name: 'reload-recorded-Keywords'}, (t) => {});
+					});
+				}
+			});
+		});
+	});
+}
+
 function inportBackupJsonData(import_data, is_overwrite){
 	function exporturl_index(Recorded_url_indexs){
 		let note_indexs = [];
@@ -1076,7 +1125,7 @@ function inportBackupJsonData(import_data, is_overwrite){
 			}
 			
 			for (var j = 0; j < host_data.sub.length; j++){
-				note_indexs.push((Recorded_keyword_indexs[i] + ':' + host_data.sub[j]))
+				note_indexs.push((Recorded_host_indexs[i] + ':' + host_data.sub[j]))
 			}
 		}
 		
@@ -1773,6 +1822,15 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			inportBackupJsonData(request.json_data, request.is_overwrite);
 			break;
 			
+		case 'quest-initialization-data':
+			sendResponse({});
+			const send_initialization_data = {
+				notification_type: 'initialization_data'
+			};
+
+			confirmNotificationMessage('初始化將刪除既有筆記並且無法回復初始化前，是否繼續初始化', '', send_initialization_data);
+			break;
+			
 		case 'create-backup-docs-google':
 			sendResponse({});
 			getKeywordData(request.tag_name, (result, is_exist) => {
@@ -1934,6 +1992,11 @@ chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx
 						settingInitialSetting('github_', github_data, () => {});
 					});
 					delete confirmnotifications_Data[notificationId];
+				}
+				break;
+			case 'initialization_data':
+				if (btnIdx == 0){
+					initialDataProcess();
 				}
 				break;
 		}
