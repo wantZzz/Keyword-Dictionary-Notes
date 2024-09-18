@@ -253,6 +253,9 @@ function searchKeywords(callback){
 		const windowHeight = (document.height !== undefined) ? document.height : document.body.offsetHeight;
 		const windowWidth = (document.width !== undefined) ? document.width : document.body.offsetWidth;
 		
+		const windowScrollX = window.scrollX;
+		const windowScrollY = window.scrollY;
+		
 		recorded_keywords.forEach(function (Keyword) {
 			keywords_searched_count[Keyword] = 0;
 		});
@@ -277,7 +280,7 @@ function searchKeywords(callback){
 		function isHidden_hardCheck(el) {
 			rect = el.getBoundingClientRect();
 			
-			if (rect.bottom < 0 || rect.right < 0){
+			if (rect.bottom + windowScrollY < 0 || rect.right + windowScrollX < 0){
 				return true
 			}
 			else if (rect.top > windowHeight || rect.left > windowWidth){

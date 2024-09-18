@@ -146,6 +146,9 @@ div#center-area::-webkit-scrollbar{
 	display: none;
 }
 
+#center-area p{
+	line-height: 1.5em;
+}
 #center-area button {
     border-radius: 5px;
     border: none;
@@ -157,7 +160,7 @@ div#center-area::-webkit-scrollbar{
 	
 }
 #center-area button:hover {
-    font-weight: bold;
+    /*font-weight: bold;*/
     box-shadow: rgba(0, 0, 0, 0.2) 3px 3px 10px 0px;
 }
 
@@ -387,6 +390,34 @@ li.switch-content.on .switch-toggle .toggle-box::before{
 	border-radius: 5px;
 	width: calc(80% - 70px);
     min-width: 260px;
+}
+
+.import-backup-block,
+.export-backup-block{
+	display: flex;
+	margin-bottom: 10px;
+}
+.import-backup-block button,
+.export-backup-block button{
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+	margin-right: 10px;
+}
+#input_backupfile{
+	width: 200px;
+}
+#input_backupfile::file-selector-button{
+	border-radius: 5px;
+    border: none;
+    background: var(--primary-color-light-popup);
+    color: var(--text-color);
+    /* font-weight: bold; */
+    height: 30px;
+    padding: 0 15px;
+}
+#input_backupfile::file-selector-button:hover{
+	box-shadow: rgba(0, 0, 0, 0.2) 3px 3px 10px 0px;
 }
 
 #center-area {

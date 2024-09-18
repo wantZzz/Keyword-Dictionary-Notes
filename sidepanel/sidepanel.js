@@ -106,7 +106,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
+								   <div class="windos_message_content ck-content">
 									 你沒有在此網域做過筆記喔，<br>
 									 趕快紀錄些什麼吧!
 								   </div>
@@ -128,7 +128,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
+								   <div class="windos_message_content ck-content">
 									 你還沒有在此網域的筆記喔，<br>
 									 趕快紀錄些什麼吧!
 								   </div>
@@ -193,7 +193,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -224,7 +224,7 @@ function refreshTitleArea(host, host_notedata, keywords_priority){
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -308,7 +308,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
+								   <div class="windos_message_content ck-content">
 									 你沒有在此網域做過筆記喔，<br>
 									 趕快紀錄些什麼吧!
 								   </div>
@@ -330,7 +330,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
+								   <div class="windos_message_content ck-content">
 									 你還沒有在此網域的筆記喔，<br>
 									 趕快紀錄些什麼吧!
 								   </div>
@@ -395,7 +395,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -426,7 +426,7 @@ function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_prior
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -616,7 +616,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
+								   <div class="windos_message_content ck-content">
 									 你沒有此關鍵字的筆記喔，<br>
 									 趕快紀錄些什麼吧!
 								   </div>
@@ -638,7 +638,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 		
 		message_block.innerHTML = `<div class="interactive_block">
 								   </div>
-								   <div class="windos_message_content">
+								   <div class="windos_message_content ck-content">
 									   你還沒有關於此關鍵字的筆記喔，<br>
 									   趕快紀錄些什麼吧!
 								   </div>
@@ -702,7 +702,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -733,7 +733,7 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 											   </svg>
 											 </button>
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											   ${note_content}
 										   </div>
 										   <div class="windos_timestamp_container">
@@ -832,7 +832,7 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 										   </svg>
 										 </button>
 									   </div>
-									   <div class="windos_message_content">
+									   <div class="windos_message_content ck-content">
 										   ${note_content}
 									   </div>
 									   <div class="windos_timestamp_container">
@@ -893,7 +893,7 @@ function afterEditRefreshProcess(note_type, process_state, note_id, save_datetim
 										   </svg>
 										 </button>
 									   </div>
-									   <div class="windos_message_content">
+									   <div class="windos_message_content ck-content">
 										   ${note_content}
 									   </div>
 									   <div class="windos_timestamp_container">
@@ -946,7 +946,7 @@ function afterDeleteRefreshProcess(note_type, process_state, target_id){
 				
 				message_block.innerHTML = `<div class="interactive_block">
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											 你還沒有在此網域的筆記喔，<br>
 											 趕快紀錄些什麼吧!
 										   </div>
@@ -993,7 +993,7 @@ function afterDeleteRefreshProcess(note_type, process_state, target_id){
 				
 				message_block.innerHTML = `<div class="interactive_block">
 										   </div>
-										   <div class="windos_message_content">
+										   <div class="windos_message_content ck-content">
 											   你還沒有關於此關鍵字的筆記喔，<br>
 											   趕快紀錄些什麼吧!
 										   </div>
@@ -1244,7 +1244,19 @@ function url_new_note_button_click(event){
 	const BalloonEditor = window.BalloonEditor;
 	
 	BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-			placeholder: 'Enter new note here'
+			placeholder: 'Enter new note here',
+			link: {
+				decorators: {
+					addTargetToExternalLinks: {
+						mode: 'automatic',
+						callback: url => true,
+						attributes: {
+							target: '_blank',
+							rel: 'noopener noreferrer'
+						}
+					}
+				}
+			}
 		})
 		.then( editor => {
 			function windos_message_KeyPress(e) {
@@ -1455,7 +1467,19 @@ function keyword_new_note_button_click(event){
 	const BalloonEditor = window.BalloonEditor;
 	
 	BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-			placeholder: 'Enter new note here'
+			placeholder: 'Enter new note here',
+			link: {
+				decorators: {
+					addTargetToExternalLinks: {
+						mode: 'automatic',
+						callback: url => true,
+						attributes: {
+							target: '_blank',
+							rel: 'noopener noreferrer'
+						}
+					}
+				}
+			}
 		})
 		.then( editor => {
 			function windos_message_KeyPress(e) {
@@ -1540,7 +1564,19 @@ function options_edit_button_click(event){
 		const BalloonEditor = window.BalloonEditor;
 	
 		BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-				placeholder: 'Enter new note here'
+				placeholder: 'Enter new note here',
+				link: {
+					decorators: {
+						addTargetToExternalLinks: {
+							mode: 'automatic',
+							callback: url => true,
+							attributes: {
+								target: '_blank',
+								rel: 'noopener noreferrer'
+							}
+						}
+					}
+				}
 			})
 			.then( editor => {
 				function windos_message_KeyPress(e) {
@@ -1603,7 +1639,19 @@ function options_edit_button_click(event){
 		const BalloonEditor = window.BalloonEditor;
 	
 		BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-				placeholder: 'Enter new note here'
+				placeholder: 'Enter new note here',
+				link: {
+					decorators: {
+						addTargetToExternalLinks: {
+							mode: 'automatic',
+							callback: url => true,
+							attributes: {
+								target: '_blank',
+								rel: 'noopener noreferrer'
+							}
+						}
+					}
+				}
 			})
 			.then( editor => {
 				function windos_message_KeyPress(e) {
@@ -1780,7 +1828,7 @@ function editor_exit_button_click(event){
 										   </svg>
 										 </button>
 									   </div>
-									   <div class="windos_message_content">
+									   <div class="windos_message_content ck-content">
 										 ${initial_EditContent[0]}
 									   </div>
 									   <div class="windos_timestamp_container">
@@ -1834,7 +1882,7 @@ function editor_exit_button_click(event){
 										   </svg>
 										 </button>
 									   </div>
-									   <div class="windos_message_content">
+									   <div class="windos_message_content ck-content">
 										   ${initial_EditContent[1]}
 									   </div>
 									   <div class="windos_timestamp_container">
