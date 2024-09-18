@@ -1,7 +1,7 @@
 //---- background ----
 export const initSubPageIndexs = ['www.google.com', 'www.bing.com', 'www.youtube.com', 'www.twitch.tv', 'forum.gamer.com.tw', 'home.gamer.com.tw'];
 
-export function isinitSubPageIndex(host){
+export function isSubPageIndex(host){
 	return initSubPageIndexs.includes(host);
 	
 	/*

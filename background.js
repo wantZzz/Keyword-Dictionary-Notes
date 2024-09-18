@@ -1,5 +1,5 @@
 import {newNoteGoogleDocs, remitNoteGoogleDocs} from "./modle/Remit2GoogleDocs.js";
-import {isinitSubPageIndex, responseSidepanelSubPageIndexUrlNoteData} from "./modle/SubpageIndex.js";
+import {isSubPageIndex, responseSidepanelSubPageIndexUrlNoteData} from "./modle/SubpageIndex.js";
 
 //外部腳本資料
 var currentpage_TabId = null;
@@ -66,7 +66,7 @@ function responseCurrentPageStatus(callback){
 					waiting_RefreshPage = currentpage_TabId;
 				}
 				else{
-					response.is_special_urls = isinitSubPageIndex(response.host);
+					response.is_special_urls = isSubPageIndex(response.host);
 					const current_tab_info = {
 						page_status: response,
 						is_support: true,
@@ -210,7 +210,7 @@ function responseSidepanelUrlNoteData(host, callback){
 }
 
 function responseSidepanelSpecialUrlNoteData(title, host, url, callback){
-	if (isinitSubPageIndex(host)){
+	if (isSubPageIndex(host)){
 		responseSidepanelSubPageIndexUrlNoteData(title, host, url, responseUrlNoteData, getNotePriority, responseSidepanelUrlNoteData, callback)
 	}
 }
@@ -350,7 +350,7 @@ function checkForNewRelease(){
 	});
 }
 
-function compareVersion(v1, v2, callback){
+function compareVersion(v1, v2){
 	const parseVersion = (version) => {
 		if (version.startsWith('v')){
 			version = version.slice(1);
@@ -367,7 +367,6 @@ function compareVersion(v1, v2, callback){
 	
 	if (v1_parses.major !== v2_parses.major) {
 		return v1_parses.major > v2_parses.major ? 1 : -1;
-		return
 	}
 	if (v1_parses.minor !== v2_parses.minor) {
 		return v1_parses.minor > v2_parses.minor ? 1 : -1;
@@ -390,8 +389,6 @@ function compareVersion(v1, v2, callback){
 	else if(isBetaOrAlpha(v1) || isBetaOrAlpha(v2)){
 		return isBetaOrAlpha(v2) ? 1 : -1;
 	}
-	
-	callback(0);
 }
 
 function reloadKeywordlist(callback){
@@ -1238,6 +1235,7 @@ function inportBackupJsonData(import_data, is_overwrite){
 									if (is_SidepanelON){
 										chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
 									}
+									chrome.runtime.sendMessage({event_name: 'reload-recorded-Keywords'}, (t) => {});
 								});
 							}
 						});
