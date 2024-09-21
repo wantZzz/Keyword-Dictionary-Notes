@@ -341,7 +341,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			}
 			break;
 	
-		case 'response-check-account-google':
+		case 'response-check-account-google'://備用
 			sendResponse({});
 			break;
 			

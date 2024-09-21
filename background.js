@@ -1296,10 +1296,34 @@ function inportBackupJsonData(import_data, is_overwrite){
 }
 
 // ====== 網路功能 ======
-function checkGoogleAccount(callback){
-	chrome.identity.getProfileUserInfo({accountStatus: 'ANY'}, (result) => {
-		callback(result);
-	})
+function isConnectGoogle(callback){
+	chrome.identity.getAuthToken({'interactive': false}, (result) => {
+		if(chrome.runtime.lastError){
+			callback(false);
+		}
+		else{
+			callback(true);;
+		}
+	});
+}
+
+function getGoogleAccountInfo(callback){
+	chrome.identity.getAuthToken({'interactive': true}, (result) => {
+		if(chrome.runtime.lastError){
+			setting['is_GoogleConnect'] = [false, ""];
+			callback({email: '', id: '', picture: '', verified_email: ''});
+		}
+		else{
+			fetch("https://www.googleapis.com/userinfo/v2/me", {
+				headers: new Headers({'Authorization': `Bearer ${result}`})
+			})
+			.then((request) => {
+				return request.json();
+			}).then((account_info) => {
+				callback(account_info);
+			});
+		}
+	});
 }
 
 function connectGoogleAccount(callback){
@@ -1309,7 +1333,7 @@ function connectGoogleAccount(callback){
 			callback(false);
 		}
 		else{
-			checkGoogleAccount((account_info) => {
+			getGoogleAccountInfo((account_info) => {
 				setting['is_GoogleConnect'] = [true, account_info.email];
 				callback(true);
 			});
@@ -1331,12 +1355,12 @@ function getGoogleAccountToken(callback){
 			callback("", false);
 		}
 		else{
-			checkGoogleAccount((account_info) => {
+			getGoogleAccountInfo((account_info) => {
 				setting['is_GoogleConnect'] = [true, account_info.email];
 			});
 			callback(result, true);;
 		}
-	})
+	});
 }
 
 //function newNoteGoogleDocs(title, token, callback)
@@ -1770,9 +1794,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			break;
 			
 		//帳戶連接
-		case 'check-account-google':
+		case 'check-account-google'://備用
 			sendResponse({});
-			checkGoogleAccount((account_info) => {
+			getGoogleAccountInfo((account_info) => {
 				const response_check_account = {
 					event_name: 'response-check-account-google',
 					account_info: account_info
@@ -2073,14 +2097,14 @@ chrome.runtime.onStartup.addListener(() => {
 		setting['is_SwitchWithTab'] = response;
 	});
 	
-	chrome.identity.getAuthToken({'interactive': false}, (result) => {
-		if(chrome.runtime.lastError){
+	isConnectGoogle((is_connect) => {
+		if(is_connect){
 			setting['is_GoogleConnect'] = [false, ""];
 		}
 		else{
 			setTimeout(() => {
 				triggerNotificationMessage(chrome.i18n.getMessage('check_can_connect_google'), 'ok');
-				checkGoogleAccount((account_info) => {
+				getGoogleAccountInfo((account_info) => {
 					setting['is_GoogleConnect'] = [true, account_info.email];
 				});
 			}, 2000);

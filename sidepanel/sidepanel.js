@@ -11,7 +11,10 @@ var is_SwitchWithTab = true;
 var current_Host = null;
 var current_Url = null;
 var current_Keyword = '';
+
 var is_SpecialUrls = false;
+var view_MainIndex = false;
+var current_HostTilte = '';
 
 var is_UrlNoteExist = 0;
 var is_KeywordNoteExist = 0;
@@ -47,6 +50,7 @@ function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 	if(is_support && is_script_run){
 		if (page_status.is_special_urls && (currentpage_Url != page_status.url)){
 			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: page_status.title, host: page_status.host, url: page_status.url}, (t) => {});
+			current_HostTilte = page_status.title;
 		}
 		else if (currentpage_Host != page_status.host){
 			chrome.runtime.sendMessage({event_name: 'quest-url-notedata', host: page_status.host}, (t) => {});
@@ -54,6 +58,7 @@ function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 		
 		currentpage_Host = page_status.host;
 		currentpage_Url = page_status.url;
+		view_MainIndex = false;
 		
 		if (page_status.is_areadysearch && (currentpage_TabId != null)){
 			const searched_keywords_quest = {
@@ -1212,6 +1217,18 @@ function more_editoptions_button_click(event){
 }
 
 // --- title area title buttons ---
+function switch_host_urlindex(event){
+	if (is_SpecialUrls || view_MainIndex){
+		if (view_MainIndex){
+			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: current_HostTilte, host: currentpage_Host, url: currentpage_Url}, (t) => {});
+			view_MainIndex = false;
+		}
+		else{
+			chrome.runtime.sendMessage({event_name: 'quest-url-notedata', host: currentpage_Host}, (t) => {});
+			view_MainIndex = true;
+		}
+	}
+}
 function url_new_note_button_click(event){
 	if (is_UrlNewNoteEdit != null){
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
@@ -2235,6 +2252,7 @@ function runInitial(){
 	});
 	
 	const title_area = document.getElementById("title_area");
+	title_area.querySelector('.title_boder').addEventListener("dblclick", switch_host_urlindex);
 	title_area.querySelector('.control_url_area button.new_note').addEventListener('click', url_new_note_button_click, false);
 	title_area.querySelector('.control_url_area button.delete_keyword').addEventListener('click', url_delete_button_click, false);
 	

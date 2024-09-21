@@ -248,3 +248,4 @@ export function responseSidepanelSubPageIndexUrlNoteData(title, host, url, respo
 	}
 }
 
+//---- sidepanel ----
