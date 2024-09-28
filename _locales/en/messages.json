@@ -308,7 +308,7 @@
 		"description": "(background) There is a message to log in to google during initialization"
 	},
 	"port_with_background_reconnect": {
-		"message": "The linked update between the sidebar and the page is disconnected\nPlease save the existing progress and reconnect",
+		"message": "The linkage update between the sidebar web index and the page is disconnected\nIf you want to restore the linkage, please save the existing progress and reopen the sidebar.",
 		"description": "(background) Sidebar message requesting reconnection"
 	},
 	"sidepanel_unsaved_warning": {

@@ -1,0 +1,366 @@
+{
+	"manifest_description": {
+		"message": "キーワードを使用して Web ページ全体でメモをとるためのブラウザ拡張機能",
+		"description": "manifest.json の機能を拡張する手順"
+	},
+	"windos_message_header_control_new_note__title": {
+		"message": "新しいメモを追加",
+		"description": "(sidepanel) サイドバーに表示されているキーワードまたはURLインデックスに新しいメモを追加します"
+	},
+	"windos_message_header_control_delete__title": {
+		"message": "メモ全体を削除する",
+		"description": "(sidepanel) サイドバーに表示されているキーワードやURLのインデックスにおいて、インデックスとインデックスの下にあるメモをすべて削除します。"
+	},
+	"windos_message_header_control_previous_mark__title": {
+		"message": "前のキーワードの位置",
+		"description": "(sidepanel) 現在検索しているWebページのサイドバーに表示されている前のキーワードの位置にジャンプします"
+	},
+	"windos_message_header_control_next_mark__title": {
+		"message": "次のキーワードの位置",
+		"description": "(sidepanel) 現在検索されている Web ページのサイドバーに現在表示されている次のキーワードにジャンプします"
+	},
+	"suggestion_area_more_suggestion__title": {
+		"message": "さらに多くのキーワード",
+		"description": "(sidepanel) さらに記録されたキーワードを開いて表示し、フローティング ウィンドウを検索します"
+	},
+	"more_options_popup_edit": {
+		"message": "編集する",
+		"description": "(sidepanel) 選択した個々のノートを編集する"
+	},
+	"more_options_popup_copy": {
+		"message": "コピーする",
+		"description": "(sidepanel) 選択した個々のノートをコピーする"
+	},
+	"more_options_popup_delete": {
+		"message": "削除する",
+		"description": "(sidepanel) 選択した個々のノートを削除する"
+	},
+	"more_options_popup_save": {
+		"message": "保存する",
+		"description": "(sidepanel) 編集用に選択した単一のノートを保存する"
+	},
+	"more_options_popup_exit": {
+		"message": "保存しない",
+		"description": "(sidepanel) 選択した個々のノートの編集をキャンセルします"
+	},
+	"suggestion_popup_search_input__placeholder": {
+		"message": "検索キーワード",
+		"description": "(sidepanel) フローティング ウィンドウで入力ボックスのプロンプト単語を検索します"
+	},
+	"interactive_block_pinned_note__title": {
+		"message": "ピンの選択",
+		"description": "(sidepanel) 選択した個々のノートを固定する"
+	},
+	"interactive_block_more_options__title": {
+		"message": "さらなるアクション",
+		"description": "(sidepanel) さらに操作フローティング ウィンドウを開いて、選択した単一ノートを操作します"
+	},
+	"popup_bar_add_new_keyword": {
+		"message": "新しいキーワード",
+		"description": "(popup) 新しいキーワードを追加する"
+	},
+	"popup_bar_open_notebook": {
+		"message": "ノートを開く",
+		"description": "(popup) サイドバーを有効にする"
+	},
+	"popup_bar_research_keyword": {
+		"message": "もう一度検索",
+		"description": "(popup) Webページ内のキーワードを再検索する"
+	},
+	"popup_bar_setting": {
+		"message": "設定",
+		"description": "(popup) 設定オプションページを開く"
+	},
+	"keyword_note_sidepanel_show__title": {
+		"message": "サイドバーに表示",
+		"description": "(content-script) このキーワードでインデックス付けされたすべてのメモをサイドバーに表示します"
+	},
+	"keyword_note_highlight__title": {
+		"message": "このキーワードのみを表示",
+		"description": "(content-script) このページにはこのキーワード タグのみを表示します"
+	},
+	"popup_window_singlemark_keyword_title": {
+		"message": "この場所のキーワード",
+		"description": "(content-script) 単一のキーワード タグを表示するときのフローティング ウィンドウのサブタイトル"
+	},
+	"popup_window_mutiplemark_keyword_title": {
+		"message": "スクロールして @ 他のキーワードを表示します",
+		"description": "(content-script) マルチキーワード タグを表示するときのフローティング ウィンドウのサブタイトル (@ は、このタグに存在するキーワードの数を示します)"
+	},
+	"content_script_needsearch_warning": {
+		"message": "この機能を使用する前に、\nまず検索してください",
+		"description": "(content-script) 他のタグを検索するリクエストは検索後に実行する必要があるという警告"
+	},
+	"content_script_notonlyshow_warning": {
+		"message": "選択されたキーワードではなく、\n現在単独で表示されているタグ",
+		"description": "(content-script) 現在個別に表示されている、リクエストされていない検索をマークするキーワード"
+	},
+	"windos_message_content_url_0noindex": {
+		"message": "このドメインでメモを取っていません\n急いで何かを記録してください。",
+		"description": "(sidepanel) URL インデックスに存在しないメモ領域のプロンプト ワード"
+	},
+	"windos_message_timestamp_url_0noindex": {
+		"message": "情報なし",
+		"description": "(sidepanel) URL インデックスに存在しないタイムスタンプ領域のプロンプトワード"
+	},
+	"windos_message_content_url_0emptyindex": {
+		"message": "このドメインにはまだメモがありません\n急いで何かを記録してください。",
+		"description": "(sidepanel) 空の URL インデックスに対するメモ領域のプロンプト ワード"
+	},
+	"windos_message_timestamp_url_0emptyindex": {
+		"message": "情報なし",
+		"description": "(sidepanel) 空の URL インデックスは存在しません。タイムスタンプ領域のプロンプト ワード"
+	},
+	"windos_message_content_keyword_0noindex": {
+		"message": "このキーワードにはメモがありません\n急いで何かを記録してください。",
+		"description": "(sidepanel) キーワードインデックスに存在しないプロンプトワードに注意してください"
+	},
+	"windos_message_timestamp_keyword_0noindex": {
+		"message": "情報なし",
+		"description": "(sidepanel) キーワードインデックスに存在しないタイムスタンプ領域のプロンプトワード"
+	},
+	"windos_message_content_keyword_0emptyindex": {
+		"message": "このキーワードに関するメモはまだありません\n急いで何かを記録してください。",
+		"description": "(sidepanel) 空のキーワードインデックスに対するメモ領域のプロンプトワード"
+	},
+	"windos_message_timestamp_keyword_0emptyindex": {
+		"message": "情報なし",
+		"description": "(sidepanel) 空のキーワード インデックスは存在しません。タイムスタンプ領域のプロンプト ワード"
+	},
+	"trigger_notification_message_error": {
+		"message": "✖ 実行中にエラーが発生しました",
+		"description": "(background) 「エラー」というタイトルでポップアップ通知イベントが発生する"
+	},
+	"trigger_notification_message_nofound": {
+		"message": "! 情報が見つかりませんでした",
+		"description": "(background) 「見つかりません」というタイトルでポップアップ通知イベントが発生する"
+	},
+	"trigger_notification_message_warning": {
+		"message": "! 操作上の警告",
+		"description": "(background) ポップアップ通知イベント発生「警告」タイトル"
+	},
+	"trigger_notification_message_ok": {
+		"message": "✔ 操作は正常に完了しました",
+		"description": "(background) 「実行が完了しました」というタイトルのポップアップ通知イベントが発生します"
+	},
+	"trigger_notification_message_default": {
+		"message": "❓ 不明なタイプの通知",
+		"description": "(background) タイトルが「不明」のポップアップ通知イベントが発生しました"
+	},
+	"confirm_notification_message_default": {
+		"message": "! 実行前に確認する",
+		"description": "(background) タイトルが「不明」のポップアップ確認通知イベントが発生しました"
+	},
+	"confirm_notification_message_default_0confirm": {
+		"message": "✔ 確認",
+		"description": "(background) ポップアップ確認通知イベント発生「不明」確認オプション"
+	},
+	"confirm_notification_message_default_0cancel": {
+		"message": "✖ キャンセル",
+		"description": "(background) ポップアップ確認通知イベントが発生しました「不明」キャンセルオプション"
+	},
+	"confirm_notification_message_newVersion": {
+		"message": "✔ 新しいバージョンが利用可能です",
+		"description": "(background) 「新しいバージョンが利用可能です」というタイトルのポップアップ確認通知イベントが発生します"
+	},
+	"confirm_notification_message_newVersion_0confirm": {
+		"message": "ダウンロードに行く",
+		"description": "(background) ポップアップ確認通知イベントが発生しました 「新しいバージョンが利用可能です」確認オプション"
+	},
+	"confirm_notification_message_newVersion_0cancel": {
+		"message": "次のバージョンを待ちます",
+		"description": "(background) ポップアップ確認通知イベントが発生しました「新しいバージョンが利用可能です」キャンセルオプション"
+	},
+	"confirm_notification_message_delete": {
+		"message": "! 削除確認",
+		"description": "(sidepanel) ポップアップ確認通知イベント発生「削除」タイトル"
+	},
+	"confirm_notification_message_delete_0confirm": {
+		"message": "✔ 確認",
+		"description": "(sidepanel) ポップアップ確認通知イベント発生「削除」確認オプション"
+	},
+	"confirm_notification_message_delete_0cancel": {
+		"message": "✖ キャンセル",
+		"description": "(sidepanel) ポップアップ確認通知イベントが発生しました。キャンセル オプション付きの「削除」"
+	},
+	"confirm_notification_message_reconnect": {
+		"message": "! 背景を再配線する",
+		"description": "(sidepanel) 「サイドバーを再接続する必要があります」というタイトルのポップアップ確認通知イベントが発生する"
+	},
+	"confirm_notification_message_reconnect_0confirm": {
+		"message": "再接続",
+		"description": "(sidepanel) ポップアップ確認通知イベントが発生しました「サイドバーを再接続する必要があります」確認オプション"
+	},
+	"confirm_notification_message_reconnect_0cancel": {
+		"message": "サイドバーを閉じる",
+		"description": "(sidepanel) ポップアップ確認通知イベントが発生する 「サイドバーを再接続する必要があります」 キャンセル オプション"
+	},
+	"web_page_notinit_error": {
+		"message": "現在閲覧している Web ページは初期化されていません\n再読み込みしてください",
+		"description": "(background) 目前瀏覽網頁沒載入本擴充的網頁背景程式但使用者請求搜尋網頁內關鍵字事件發生的訊息"
+	},
+	"add_new_keyword_reserved_error": {
+		"message": "このキーワードはシステムの予約語です\n追加できません",
+		"description": "(background) 請求新增的關鍵字索引是保留字事件發生的訊息"
+	},
+	"add_new_keyword_exist_error": {
+		"message": "キーワードはすでに存在します",
+		"description": "(background) 請求新增的關鍵字索引已經存在事件發生的訊息"
+	},
+	"add_new_keyword_exist_storage_error": {
+		"message": "このキーワードはすでに占有されています\nまたは、キーワードは記録された URL です",
+		"description": "(background) 請求新增的關鍵字索引已經存在於儲存空間事件發生的訊息"
+	},
+	"add_new_keyword_finish": {
+		"message": "キーワード索引を追加しました",
+		"description": "(background) 請求新增的關鍵字索引儲存成功事件發生的訊息"
+	},
+	"delete_new_keyword_reserved_error": {
+		"message": "このキーワードはシステムの予約語です\n削除できません",
+		"description": "(background) 請求移除的關鍵字索引是保留字事件發生的訊息"
+	},
+	"delete_keyword_notexist_error": {
+		"message": "このキーワードは存在しません",
+		"description": "(background) 請求移除的關鍵字索引已經存在事件發生的訊息"
+	},
+	"delete_new_keyword_finish": {
+		"message": "キーワードが削除されました",
+		"description": "(background) 請求移除的關鍵字索引移除成功事件發生的訊息"
+	},
+	"add_new_url_exist_error": {
+		"message": "URL にはすでにキーワードが含まれています",
+		"description": "(background) 請求新增的網址索引已經存在事件發生的訊息"
+	},
+	"add_new_url_finish": {
+		"message": "URLが追加されました",
+		"description": "(background) 請求新增的網址索引儲存成功事件發生的訊息"
+	},
+	"delete_new_url_finish": {
+		"message": "URLは削除されました",
+		"description": "(background) 請求移除的網址索引移除成功事件發生的訊息"
+	},
+	"edit_keyword_reserved_error": {
+		"message": "このキーワードはシステムの予約語です\nこの操作は実行できません",
+		"description": "(background) 請求編輯的關鍵字索引是保留字事件發生的訊息"
+	},
+	"edit_keyword_exist_error": {
+		"message": "キーワードはすでに存在します",
+		"description": "(background) 請求編輯的關鍵字索引已經存在事件發生的訊息"
+	},
+	"edit_keyword_finish": {
+		"message": "キーワードが正常に変更されました",
+		"description": "(background) 請求編輯的關鍵字索引編輯成功事件發生的訊息"
+	},
+	"add_keyword_note_noexist_error": {
+		"message": "メモを保存できません エラー:: keyword does not exist",
+		"description": "(background) 請求新增的關鍵字筆記因關鍵字索引不存在事件發生的訊息"
+	},
+	"add_keyword_note_execute_error": {
+		"message": "メモを保存できません エラー:",
+		"description": "(background) 請求新增的關鍵字筆記因執行中發生錯誤事件發生的訊息"
+	},
+	"add_keyword_note_finish": {
+		"message": "メモの内容が保存されました",
+		"description": "(background) 請求新增的關鍵字筆記儲存成功事件發生的訊息"
+	},
+	"delete_keyword_note_noexist_error": {
+		"message": "メモは削除できません エラー: keyword does not exist",
+		"description": "(background) 請求刪除的關鍵字筆記因關鍵字索引不存在事件發生的訊息"
+	},
+	"delete_keyword_note_finish": {
+		"message": "メモが削除されました",
+		"description": "(background) 請求刪除的關鍵字筆記刪除成功事件發生的訊息"
+	},
+	"delete_keyword_note_execute_error": {
+		"message": "メモは削除できません エラー:",
+		"description": "(background) 請求刪除的關鍵字筆記因執行中發生錯誤事件發生的訊息"
+	},
+	"edit_keyword_note_noexist_error": {
+		"message": "メモは削除できません エラー: keyword does not exist",
+		"description": "(background) 請求編輯的關鍵字筆記因關鍵字索引不存在事件發生的訊息"
+	},
+	"edit_keyword_note_finish": {
+		"message": "メモを編集しました",
+		"description": "(background) 請求編輯的關鍵字筆記編輯成功事件發生的訊息"
+	},
+	"edit_keyword_note_execute_error": {
+		"message": "このメモは編集できません エラー:",
+		"description": "(background) 請求編輯的關鍵字筆記因執行中發生錯誤事件發生的訊息"
+	},
+	"inport_backupdata_finish": {
+		"message": "インポートが成功しました",
+		"description": "(background) 匯入備份資料成功事件發生的訊息"
+	},
+	"backup_docs_google_unlogin_error": {
+		"message": "まだGoogleアカウントにログインしていません\n設定にログインしてください",
+		"description": "(background) 請求備份時因未登入事件發生的訊息"
+	},
+	"backup_docs_google_notexist_error": {
+		"message": "このキーワードは存在しません",
+		"description": "(background) 請求備份時因關鍵字不存在事件發生的訊息"
+	},
+	"backup_docs_google_cantgettoken_error": {
+		"message": "Googleアカウントを取得できません\n再度ログインしてもう一度お試しください",
+		"description": "(background) 請求備份時因無法取得 token 事件發生的訊息"
+	},
+	"check_can_connect_google": {
+		"message": "KDN は Google アカウントに接続されています\n利用可能なクラウドサービス",
+		"description": "(background) 初始化時已有登入 google 的訊息"
+	},
+	"port_with_background_reconnect": {
+		"message": "サイドバーの Web インデックスとページ間のリンクの更新が切断されました\nリンクを復元したい場合は、既存の進行状況を保存して、サイドバーを再度開いてください",
+		"description": "(sidepanel) 側邊欄請求重新連線的訊息"
+	},
+	"sidepanel_unsaved_warning": {
+		"message": "編集中のメモがまだあります\nこの操作を実行する前に、編集中のメモを保存してください",
+		"description": "(sidepanel) 側邊欄警告 先儲存正在編輯的筆記 的訊息"
+	},
+	"sidepanel_unrecord_url_warning": {
+		"message": "インデックスのない URL は削除できません",
+		"description": "(sidepanel) 側邊欄警告 刪除未被紀錄網址索引 的訊息"
+	},
+	"sidepanel_unsearched_warning": {
+		"message": "この機能を使用する前に、\nまず検索してください",
+		"description": "(sidepanel) 側邊欄警告 未先搜尋網頁關鍵字 的訊息"
+	},
+	"sidepanel_unfinished_function_warning": {
+		"message": "この機能はドラフト段階です",
+		"description": "(sidepanel) 側邊欄警告 該功能未完成 的訊息"
+	},
+	"sidepanel_timeout_warning": {
+		"message": "操作が制限時間を超えたようです\n操作をもう一度試してください",
+		"description": "(sidepanel) 側邊欄警告 超時的請求回應 的訊息"
+	},
+	"options_delete_keyword": {
+		"message": "キーワード インデックスを削除しています\n削除後はキーワードに関連付けられたメモを取得できません\n続行しますか?",
+		"description": "(sidepanel) 請求確認 刪除關鍵字索引 的訊息"
+	},
+	"options_delete_url": {
+		"message": "URL インデックスを削除しています\n削除後にキーワードに関連付けられたメモを取得することはできません\n続行しますか?",
+		"description": "(sidepanel) 請求確認 刪除網址索引 的訊息"
+	},
+	"options_delete_keyword_note": {
+		"message": "キーワード メモを削除しています\n削除後はメモを取得できません\n続行しますか?",
+		"description": "(sidepanel) 請求確認 刪除關鍵字筆記 的訊息"
+	},
+	"options_delete_url_note": {
+		"message": "URL メモを削除しています\n削除後はメモを取得できません\n続行しますか?",
+		"description": "(sidepanel) 請求確認 刪除網址筆記 的訊息"
+	},
+	"submit_newkeyword_click_warning": {
+		"message": "キーワードが入力されていません",
+		"description": "(popup) 警告: 新しいキーワードを空にすることはできません"
+	},
+	"research_click_warning": {
+		"message": "再度検索する前に少なくとも 1 回検索してください",
+		"description": "(popup) 警告未執行初始搜尋前 不可請求重新搜尋"
+	},
+	"content_script_found": {
+		"message": "マークされたキーワードの位置\nこのページの @ 個の場所にキーワードが見つかりました",
+		"description": "(content-script) 該網頁中有找到關鍵字的訊息(@ 為找到多少關鍵字)"
+	},
+	"content_script_notfound": {
+		"message": "現在のページではキーワードが見つかりませんでした",
+		"description": "(content-script) 該網頁中找不到關鍵字的訊息"
+	}
+}

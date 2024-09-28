@@ -69,7 +69,7 @@
 			"extension_ids": ["*"]
 		},
 		{
-			"resources": ["modle/*.js"],
+			"resources": ["module/*.js"],
 			"extension_ids": ["*"]
 		}
 	],

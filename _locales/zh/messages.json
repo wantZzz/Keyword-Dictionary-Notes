@@ -308,7 +308,7 @@
 		"description": "(background) 初始化時已有登入 google 的訊息"
 	},
 	"port_with_background_reconnect": {
-		"message": "側邊欄與頁面的連動更新斷線\n請儲存現有進度並重新連線",
+		"message": "側邊欄網頁索引與頁面的連動更新斷線\n若想恢復連動請儲存現有進度並重開側邊欄",
 		"description": "(sidepanel) 側邊欄請求重新連線的訊息"
 	},
 	"sidepanel_unsaved_warning": {

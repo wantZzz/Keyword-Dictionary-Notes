@@ -1,5 +1,5 @@
-import {newNoteGoogleDocs, remitNoteGoogleDocs} from "./modle/Remit2GoogleDocs.js";
-import {isSubPageIndex, responseSidepanelSubPageIndexUrlNoteData} from "./modle/SubpageIndex.js";
+import {newNoteGoogleDocs, remitNoteGoogleDocs} from "./module/Remit2GoogleDocs.js";
+import {initSubPageIndexs, subpageIndex_module} from "./module/SubpageIndex.js";
 
 //外部腳本資料
 var currentpage_TabId = null;
@@ -17,9 +17,11 @@ var setting = {
 
 var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
 //儲存資料
-const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'RecordedUrls'];
+const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'RecordedUrls', 'NoIndexNote'];
 var recorded_Keywords = [];
 var current_Keyword = '';
+
+const subpageIndex = new subpageIndex_module(responseUrlNoteData, getNotePriority, responseSidepanelUrlNoteData, moduleDataRead, moduleDataWrite);
 
 // ====== 資料回傳 ====== 
 function responseCurrentPageStatus(callback){
@@ -66,7 +68,7 @@ function responseCurrentPageStatus(callback){
 					waiting_RefreshPage = currentpage_TabId;
 				}
 				else{
-					response.is_special_urls = isSubPageIndex(response.host);
+					response.is_special_urls = subpageIndex.isSubPageIndex(response.host);
 					const current_tab_info = {
 						page_status: response,
 						is_support: true,
@@ -210,8 +212,8 @@ function responseSidepanelUrlNoteData(host, callback){
 }
 
 function responseSidepanelSpecialUrlNoteData(title, host, url, callback){
-	if (isSubPageIndex(host)){
-		responseSidepanelSubPageIndexUrlNoteData(title, host, url, responseUrlNoteData, getNotePriority, responseSidepanelUrlNoteData, callback)
+	if (subpageIndex.isSubPageIndex(host)){
+		subpageIndex.responseSidepanelSubPageIndexUrlNoteData(title, host, url, callback)
 	}
 }
 
@@ -1014,6 +1016,29 @@ function removeUrlIndex(host, is_special_url){
 	}
 }
 
+function moduleDataRead(modulename, key, callback){
+	chrome.storage.local.get(["ModuleData"]).then((result) => {
+		const module_datas = result.ModuleData;
+		
+		callback(module_datas[modulename][key]);
+	});
+}
+
+function moduleDataWrite(modulename, key, value, callback){
+	chrome.storage.local.get(["ModuleData"]).then((result) => {
+		let module_datas = result.ModuleData;
+		
+		module_datas[modulename][key] = value;
+		chrome.storage.local.set({ModuleData: module_datas}).then(() => {
+			if (chrome.runtime.lastError){
+				callback(false);
+			}
+			else{
+				callback(true);
+			}
+		});
+	});
+}
 //function getNodeBackgroundColor(input_node)
 
 // ====== 檔案存取 ====== 
@@ -1508,6 +1533,23 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 					}
 				});
 			}
+			
+			break;
+		case 'quest-noindex-notedata-sidepanel':
+			sendResponse({});
+			
+			responseSidepanelKeywordsNoteData('NoIndexNote', true, (keyword_notedata, keywords_priority) => {
+				const response_keyword_notedata = {
+					event_name: 'response-noindex-notedata-sidepanel',
+					keyword_notedata: keyword_notedata,
+					keywords_priority: keywords_priority
+				};
+				
+				if (is_SidepanelON){
+					chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
+					current_Keyword = 'NoIndexNote';
+				}
+			});
 			
 			break;
 		case 'quest-keyword-notedata-content':

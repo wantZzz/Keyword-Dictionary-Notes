@@ -1391,6 +1391,17 @@ function more_suggestion_button_click(event){
 	
 	all_suggestion_popup.classList.add('popup_show');
 }
+function noindexnote_button_click(event){
+	if (is_KeywordNewNoteEdit != null){
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+		return;
+	}
+	
+	if (!(current_Keyword === 'NoIndexNote')){
+		chrome.runtime.sendMessage({event_name: 'quest-noindex-notedata-sidepanel'}, (t) => {});
+		current_Keyword = trigger_keyword;
+	}
+}
 function keywordSearchAlgorithmProcess(event){
 	if (is_SuggestionSearch_Composition){
 		return;
@@ -1439,6 +1450,10 @@ function keywordSearchAlgorithmProcess(event){
 
 // --- keyword area title buttons ---
 function keyword_previous_mark_button_click(event){
+	if (current_Keyword === 'NoIndexNote'){
+		return
+	}
+	
 	if (is_CurrentPageSearch){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-previous-mark', target_keyword: current_Keyword}, (t) => {});
 	}
@@ -1447,6 +1462,10 @@ function keyword_previous_mark_button_click(event){
 	}
 }
 function keyword_next_mark_button_click(event){
+	if (current_Keyword === 'NoIndexNote'){
+		return
+	}
+	
 	if (is_CurrentPageSearch){
 		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-next-mark', target_keyword: current_Keyword}, (t) => {});
 	}
@@ -1529,6 +1548,9 @@ function keyword_new_note_button_click(event){
 }
 function keyword_delete_button_click(event){
 	const keyword = current_Keyword;
+	if (keyword === 'NoIndexNote'){
+		triggerAlertWindow('純筆記下無法一次刪除所有筆記', 'warning');//需要多語言i18n
+	}
 
 	const send_keyword_note_delete = {
 		notification_type: 'message',
@@ -2045,6 +2067,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			
 			refreshKeywordArea(request.keyword, request.keyword_notedata, request.keywords_priority);
 			break;
+		case 'response-noindex-notedata-sidepanel':
+			sendResponse({});
+			
+			refreshKeywordArea('純筆記', request.keyword_notedata, request.keywords_priority);//需要多語言i18n
+			break;
 		case 'reload-recorded-Keywords':
 			sendResponse({});
 			
@@ -2258,6 +2285,7 @@ function runInitial(){
 	
 	const suggestion_area = document.getElementById("suggestion_area");
 	suggestion_area.querySelector("button#more_suggestion").addEventListener("click", more_suggestion_button_click);
+	suggestion_area.querySelector("button#pure_notes").addEventListener("click", noindexnote_button_click);
 	const suggestion_container = suggestion_area.querySelector(".suggestion_container");
 	suggestion_container.onwheel = function (event){ 
 		event.preventDefault();  

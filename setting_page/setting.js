@@ -1,4 +1,4 @@
-import {formatNote2GoogleDocs} from "/modle/Remit2GoogleDocs.js";
+import {formatNote2GoogleDocs} from "/module/Remit2GoogleDocs.js";
 
 //通用設定資料
 var settings = {
