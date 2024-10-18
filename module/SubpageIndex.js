@@ -13,7 +13,7 @@ export class subpageIndex_module{
 		
 		/*
 		this.moduleDataRead(this.modulename, 'custom_subpageIndexs', (custom_subpageIndexs) => {
-			this.custom_subpageIndexs = custom_subpageIndexs;
+			this.custom_subpageIndexs = Object.keys(custom_subpageIndexs);
 		});
 		*/
 	}

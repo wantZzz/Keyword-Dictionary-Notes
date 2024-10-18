@@ -1399,7 +1399,7 @@ function noindexnote_button_click(event){
 	
 	if (!(current_Keyword === 'NoIndexNote')){
 		chrome.runtime.sendMessage({event_name: 'quest-noindex-notedata-sidepanel'}, (t) => {});
-		current_Keyword = trigger_keyword;
+		current_Keyword = 'NoIndexNote';
 	}
 }
 function keywordSearchAlgorithmProcess(event){
@@ -1451,7 +1451,7 @@ function keywordSearchAlgorithmProcess(event){
 // --- keyword area title buttons ---
 function keyword_previous_mark_button_click(event){
 	if (current_Keyword === 'NoIndexNote'){
-		return
+		return;
 	}
 	
 	if (is_CurrentPageSearch){
@@ -1463,7 +1463,7 @@ function keyword_previous_mark_button_click(event){
 }
 function keyword_next_mark_button_click(event){
 	if (current_Keyword === 'NoIndexNote'){
-		return
+		return;
 	}
 	
 	if (is_CurrentPageSearch){
@@ -1549,7 +1549,8 @@ function keyword_new_note_button_click(event){
 function keyword_delete_button_click(event){
 	const keyword = current_Keyword;
 	if (keyword === 'NoIndexNote'){
-		triggerAlertWindow('純筆記下無法一次刪除所有筆記', 'warning');//需要多語言i18n
+		triggerAlertWindow(chrome.i18n.getMessage('noindexnote_delete_button_warning'), 'warning');
+		return;
 	}
 
 	const send_keyword_note_delete = {
@@ -2070,7 +2071,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		case 'response-noindex-notedata-sidepanel':
 			sendResponse({});
 			
-			refreshKeywordArea('純筆記', request.keyword_notedata, request.keywords_priority);//需要多語言i18n
+			refreshKeywordArea(chrome.i18n.getMessage('noindexnote_titlename'), request.keyword_notedata, request.keywords_priority);
+			current_Keyword = 'NoIndexNote';
 			break;
 		case 'reload-recorded-Keywords':
 			sendResponse({});
@@ -2346,7 +2348,10 @@ function runInitial(){
 		console.log(`${is_SwitchWithTab} ${current_Keyword}`);
 		chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
 			recordedKeywordsUpdate(response.recorded_keywords);
-			if (Boolean(current_Keyword)){
+			if (current_Keyword == 'NoIndexNote'){
+				chrome.runtime.sendMessage({event_name: 'quest-noindex-notedata-sidepanel'}, (t) => {});
+			}
+			else if (Boolean(current_Keyword)){
 				chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword, is_first: true}, (t) => {});
 			}
 		});

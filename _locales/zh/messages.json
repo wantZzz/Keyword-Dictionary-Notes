@@ -362,5 +362,17 @@
 	"content_script_notfound": {
 		"message": "未能在目前網頁上找到關鍵字",
 		"description": "(content-script) 該網頁中找不到關鍵字的訊息"
+	},
+	"suggestion_area_noindexnote_button__title": {
+		"message": "顯示純筆記",
+		"description": "(sidepanel) 顯示純筆記於的關鍵字瀏覽區"
+	},
+	"noindexnote_titlename": {
+		"message": "純筆記",
+		"description": "(sidepanel) 純筆記顯示於的關鍵字瀏覽區的標題"
+	},
+	"noindexnote_delete_button_warning": {
+		"message": "純筆記下無法一次刪除所有筆記",
+		"description": "(sidepanel) 純筆記下無法一次刪除所有筆記的訊息"
 	}
 }

@@ -362,5 +362,17 @@
 	"content_script_notfound": {
 		"message": "現在のページではキーワードが見つかりませんでした",
 		"description": "(content-script) 該網頁中找不到關鍵字的訊息"
+	},
+	"suggestion_area_noindexnote_button__title": {
+		"message": "純粋なノートを表示する",
+		"description": "(sidepanel) 純粋なメモが配置されるキーワード閲覧エリアを表示します"
+	},
+	"noindexnote_titlename": {
+		"message": "純書き込み",
+		"description": "(sidepanel) 純筆記顯示於的關鍵字瀏覽區の標題"
+	},
+	"noindexnote_delete_button_warning": {
+		"message": "純粋なメモでは、すべてのメモを一度に削除することはできません",
+		"description": "(sidepanel) 純筆記下無法一次刪除所有筆記的訊息"
 	}
 }

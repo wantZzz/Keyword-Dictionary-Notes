@@ -362,5 +362,17 @@
 	"content_script_notfound": {
 		"message": "The keyword could not be found on the current page",
 		"description": "(content-script) The message for the keyword cannot be found on this page"
+	},
+	"suggestion_area_noindexnote_button__title": {
+		"message": "Show pure notes",
+		"description": "(sidepanel) Display the keyword browsing area where pure notes are placed"
+	},
+	"noindexnote_titlename": {
+		"message": "Pure notes",
+		"description": "(sidepanel) The title of the keyword browsing area where pure notes are displayed"
+	},
+	"noindexnote_delete_button_warning": {
+		"message": "It is not possible to delete all notes at once under pure notes",
+		"description": "(sidepanel) Note-only messages cannot delete all notes at once"
 	}
 }

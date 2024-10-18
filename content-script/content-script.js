@@ -73,57 +73,6 @@ function trackHostListener(){
 function insertPopupHtml(){
 	var keyword_container = document.createElement('keywordnote');
 	
-	/*
-	keyword_container.innerHTML = `<div class="keywordnote_popup">
-									<div class="popup_header">
-									  <div class="title_boder">
-											<span id="keyword_title">某個關鍵字</span>
-											<div class="right_fade"></div>
-									  </div>
-									  <div class="keyword_button_container">
-											<button id="keyword_note_sidepanel_show">
-												<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
-												<path fill="currentColor" d="M40 12a6.25 6.25 0 00-6-6h-24a6.25 6.25 0 00-5 6v22a6.25 6.25 0 005 5h24a6.25 6.25 0 006-5.25zm-30 24a3.75 3.75 0 01-2-2v-22a3.75 3.75 0 012-3h15v27z" />
-												</svg>
-											</button>
-											<button id="keyword_note_invisible">
-												<i class="svg_icon">
-												<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 14 14">
-													<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-													<path d="M3.63 3.624C4.621 2.98 5.771 2.5 7 2.5c2.79 0 5.18 2.475 6.23 3.746c.166.207.258.476.258.754c0 .279-.092.547-.258.754c-.579.7-1.565 1.767-2.8 2.583m-1.93.933c-.482.146-.984.23-1.5.23c-2.79 0-5.18-2.475-6.23-3.746A1.208 1.208 0 0 1 .512 7c0-.278.092-.547.258-.754c.333-.402.8-.926 1.372-1.454" />
-													<path d="M8.414 8.414a2 2 0 0 0-2.828-2.828M13.5 13.5L.5.5" />
-													</g>
-												</svg>
-												</i>
-											</button>
-											<button id="keyword_note_highlight">
-												<i class="svg_icon">
-												<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24">
-													<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-													<path d="m9 11l-6 6v3h9l3-3" />
-													<path d="m22 12l-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" />
-													</g>
-												</svg>
-												</i>
-											</button>
-									  </div> 
-									</div>
-									<div class="pin_note_container">
-									  <div class="note_block">
-											<div class="note_content">
-												This page is still in its initial state...
-											</div>
-											<div class="bottom_fade"></div>
-									  </div>
-									  <div class="windos_timestamp_container">
-											<div class="windos_message_timestamp">
-												Waiting for popup start up...
-											</div>
-									  </div>
-									</div>
-								</div>`;
-	*/
-	
 	keyword_container.innerHTML = `<div class="keywordnote_popup">
 									<div class="popup_header">
 									  <div class="title_boder">
