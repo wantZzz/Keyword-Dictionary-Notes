@@ -1077,7 +1077,15 @@ function getDisplayKeyword(callback, try_time = 0){
 		let DisplayCRF = result.KeywordsDisplayCRF;
 		let display_list = [];
 		
-		if (DisplayCRF == undefined){
+		try{
+			const display_list_length = Math.min((DisplayCRF.length - 1), Math.abs(DisplayCRF[DisplayCRF.length - 1][1]));
+			for (let i = 0; i < display_list_length; i++){
+				display_list.push(DisplayCRF[i][0]);
+			}
+			
+			callback(display_list);
+		}
+		catch{
 			if (try_time < 3){
 				setTimeout(() => {
 					getDisplayKeyword(callback, try_time + 1);
@@ -1087,12 +1095,6 @@ function getDisplayKeyword(callback, try_time = 0){
 				callback([]);
 			}
 		}
-		const display_list_length = Math.min((DisplayCRF.length - 1), Math.abs(DisplayCRF[DisplayCRF.length - 1][1]));
-		for (let i = 0; i < display_list_length; i++){
-			display_list.push(DisplayCRF[i][0]);
-		}
-		
-		callback(display_list);
 	});
 }
 
