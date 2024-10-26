@@ -2,7 +2,7 @@
 export const initSubPageIndexs = ['www.google.com', 'www.bing.com', 'www.youtube.com', 'www.twitch.tv', 'forum.gamer.com.tw', 'home.gamer.com.tw'];
 
 export class subpageIndex_module{
-	constructor (responseUrlNoteData, getNotePriority, responseSidepanelUrlNoteData, moduleDataRead, moduleDataWrite) {
+	constructor(responseUrlNoteData, getNotePriority, responseSidepanelUrlNoteData, moduleDataRead, moduleDataWrite) {
 		this.modulename = "SubpageIndex";
 		
 		this.responseUrlNoteData = responseUrlNoteData;
@@ -11,24 +11,75 @@ export class subpageIndex_module{
 		this.moduleDataRead = moduleDataRead;
 		this.moduleDataWrite = moduleDataWrite;
 		
-		/*
-		this.moduleDataRead(this.modulename, 'custom_subpageIndexs', (custom_subpageIndexs) => {
-			this.custom_subpageIndexs = Object.keys(custom_subpageIndexs);
+		this.textencoder = new TextEncoder();
+		
+		this.conformSubpage = {};//key: [search_index | null, string]
+	}
+	
+	initSubPageIndexModule(){
+		this.moduleDataRead(this.modulename, 'custom_subpageRules', (custom_subpagerules) => {
+			this.custom_subpageHosts = Object.keys(custom_subpagerules);
+			this.custom_subpageRules = custom_subpagerules;
 		});
-		*/
+		this.moduleDataRead(this.modulename, 'initindexs_enable', (initindexs_enable_data) => {
+			this.initindexs_enable = {};
+			for (let i = 0; i < initSubPageIndexs.length; i++){
+				if (initindexs_enable_data[initSubPageIndexs[i]]){
+					this.initindexs_enable[initSubPageIndexs[i]] = initindexs_enable_data[initSubPageIndexs[i]];
+				}
+				else{
+					this.initindexs_enable[initSubPageIndexs[i]] = false;
+				}
+			}
+		});
+	
+		console.log('subpageIndex 初始化完成');
 	}
 	
 	isSubPageIndex(host){
-		return initSubPageIndexs.includes(host);
+		//return initSubPageIndexs.includes(host);
 		
-		/*
 		if (initSubPageIndexs.includes(host)){
 			return true;
 		}
-		else if (this.custom_subpageIndexs.includes(host)){
+		else if (this.custom_subpageHosts.includes(host)){
 			return true;
 		}
-		*/
+	}
+	
+	base64ToPathname(base64) { //sorce: https://developer.mozilla.org/en-US/docs/Glossary/Base64
+		const binString = atob(base64);
+		const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0));
+	  
+		return this.textencoder.decode(bytes);
+	}
+
+	pathnameToBase64(pathname) { //sorce: https://developer.mozilla.org/en-US/docs/Glossary/Base64
+		const bytes = this.textencoder.encode(pathname);
+		
+		const binString = Array.from(bytes, (byte) =>
+			String.fromCodePoint(byte),
+		).join("");
+		return btoa(binString);
+	}
+
+	logicOperationSwitching(input_A, input_B, logic){
+		switch(logic){
+			case 'AND':
+				return input_A && input_B;
+				break;
+			case 'OR':
+				return input_A || input_B;
+				break;
+			case 'NAND':
+				return !(input_A && input_B);
+				break;
+			case 'NOR':
+				return !(input_A || input_B);
+				break;
+			default:
+				return false;
+		}
 	}
 	
 	responseSidepanelSubPageIndexUrlNoteData(title, host, url, callback){
@@ -38,7 +89,10 @@ export class subpageIndex_module{
 			case 'www.google.com':
 				const google_url = new URL(url);
 
-				if (google_url.searchParams.has('q')){
+				if (!this.initindexs_enable['www.google.com']){
+					break;
+				}
+				else if (google_url.searchParams.has('q')){
 					is_match = true;
 					const google_key_index = host + ':' + google_url.searchParams.get('q');
 					const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="-2 -2 24 24" style="position: relative;top: calc(50% - 0.5em);">
@@ -71,7 +125,10 @@ export class subpageIndex_module{
 				let bing_pathnames = bing_url.pathname;
 				bing_pathnames = bing_pathnames.slice(1).split('/')
 				
-				if ((bing_pathnames[0] == 'search') && bing_url.searchParams.has('q')){
+				if (!this.initindexs_enable['www.bing.com']){
+					break;
+				}
+				else if ((bing_pathnames[0] == 'search') && bing_url.searchParams.has('q')){
 					is_match = true;
 					const bing_key_index = host + ':' + bing_url.searchParams.get('q');
 					const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" style="position: relative;top: calc(50% - 0.5em);">
@@ -100,7 +157,10 @@ export class subpageIndex_module{
 			case 'www.youtube.com':
 				const youtube_url = new URL(url);
 
-				if (youtube_url.searchParams.has('v')){
+				if (!this.initindexs_enable['www.youtube.com']){
+					break;
+				}
+				else if (youtube_url.searchParams.has('v')){
 					is_match = true;
 					const youtube_key_index = host + ':' + youtube_url.searchParams.get('v');
 					const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" style="position: relative;top: calc(50% - 0.5em);">
@@ -130,7 +190,10 @@ export class subpageIndex_module{
 				let twitch_pathnames = twitch_url.pathname;
 				twitch_pathnames = twitch_pathnames.slice(1).split('/')
 				
-				if (twitch_pathnames.length == 1 && Boolean(twitch_pathnames[0])){
+				if (!this.initindexs_enable['www.twitch.tv']){
+					break;
+				}
+				else if (twitch_pathnames.length == 1 && Boolean(twitch_pathnames[0])){
 					is_match = true;
 					const twitch_key_index = host + ':' + twitch_pathnames[0];
 					const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" style="position: relative;top: calc(50% - 0.5em);">
@@ -162,7 +225,10 @@ export class subpageIndex_module{
 			case 'forum.gamer.com.tw':
 				const forumgamer_url = new URL(url);
 				
-				if (forumgamer_url.searchParams.has('bsn')){
+				if (!this.initindexs_enable['forum.gamer.com.tw']){
+					break;
+				}
+				else if (forumgamer_url.searchParams.has('bsn')){
 					is_match = true;
 					const forumgamer_key_index = host + ':' + forumgamer_url.searchParams.get('bsn');
 					const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 40 40" style="position: relative;top: calc(50% - 0.5em);">
@@ -192,7 +258,10 @@ export class subpageIndex_module{
 				let homegamer_pathnames = homegamer_url.pathname;
 				homegamer_pathnames = homegamer_pathnames.slice(1).split('/')
 				
-				if (['artwork.php', 'creationDetail.php'].includes(homegamer_pathnames[0])){
+				if (!this.initindexs_enable['home.gamer.com.tw']){
+					break;
+				}
+				else if (['artwork.php', 'creationDetail.php'].includes(homegamer_pathnames[0])){
 					is_match = true;
 					const homegamer_key_index = host + ':' + title.slice(title.indexOf(' - ') + 3, title.indexOf('的創作'));
 					
@@ -254,31 +323,178 @@ export class subpageIndex_module{
 		}
 		
 		if (!is_match){
-			/*
-			let custom_indexcopy = this.custom_subpageIndexs;
+			const subpagehost_length = this.custom_subpageHosts.length;
 			let is_match_custom = false;
+			let search_index = null;
 			
-			while (custom_indexcopy.length){
-				if (custom_indexcopy.pop() == host){
-					is_match_custom = true;
+			for (let i = 0; i < subpagehost_length; i++){
+				if (this.custom_subpageHosts[i] == host){
+					const custom_index_url = new URL(url);
 					
+					search_index = this.pathnameToBase64(custom_index_url.pathname + custom_index_url.search);
 					
+					if (this.conformSubpage[search_index]){
+						[search_index, title] = this.conformSubpage[search_index][0];//暫時只顯示第一符合
+						is_match_custom = (search_index != null);
+					}
+					else{
+						this.getCustomSubpageIndexs(title, custom_index_url, (is_conform, subindexs) => {
+							if (is_conform){
+								is_match_custom = true;
+								
+								if (subindexs.length){
+									this.conformSubpage[search_index] = subindexs;
+									[search_index, title] = subindexs[0];//暫時只顯示第一符合
+								}
+								else{
+									this.conformSubpage[search_index] = [[search_index, title]]
+								}
+							}
+							else{
+								is_match_custom = false;
+								this.conformSubpage[search_index] = null;
+							}
+						});
+					}
+					
+					break;
 				}
 			}
 			
 			if (!is_match_custom){
-			*/
-			
-			this.responseSidepanelUrlNoteData(host, (host_notedata, keywords_priority) => {
-				const response_host_notedata = {
-					event_name: 'response-url-notedata',
-					host: host,
-					host_notedata: host_notedata,
-					keywords_priority: keywords_priority
-				};
-				chrome.runtime.sendMessage(response_host_notedata, (t) => {});
-			});
+				this.responseSidepanelUrlNoteData(host, (host_notedata, keywords_priority) => {
+					const response_host_notedata = {
+						event_name: 'response-url-notedata',
+						host: host,
+						host_notedata: host_notedata,
+						keywords_priority: keywords_priority
+					};
+					chrome.runtime.sendMessage(response_host_notedata, (t) => {});
+				});
+			}
+			else{
+				const output_title = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+										<path fill="currentColor" d="M3 3h6v4H3zm12 7h6v4h-6zm0 7h6v4h-6zm-2-4H7v5h6v2H5V9h2v2h6z" />
+									  </svg>
+									  ${title}`;
+				const custom_index_index = host + '@' + search_index;
+				
+				this.responseUrlNoteData(custom_index_index, (forumgamer_notedata) => {
+					if (forumgamer_notedata == null){
+						callback(output_title, custom_index_index, null, null);
+					}
+					else{
+						this.getNotePriority(host, (forumgamer_priority) => {
+							if (forumgamer_priority == -1){
+								callback(output_title, custom_index_index, forumgamer_notedata, []);
+							}
+							else{
+								callback(output_title, custom_index_index, forumgamer_notedata, forumgamer_priority);
+							}
+						});
+					}
+				});
+			}
 		}
 	}
+	
+	getCustomSubpageIndexs(title, custom_index_url, callback){
+		const custom_length = this.custom_subpageRules[custom_index_url.host].length;
+		let subpage_indexs = [];
+		let is_conform = false;
+		
+		for (let i = 0; i < custom_length; i++){
+			const check_rules = this.custom_subpageRules[custom_index_url.host][i];
+			
+			if (!check_rules.enable){
+				continue;
+			}
+			
+			let regex_result = null;
+			switch(check_rules.mode){
+				case 'pathname':
+					/*
+					{
+						mode: 'pathname',
+						enable: bool,
+						id: int(11111~99999),
+						regex_rule: string
+					}
+					*/
+					const pathname_regex = new RegExp(check_rules.regex_rule);
+					regex_result = custom_index_url.pathname.match(pathname_regex);
+					
+					if (Boolean(regex_result)){
+						try{
+							let specify_index = regex_result.groups.specify_index;
+							subpage_indexs.push([`${check_rules.id}${specify_index}`, specify_index]);
+						}
+						finally {
+							is_conform = true;
+						}
+					}
+						
+					break;
+				case 'parameter':
+					/*
+					{
+						mode: 'parameter',
+						enable: bool,
+						id: int(11111~99999),
+						judge: [{
+							param: string,
+							is_regex: bool,
+							regex_rule: [null | string],
+							logic: string['AND', 'OR', 'NAND', 'NOR']
+						}]
+					}
+					*/
+					let judges = custom_rules.judge;
+					let parameter_conform = false;
+					
+					while (judges.length){
+						const judge = judges.pop();
+						const has_param = custom_index_url.searchParams.has(judge.param);
+						
+						if (has_param && judge.is_regex){
+							const param_regex = new RegExp(judge.regex_rule);
+							has_param = param_regex.test(custom_index_url.searchParams.get(judge.param));
+						}
+						
+						parameter_conform = this.logicOperationSwitching(parameter_conform, has_param, judge.logic);
+					}
+					
+					is_conform = is_conform || parameter_conform;
+					
+					break;
+				case 'title':
+					/*
+					{
+						mode: 'title',
+						enable: bool,
+						id: int(11111~99999),
+						regex_rule: string
+					}
+					*/
+					const title_regex = new RegExp(check_rules.regex_rule);
+					regex_result = title.match(title_regex);
+					
+					if (Boolean(regex_result)){
+						try{
+							let specify_index = regex_result.groups.specify_index;
+							subpage_indexs.push([`${check_rules.id}${specify_index}`, specify_index]);
+						}
+						finally {
+							is_conform = true;
+						}
+					}
+						
+					break;
+			}
+		}
+		
+		callback(is_conform, subpage_indexs);
+	}
 }
+
 //---- sidepanel ----

@@ -1,4 +1,5 @@
 import {formatNote2GoogleDocs} from "/module/Remit2GoogleDocs.js";
+//import {initSubPageIndexs, initSubPageIndexs_info, subpageIndex_setting} from "./module/SubpageIndex.js";
 
 //通用設定資料
 var settings = {
@@ -92,6 +93,32 @@ function noteVersionUpdate(data, note_version){
 		case 1:
 			data['RecordedUrls'] = {};
 			data['note_version'] = 2;
+		case 2:
+			data['ModuleData'] = {
+				"SubpageIndex": {
+					"initindexs_enable": {
+						"www.google.com": true,
+						"www.bing.com": true,
+						"www.youtube.com": true,
+						"www.twitch.tv": true,
+						"forum.gamer.com.tw": true,
+						"home.gamer.com.tw": true
+					},
+					"custom_subpageIndexs": {
+						"www.pttweb.cc": []
+					},
+					"custom_subpageRules": {
+						"www.pttweb.cc": [{
+							"mode": "pathname",
+							"enable": true,
+							"id": 11111,
+							"regex_rule": "(?<specify_index>Military)"
+						}]
+					}
+				}
+			};
+			data['NoIndexNote'] = [];
+			data['note_version'] = 3;
 	}
 	
 	return data;
@@ -391,6 +418,8 @@ function runInitial(){
 	});
 	
 	const rules_created_list = document.getElementById('rules-created-table');
+	//initRulesTable(rules_created_list);
+	
 	const rules_switch_toggles = rules_created_list.querySelectorAll('.switch-toggle span.toggle-box');
 	rules_switch_toggles.forEach(function (switch_toggle){
 		switch_toggle.addEventListener('click', rulesSwitchOnClick);

@@ -17,7 +17,7 @@ var setting = {
 
 var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
 //儲存資料
-const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'RecordedUrls', 'NoIndexNote'];
+const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'RecordedUrls', 'NoIndexNote', 'ModuleData'];
 var recorded_Keywords = [];
 var current_Keyword = '';
 
@@ -877,7 +877,15 @@ function getDisplayKeyword(callback, try_time = 0){
 		let DisplayCRF = result.KeywordsDisplayCRF;
 		let display_list = [];
 		
-		if (DisplayCRF == undefined){
+		try{
+			const display_list_length = Math.min((DisplayCRF.length - 1), Math.abs(DisplayCRF[DisplayCRF.length - 1][1]));
+			for (let i = 0; i < display_list_length; i++){
+				display_list.push(DisplayCRF[i][0]);
+			}
+			
+			callback(display_list);
+		}
+		catch{
 			if (try_time < 3){
 				setTimeout(() => {
 					getDisplayKeyword(callback, try_time + 1);
@@ -887,12 +895,6 @@ function getDisplayKeyword(callback, try_time = 0){
 				callback([]);
 			}
 		}
-		const display_list_length = Math.min((DisplayCRF.length - 1), Math.abs(DisplayCRF[DisplayCRF.length - 1][1]));
-		for (let i = 0; i < display_list_length; i++){
-			display_list.push(DisplayCRF[i][0]);
-		}
-		
-		callback(display_list);
 	});
 }
 
@@ -1172,7 +1174,8 @@ function inportBackupJsonData(import_data, is_overwrite){
 				"AutoTriggerUrl": import_data.AutoTriggerUrl,
 				"KeywordsDisplayCRF": import_data.KeywordsDisplayCRF,
 				"KeywordsNotePriority": import_data.KeywordsNotePriority,
-				"KeywordsSetting": keywords_settings
+				"KeywordsSetting": keywords_settings,
+				"ModuleData": import_data.ModuleData
 			}
 			
 			chrome.storage.local.get(["RecordedUrls"]).then((result) => {
@@ -1186,6 +1189,9 @@ function inportBackupJsonData(import_data, is_overwrite){
 							current_Keyword = control_data.RecordedKeywords.includes(current_Keyword) ? current_Keyword : import_data.RecordedKeywords[0];
 							
 							triggerNotificationMessage(chrome.i18n.getMessage('inport_backupdata_finish'), 'ok');
+							
+							subpageIndex.loadSubPageIndexData();
+							
 							if (Boolean(portWithSidepanel)){
 								responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
 									const response_keyword_notedata = {
@@ -2080,6 +2086,7 @@ chrome.runtime.onInstalled.addListener(function (details){
 			recorded_Keywords = ['標籤', '無標籤'];
 			current_Keyword = '標籤';
 			
+			subpageIndex.loadSubPageIndexData();
 			console.log('安裝初始化完成');
 		})
 	}
@@ -2106,6 +2113,34 @@ chrome.runtime.onInstalled.addListener(function (details){
 					case 1:
 						chrome.storage.local.set({"RecordedUrls": {}}).then(() => {});
 						settingInitialSetting('note_version', 2, () => {});
+					case 2:
+						chrome.storage.local.set({
+							"ModuleData": {
+								"SubpageIndex": {
+									"initindexs_enable": {
+										"www.google.com": true,
+										"www.bing.com": true,
+										"www.youtube.com": true,
+										"www.twitch.tv": true,
+										"forum.gamer.com.tw": true,
+										"home.gamer.com.tw": true
+									},
+									"custom_subpageIndexs": {
+										"www.pttweb.cc": []
+									},
+									"custom_subpageRules": {
+										"www.pttweb.cc": [{
+											"mode": "pathname",
+											"enable": true,
+											"id": 11111,
+											"regex_rule": "bbs/(?<specify_index>\\w+)([/]{0,1})"
+										}]
+									}
+								}
+							},
+							"NoIndexNote": []
+						}).then(() => {});
+						settingInitialSetting('note_version', 3, () => {});
 				}
 			}
 			/*
@@ -2113,7 +2148,7 @@ chrome.runtime.onInstalled.addListener(function (details){
 			}
 			*/
 			
-			
+			subpageIndex.loadSubPageIndexData();
 			console.log('擴充功能初始化完成');
 		});
 	}
@@ -2154,6 +2189,8 @@ chrome.runtime.onStartup.addListener(() => {
 	});
 	
 	checkForNewRelease();
+	subpageIndex.loadSubPageIndexData();
+	
 	console.log('擴充功能初始化完成');
 });
 

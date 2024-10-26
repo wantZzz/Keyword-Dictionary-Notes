@@ -95,14 +95,14 @@
 				<h3 class="page-title">已建立規則</h3>
 				<table id="rules-created-table">
 					<tbody>
-						<tr>
+						<tr ruleid="*">
 							<td><strong>建立日期</strong></td>
 							<td><strong>應用網域</strong></td>
 							<td><strong>規則類別</strong></td>
 							<td><strong>規則啟用</strong></td>
 							<td></td>
 						</tr>
-						<tr class="on">
+						<tr class="on" ruleid="@www.google.com">
 							<td><span>預設</span></td>
 							<td><span>Google</span></td>
 							<td><span>以文字搜尋詞</span></td>
@@ -113,7 +113,7 @@
 							</td>
 							<td></td>
 						</tr>
-						<tr class="on">
+						<tr class="on" ruleid="@www.youtube.com">
 							<td><span>預設</span></td>
 							<td><span>Youtube</span></td>
 							<td><span>以影片ID</span></td>
@@ -124,7 +124,7 @@
 							</td>
 							<td></td>
 						</tr>
-						<tr class="on">
+						<tr class="on" ruleid="@www.twitch.tv">
 							<td><span>預設</span></td>
 							<td><span>Twitch</span></td>
 							<td><span>以頻道ID</span></td>
@@ -135,7 +135,7 @@
 							</td>
 							<td></td>
 						</tr>
-						<tr class="on">
+						<tr class="on" ruleid="@home.gamer.com.tw">
 							<td><span>預設</span></td>
 							<td><span>巴哈姆特</span></td>
 							<td><span>以哈拉區ID</span></td>
@@ -146,7 +146,7 @@
 							</td>
 							<td></td>
 						</tr>
-						<tr class="on">
+						<tr class="on" ruleid="@forum.gamer.com.tw">
 							<td><span>預設</span></td>
 							<td><span>巴哈姆特</span></td>
 							<td><span>以用戶小屋ID</span></td>
@@ -157,7 +157,7 @@
 							</td>
 							<td></td>
 						</tr>
-						<tr class="on">
+						<tr class="on" ruleid="@www.bing.com">
 							<td><span>預設</span></td>
 							<td><span>Bing</span></td>
 							<td><span>以文字搜尋詞</span></td>
@@ -168,7 +168,7 @@
 							</td>
 							<td></td>
 						</tr>
-						<tr class>
+						<tr class ruleid="11111">
 							<td><span>May 31, 2024</span></td>
 							<td><span>https://www.youtube.com/watch*</span></td>
 							<td><span>網址變數</span></td>
@@ -195,7 +195,7 @@
 					</tbody>
 				</table>
 				<div class="rules-enable-confirm">
-					<button>確認並應用以上規則</button>
+					<button disabled>確認並應用以上規則</button>
 				</div>
 			</div>
 			<div>
@@ -216,11 +216,11 @@
 							<input type="text" dir="ltr" placeholder="http:// or https://">
 						</div>
 						<div class="regex-input">
-							<p>輸入正規表示式進行過濾: </p>
+							<p>輸入正規表示式進行過濾(以 specify_index 為分類基準): </p>
 							<input type="text" classify="regex" placeholder="正規表示式過濾">
 						</div>
 						<div class="rule-confirm">
-							<button>確認並建立規則</button>
+							<button disabled>確認並建立規則</button>
 						</div>
 					</div>
 				  </li>
@@ -297,7 +297,7 @@
 							</table>
 						</div>
 						<div class="rule-confirm">
-							<button>確認並建立規則</button>
+							<button disabled>確認並建立規則</button>
 						</div>
 					</div>
 				  </li>
@@ -320,7 +320,7 @@
 							<input type="text" classify="regex" placeholder="正規表示式過濾">
 						</div>
 						<div class="rule-confirm">
-							<button>確認並建立規則</button>
+							<button disabled>確認並建立規則</button>
 						</div>
 					</div>
 				  </li>
