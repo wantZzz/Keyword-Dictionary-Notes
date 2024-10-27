@@ -30,6 +30,13 @@ export class subpageIndex_module{
 		for (let i = 0; i < initSubPageIndexs.length; i++){
 			this.initindexs_enable[initSubPageIndexs[i]] = false;
 		}
+		
+		this.is_dataloaded = false;
+		setTimeout(() => {
+			if (!this.is_dataloaded){
+				this.loadSubPageIndexData();
+			};
+		}, 3000);
 	}
 	
 	loadSubPageIndexData(){
@@ -49,6 +56,7 @@ export class subpageIndex_module{
 			}
 		});
 		this.conformSubpage = {};
+		this.is_dataloaded = true;
 		
 		console.log('subpageIndex 設定載入完成');
 	}
@@ -540,6 +548,7 @@ export class subpageIndex_module{
 		}
 	
 		this.conformSubpage = {};
+		this.custom_subpageHosts = Object.keys(this.custom_subpageRules);
 		this.moduleDataWrite(this.modulename, 'custom_subpageRules', this.custom_subpageRules, (t) => {})
 	}
 }
@@ -548,6 +557,8 @@ export class subpageIndex_module{
 
 export class subpageIndex_setting{
 	constructor(initindexs_enable, custom_subpagerules){
+		this.modulename = "SubpageIndex";
+		
 		this.initindexs_enable = {};
 		for (let i = 0; i < initSubPageIndexs.length; i++){
 			if (initindexs_enable[initSubPageIndexs[i]]){

@@ -254,7 +254,19 @@ li.switch-content.on .switch-toggle .toggle-box::before{
 #rules-created-table td {
     padding: 4px 10px;
 }
-#rules-created-table td:first-child {
+#rules-created-table td:nth-child(2) {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 140px;
+}
+#rules-created-table td:nth-child(3) {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 300px;
+}
+#rules-created-table tbody tr:first-child {
     padding: 0 10px 0 5px;
 }
 #rules-created-table tbody tr:first-child {
