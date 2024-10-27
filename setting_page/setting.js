@@ -1,5 +1,7 @@
 import {formatNote2GoogleDocs} from "/module/Remit2GoogleDocs.js";
-//import {initSubPageIndexs, initSubPageIndexs_info, subpageIndex_setting} from "./module/SubpageIndex.js";
+import {initSubPageIndexs, initSubPageIndexs_info, subpageIndex_setting} from "/module/SubpageIndex.js";
+
+var subpageSetting = null;//new subpageIndex_setting(initindexs_enable, custom_subpageRules)
 
 //通用設定資料
 var settings = {
@@ -123,6 +125,94 @@ function noteVersionUpdate(data, note_version){
 	
 	return data;
 }
+
+function refrshRulesTable(table){
+	let tbody = table.tBodies[0];
+	
+	function sanitizesString(value){//sorce: https://stackoverflow.com/questions/12799539/javascript-xss-prevention
+		const lt = /</g, gt = />/g, ap = /'/g, ic = /"/g;
+		value = value.toString().replace(lt, "&lt;").replace(gt, "&gt;").replace(ap, "&#39;").replace(ic, "&#34;");
+		
+		return value;
+	}
+	
+	function createRuleTR(id, date, host, rule_category, is_enable, is_initsubpage = false){
+		let ruletr = document.createElement('tr');
+		
+		if (is_enable){
+			ruletr.classList.add('on');
+		}
+		
+		ruletr.setAttribute('ruleid', id);
+		let ruletr_innerhtml = `
+			<td><span>${date}</span></td>
+			<td><span>${host}</span></td>
+			<td><span>${sanitizesString(rule_category)}</span></td>
+			<td>
+				<div class="switch-toggle">
+					<span class="toggle-box"></span>
+				</div>
+			</td>
+		`;
+		
+		ruletr_innerhtml += is_initsubpage ? "<td></td>" : `
+			<td>
+				<div class="rule-created-control">
+					<i class="svg-24button edit-rule-conditions">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-2 -2 28 28">
+							<path fill="currentColor" fill-rule="evenodd" d="M15.586 3a2 2 0 0 1 2.828 0L21 5.586a2 2 0 0 1 0 2.828L19.414 10L14 4.586zm-3 3l-9 9A2 2 0 0 0 3 16.414V19a2 2 0 0 0 2 2h2.586A2 2 0 0 0 9 20.414l9-9z" clip-rule="evenodd" />
+						</svg>
+					</i>
+					<i class="svg-24button delete-rule-conditions">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-2 -2 28 28">
+							<path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
+						</svg>
+					</i>
+				</div>
+			</td>`;
+		ruletr.innerHTML = ruletr_innerhtml;
+		
+		return ruletr;
+	}
+	
+	tbody.innerHTML = `
+		<tr ruleid="*">
+			<td><strong>建立日期</strong></td>
+			<td><strong>應用網域</strong></td>
+			<td><strong>規則類別</strong></td>
+			<td><strong>規則啟用</strong></td>
+			<td></td>
+		</tr>
+	`;
+	const indexs_enable = subpageSetting.getRulesInfo();
+	
+	let wait_list = []
+	for (let i = 0; i < indexs_enable.length; i++){
+		const [id, date, host, rule_category, is_enable] = indexs_enable[i];
+		
+		const is_initsubpage = id.startsWith('@');
+		const tr_node = createRuleTR(id, date, host, rule_category, is_enable, is_initsubpage);
+		
+		if (is_initsubpage){
+			tbody.appendChild(tr_node);
+		}
+		else{
+			wait_list.push(tr_node);
+		}
+	}
+	
+	while(wait_list.length){
+		tbody.appendChild(wait_list.shift());
+	}
+	
+	const rules_switch_toggles = table.querySelectorAll('.switch-toggle span.toggle-box');
+	rules_switch_toggles.forEach(function (switch_toggle){
+		switch_toggle.addEventListener('click', rulesSwitchOnClick);
+	});
+	
+	const rule_tab = table.closest('div#rule-tab');
+	rule_tab.querySelector('div.rules-enable-confirm button').addEventListener('click', rulesEnableConfirmClick);
+}
 // ====== 元素事件 ====== 
 function triggerAlertWindow(message, type){
 	const notification = {
@@ -187,6 +277,29 @@ function dropDownExpand(event){
 	
 	const collapse_content = event.target.closest('li.collapse-content');
 	collapse_content.classList.toggle('expand');
+}
+
+function rulesEnableConfirmClick(event){
+	const tbody = event.target.closest('div#rule-tab').querySelector('tbody');
+	let rules_enable = new Object();
+	
+	for (let i = 0; i < tbody.children.length; i++){
+		const ruletr = tbody.children[i];
+		const ruleid = ruletr.getAttribute('ruleid');
+		
+		if (!Boolean(ruleid)){
+			continue;
+		}
+		else if (ruleid == "*"){
+			continue;
+		}
+		else{
+			rules_enable[ruleid] = ruletr.classList.contains('on');
+		}
+	}
+	
+	subpageSetting.updateRulesEnable(rules_enable);
+	chrome.runtime.sendMessage({event_name: 'update-subpage-rules-enable', rules_enable: rules_enable}, (t) => {});
 }
 
 function addUrlRule(event){
@@ -406,6 +519,18 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				chrome.runtime.sendMessage(response_note2_googledocs, () => {})
 			});
 			break;
+			
+		//--- SubpageIndex.js ---
+		case 'response-init-subpagesetting':
+			sendResponse({});
+			
+			if (!subpageSetting){
+				subpageSetting = new subpageIndex_setting(request.reply_data.initindexs_enable, request.reply_data.custom_subpageRules);
+				
+				const rules_created_list = document.getElementById('rules-created-table');
+				refrshRulesTable(rules_created_list);
+			}
+			break;
 	}
 });
 
@@ -415,14 +540,6 @@ function runInitial(){
 	const title_bottons = sidebar_area.querySelectorAll('button.title_botton');
 	title_bottons.forEach(function (title_botton){
 		title_botton.addEventListener('click', switchCenterPage);
-	});
-	
-	const rules_created_list = document.getElementById('rules-created-table');
-	//initRulesTable(rules_created_list);
-	
-	const rules_switch_toggles = rules_created_list.querySelectorAll('.switch-toggle span.toggle-box');
-	rules_switch_toggles.forEach(function (switch_toggle){
-		switch_toggle.addEventListener('click', rulesSwitchOnClick);
 	});
 	
 	const rules_option_list = document.getElementById('rules-option-list');
@@ -480,6 +597,10 @@ function runInitial(){
 		
 		UpdateAccountGoogleInfo();
 	});
+	
+	//--- SubpageIndex.js ---
+	
+	chrome.runtime.sendMessage({event_name: 'quest-module-data-read', reply_event_name: 'response-init-subpagesetting', modulename: "SubpageIndex", keys: ['custom_subpageRules', 'initindexs_enable']}, (t) => {});
 }
 
 runInitial();

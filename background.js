@@ -1018,11 +1018,22 @@ function removeUrlIndex(host, is_special_url){
 	}
 }
 
-function moduleDataRead(modulename, key, callback){
+function moduleDataRead(modulename, keys, callback){
 	chrome.storage.local.get(["ModuleData"]).then((result) => {
 		const module_datas = result.ModuleData;
 		
-		callback(module_datas[modulename][key]);
+		let reply_data = new Object();
+		
+		while(keys.length){
+			const key = keys.pop();
+			const data = module_datas[modulename][key];
+			
+			if (data){
+				reply_data[key] = data;
+			}
+		}
+		
+		callback(reply_data);
 	});
 }
 
@@ -1588,6 +1599,21 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				chrome.runtime.sendMessage(response_display_keyword, (t) => {});
 			});
 			break;
+			
+		case 'quest-module-data-read':
+			sendResponse({});
+			
+			moduleDataRead(request.modulename, request.keys, (reply_data) => {
+				const response_module_data = {
+					event_name: request.reply_event_name,
+					reply_data: reply_data,
+					keys: request.keys,
+					note: request.note
+				};
+				
+				chrome.runtime.sendMessage(response_module_data, (t) => {});
+			});
+			break;
 		//修改儲存資料
 		case 'send-keyword-note-add-popup'://預計廢棄
 			sendResponse({});
@@ -1930,6 +1956,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 					triggerNotificationMessage(chrome.i18n.getMessage('backup_docs_google_cantgettoken_error'), 'error');
 				}
 			});
+			break;
+			
+		//--- SubpageIndex.js ---
+		case 'update-subpage-rules-enable':
+			sendResponse({});
+			
+			subpageIndex.updateRulesEnable(request.rules_enable);
 			break;
 	}
 	console.log(request.event_name);

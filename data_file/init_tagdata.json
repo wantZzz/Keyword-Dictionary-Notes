@@ -32,7 +32,8 @@
 					"mode": "pathname",
 					"enable": true,
 					"id": 11111,
-					"regex_rule": "bbs/(?<specify_index>\\w+)([/]{0,1})"
+					"regex_rule": "bbs/(?<specify_index>\\w+)([/]{0,1})",
+					"date": "11/4 05:14"
 				}]
 			}
 		}

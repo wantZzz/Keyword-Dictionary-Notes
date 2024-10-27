@@ -1,5 +1,14 @@
-//---- background ----
 export const initSubPageIndexs = ['www.google.com', 'www.bing.com', 'www.youtube.com', 'www.twitch.tv', 'forum.gamer.com.tw', 'home.gamer.com.tw'];
+export const initSubPageIndexs_info = {
+	'www.google.com': {'tilte': 'Google', 'rule': '以文字搜尋詞'},
+	'www.bing.com': {'tilte': 'Bing', 'rule': '以文字搜尋詞'},
+	'www.youtube.com': {'tilte': 'Youtube', 'rule': '以影片ID'},
+	'www.twitch.tv': {'tilte': 'Twitch', 'rule': '以頻道ID'},
+	'forum.gamer.com.tw': {'tilte': '巴哈姆特', 'rule': '以哈拉區ID'},
+	'home.gamer.com.tw': {'tilte': '巴哈姆特', 'rule': '以用戶小屋ID'}
+};
+
+//---- background ----
 
 export class subpageIndex_module{
 	constructor(responseUrlNoteData, getNotePriority, responseSidepanelUrlNoteData, moduleDataRead, moduleDataWrite) {
@@ -14,14 +23,21 @@ export class subpageIndex_module{
 		this.textencoder = new TextEncoder();
 		
 		this.conformSubpage = {};//key: [search_index | null, string]
+		
+		this.custom_subpageHosts = [];
+		this.custom_subpageRules = {};
+		this.initindexs_enable = {};
+		for (let i = 0; i < initSubPageIndexs.length; i++){
+			this.initindexs_enable[initSubPageIndexs[i]] = false;
+		}
 	}
 	
-	initSubPageIndexModule(){
-		this.moduleDataRead(this.modulename, 'custom_subpageRules', (custom_subpagerules) => {
-			this.custom_subpageHosts = Object.keys(custom_subpagerules);
-			this.custom_subpageRules = custom_subpagerules;
-		});
-		this.moduleDataRead(this.modulename, 'initindexs_enable', (initindexs_enable_data) => {
+	loadSubPageIndexData(){
+		this.moduleDataRead(this.modulename, ['custom_subpageRules', 'initindexs_enable'], (module_data) => {
+			this.custom_subpageHosts = Object.keys(module_data.custom_subpageRules);
+			this.custom_subpageRules = module_data.custom_subpageRules;
+			
+			const initindexs_enable_data = module_data.initindexs_enable;
 			this.initindexs_enable = {};
 			for (let i = 0; i < initSubPageIndexs.length; i++){
 				if (initindexs_enable_data[initSubPageIndexs[i]]){
@@ -32,8 +48,9 @@ export class subpageIndex_module{
 				}
 			}
 		});
-	
-		console.log('subpageIndex 初始化完成');
+		this.conformSubpage = {};
+		
+		console.log('subpageIndex 設定載入完成');
 	}
 	
 	isSubPageIndex(host){
@@ -418,7 +435,8 @@ export class subpageIndex_module{
 						mode: 'pathname',
 						enable: bool,
 						id: int(11111~99999),
-						regex_rule: string
+						regex_rule: string,
+						date: string
 					}
 					*/
 					const pathname_regex = new RegExp(check_rules.regex_rule);
@@ -446,10 +464,11 @@ export class subpageIndex_module{
 							is_regex: bool,
 							regex_rule: [null | string],
 							logic: string['AND', 'OR', 'NAND', 'NOR']
-						}]
+						}],
+						date: string
 					}
 					*/
-					let judges = custom_rules.judge;
+					let judges = check_rules.judge;
 					let parameter_conform = false;
 					
 					while (judges.length){
@@ -473,7 +492,8 @@ export class subpageIndex_module{
 						mode: 'title',
 						enable: bool,
 						id: int(11111~99999),
-						regex_rule: string
+						regex_rule: string,
+						date: string
 					}
 					*/
 					const title_regex = new RegExp(check_rules.regex_rule);
@@ -495,6 +515,99 @@ export class subpageIndex_module{
 		
 		callback(is_conform, subpage_indexs);
 	}
+
+	updateRulesEnable(rules_enable){
+		for (let i = 0; i < initSubPageIndexs.length; i++){
+			const init_subpage = initSubPageIndexs[i];
+			const init_subpage_id = `@${init_subpage}`;
+			
+			if (rules_enable[init_subpage_id]){
+				this.initindexs_enable[init_subpage] = rules_enable[init_subpage_id];
+			}
+		}
+
+		for (let i = 0; i < this.custom_subpageHosts.length; i++){
+			const subpagehosts = this.custom_subpageHosts[i]
+			const subpage_rules = this.custom_subpageRules[subpagehosts];
+			
+			for (let j = 0; j < subpage_rules.length; j++){
+				const subpage_rule = subpage_rules[j];
+				
+				if (rules_enable[subpage_rule.id]){
+					this.custom_subpageRules[subpagehosts][j].enable = rules_enable[subpage_rule.id];
+				}
+			}
+		}
+	
+		this.conformSubpage = {};
+		this.moduleDataWrite(this.modulename, 'custom_subpageRules', this.custom_subpageRules, (t) => {})
+	}
 }
 
-//---- sidepanel ----
+//---- setting ----
+
+export class subpageIndex_setting{
+	constructor(initindexs_enable, custom_subpagerules){
+		this.initindexs_enable = {};
+		for (let i = 0; i < initSubPageIndexs.length; i++){
+			if (initindexs_enable[initSubPageIndexs[i]]){
+				this.initindexs_enable[initSubPageIndexs[i]] = initindexs_enable[initSubPageIndexs[i]];
+			}
+			else{
+				this.initindexs_enable[initSubPageIndexs[i]] = false;
+			}
+		}
+		
+		this.custom_subpageHosts = Object.keys(custom_subpagerules);
+		this.custom_subpageRules = custom_subpagerules;
+	}
+	
+	getRulesInfo(){
+		let custom_rules = [];
+		const mode_info = {
+			'pathname': '檔案路徑: ',
+			'parameter': '網址變數: ',
+			'title': '分頁標籤: '
+		};
+		
+		for (let i = 0; i < initSubPageIndexs.length; i++){
+			const info = initSubPageIndexs_info[initSubPageIndexs[i]];
+			custom_rules.push([`@${initSubPageIndexs[i]}`, '預設', info.tilte, info.rule, this.initindexs_enable[initSubPageIndexs[i]]]);
+		}
+
+		for (let i = 0; i < this.custom_subpageHosts.length; i++){
+			const subpage_rules = this.custom_subpageRules[this.custom_subpageHosts[i]];
+			
+			for (let j = 0; j < subpage_rules.length; j++){
+				const subpage_rule = subpage_rules[j];
+				custom_rules.push([subpage_rule.id.toString(), subpage_rule.date, this.custom_subpageHosts[i], `${mode_info[subpage_rule.mode]}${subpage_rule.regex_rule}`, subpage_rule.enable]);
+			}
+		}
+		
+		return custom_rules;
+	}
+	
+	updateRulesEnable(rules_enable){
+		for (let i = 0; i < initSubPageIndexs.length; i++){
+			const init_subpage = initSubPageIndexs[i];
+			const init_subpage_id = `@${init_subpage}`;
+			
+			if (rules_enable[init_subpage_id]){
+				this.initindexs_enable[init_subpage] = rules_enable[init_subpage_id];
+			}
+		}
+
+		for (let i = 0; i < this.custom_subpageHosts.length; i++){
+			const subpagehosts = this.custom_subpageHosts[i]
+			const subpage_rules = this.custom_subpageRules[subpagehosts];
+			
+			for (let j = 0; j < subpage_rules.length; j++){
+				const subpage_rule = subpage_rules[j];
+				
+				if (rules_enable[subpage_rule.id]){
+					this.custom_subpageRules[subpagehosts][j].enable = rules_enable[subpage_rule.id];
+				}
+			}
+		}
+	}
+}
