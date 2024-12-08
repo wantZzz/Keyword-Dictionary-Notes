@@ -210,17 +210,17 @@
 					  </i>
 					  <label>依 <strong>檔案路徑</strong> 編輯分頁索引規則</label>
 					</div>
-					<div id="tabnamerule-input" class="fold-content">
+					<div id="pathnamerule-input" class="fold-content">
 						<div class="domainname-input">
 							<p>應用網域: </p>
 							<input type="text" dir="ltr" placeholder="http:// or https://">
 						</div>
 						<div class="regex-input">
-							<p>輸入正規表示式進行過濾(以 specify_index 為分類基準): </p>
+							<p>輸入正規表示式進行過濾(以 specify_index 與其他同規則分頁關聯，若無則不與其他分頁關聯): </p>
 							<input type="text" classify="regex" placeholder="正規表示式過濾">
 						</div>
 						<div class="rule-confirm">
-							<button disabled>確認並建立規則</button>
+							<button>確認並建立規則</button>
 						</div>
 					</div>
 				  </li>
@@ -233,7 +233,7 @@
 					  </i>
 					  <label>依 <strong>網址變數</strong> 編輯分頁索引規則</label>
 					</div>
-					<div id="urlrule-input" class="fold-content">
+					<div id="parameterrule-input" class="fold-content">
 						<div class="domainname-input">
 							<p>應用網域: </p>
 							<input type="text" dir="ltr" placeholder="http:// or https://">
@@ -316,7 +316,7 @@
 							<input type="text" dir="ltr" placeholder="http:// or https://">
 						</div>
 						<div class="regex-input">
-							<p>輸入正規表示式進行過濾: </p>
+							<p>輸入正規表示式進行過濾(以 specify_index 與其他同規則分頁關聯，若無則不與其他分頁關聯): </p>
 							<input type="text" classify="regex" placeholder="正規表示式過濾">
 						</div>
 						<div class="rule-confirm">

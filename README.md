@@ -72,7 +72,7 @@ Keyword Dictionary Notes 能 **同時搜尋多個關鍵字並標記** 出來，�
 | 側邊欄使用       | 用於顯示筆記資料			        | "sidePanel" |
 | 功能表使用       | 用於快速建立關鍵字索引			      | "contextMenus" |
 | 快速鍵          | 建立搜尋與開啟側邊欄的快速鍵		      | "commands" |
-| 存取google服務  | 登入google進行雲端備份       		      | "identity", "identity.email" |
+| 存取google服務  | --登入google進行雲端備份--(擱置)       		      | "identity", "identity.email" |
 
 ## 第三方開源程式
 

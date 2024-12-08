@@ -1,4 +1,4 @@
-import {newNoteGoogleDocs, remitNoteGoogleDocs} from "./module/Remit2GoogleDocs.js";
+//import {newNoteGoogleDocs, remitNoteGoogleDocs} from "./module/Remit2GoogleDocs.js"; //擱置開發
 import {initSubPageIndexs, subpageIndex_module} from "./module/SubpageIndex.js";
 
 //外部腳本資料
@@ -948,8 +948,10 @@ function checkUrlIndex(host, callback){
 
 function addUrlIndex(host, is_special_url){
 	if (is_special_url){
-		let main = host.slice(0, host.indexOf(':'));
-		let sub = host.slice(host.indexOf(':') + 1);
+		const delimiter = host.includes('@') ? '@' : ':';
+		
+		let main = host.slice(0, host.indexOf(delimiter));
+		let sub = host.slice(host.indexOf(delimiter) + 1);
 		
 		chrome.storage.local.get(['RecordedUrls']).then((result) => {
 			let new_recordedurls = result.RecordedUrls;
@@ -982,8 +984,10 @@ function addUrlIndex(host, is_special_url){
 
 function removeUrlIndex(host, is_special_url){
 	if (is_special_url){
-		let main = host.slice(0, host.indexOf(':'));
-		let sub = host.slice(host.indexOf(':') + 1);
+		const delimiter = host.includes('@') ? '@' : ':';
+		
+		let main = host.slice(0, host.indexOf(delimiter));
+		let sub = host.slice(host.indexOf(delimiter) + 1);
 		
 		chrome.storage.local.get(['RecordedUrls']).then((result) => {
 			let new_recordedurls = result.RecordedUrls;
@@ -994,7 +998,7 @@ function removeUrlIndex(host, is_special_url){
 				if (remove_index >= 0){
 					new_recordedurls[main].sub.splice(remove_index, 1);
 					
-					if (!new_recordedurls[main].main){
+					if (!new_recordedurls[main].main && (new_recordedurls[main].sub.length == 0)){
 						delete new_recordedurls[main];
 					}
 					chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
@@ -1009,7 +1013,7 @@ function removeUrlIndex(host, is_special_url){
 			if (new_recordedurls[main]){
 				new_recordedurls[main].main = false;
 				
-				if (len(new_recordedurls[main].sub) == 0){
+				if (new_recordedurls[main].sub.length == 0){
 					delete new_recordedurls[main];
 				}
 				chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
@@ -1079,7 +1083,8 @@ function exportBackupData(callback){
 			}
 			
 			for (var j = 0; j < host_data.sub.length; j++){
-				note_indexs.push((Recorded_host_indexs[i] + ':' + host_data.sub[j]))
+				const delimiter = (Recorded_host_indexs[i] in initSubPageIndexs) ? ':' : '@';
+				note_indexs.push((Recorded_host_indexs[i] + delimiter + host_data.sub[j]))
 			}
 		}
 	}
@@ -1928,7 +1933,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 
 			confirmNotificationMessage('初始化將刪除既有筆記並且無法回復初始化前，是否繼續初始化', '', send_initialization_data);
 			break;
-			
+		
+		/*	//擱置開發
 		case 'create-backup-docs-google':
 			sendResponse({});
 			getKeywordData(request.tag_name, (result, is_exist) => {
@@ -1957,12 +1963,19 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				}
 			});
 			break;
+		*/
 			
 		//--- SubpageIndex.js ---
 		case 'update-subpage-rules-enable':
 			sendResponse({});
 			
 			subpageIndex.updateRulesEnable(request.rules_enable);
+			break;
+			
+		case 'send-new-subpage-rules':
+			sendResponse({});
+			
+			subpageIndex.updateRules(request.host, request.rule_data);
 			break;
 	}
 	console.log(request.event_name);

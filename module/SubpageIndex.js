@@ -525,6 +525,7 @@ export class subpageIndex_module{
 	}
 
 	updateRulesEnable(rules_enable){
+		//console.log('SubpageIndex updateRulesEnable')
 		for (let i = 0; i < initSubPageIndexs.length; i++){
 			const init_subpage = initSubPageIndexs[i];
 			const init_subpage_id = `@${init_subpage}`;
@@ -540,16 +541,28 @@ export class subpageIndex_module{
 			
 			for (let j = 0; j < subpage_rules.length; j++){
 				const subpage_rule = subpage_rules[j];
+				const table_id = `${this.custom_subpageHosts[i]}${subpage_rule.id}`;
 				
-				if (rules_enable[subpage_rule.id]){
-					this.custom_subpageRules[subpagehosts][j].enable = rules_enable[subpage_rule.id];
+				if (rules_enable[table_id]){
+					this.custom_subpageRules[subpagehosts][j].enable = rules_enable[table_id];
 				}
 			}
 		}
 	
 		this.conformSubpage = {};
 		this.custom_subpageHosts = Object.keys(this.custom_subpageRules);
-		this.moduleDataWrite(this.modulename, 'custom_subpageRules', this.custom_subpageRules, (t) => {})
+		this.moduleDataWrite(this.modulename, 'custom_subpageRules', this.custom_subpageRules, (t) => {});
+	}
+	
+	updateRules(host, rule_data){
+		if (Boolean(this.custom_subpageRules[host])){
+			this.custom_subpageRules[host].push(rule_data);
+		}
+		else{
+			this.custom_subpageRules[host] = [rule_data];
+		}
+		
+		this.moduleDataWrite(this.modulename, 'custom_subpageRules', this.custom_subpageRules, (t) => {});
 	}
 }
 
@@ -571,6 +584,8 @@ export class subpageIndex_setting{
 		
 		this.custom_subpageHosts = Object.keys(custom_subpagerules);
 		this.custom_subpageRules = custom_subpagerules;
+		
+		this.next_rule_id = 11111;
 	}
 	
 	getRulesInfo(){
@@ -591,7 +606,12 @@ export class subpageIndex_setting{
 			
 			for (let j = 0; j < subpage_rules.length; j++){
 				const subpage_rule = subpage_rules[j];
-				custom_rules.push([subpage_rule.id.toString(), subpage_rule.date, this.custom_subpageHosts[i], `${mode_info[subpage_rule.mode]}${subpage_rule.regex_rule}`, subpage_rule.enable]);
+				const table_id = `${this.custom_subpageHosts[i]}@${subpage_rule.id}`;
+				custom_rules.push([table_id, subpage_rule.date, this.custom_subpageHosts[i], `${mode_info[subpage_rule.mode]}${subpage_rule.regex_rule}`, subpage_rule.enable]);
+			
+				if (this.next_rule_id <= subpage_rule.id){
+					this.next_rule_id = (subpage_rule.id + 1);
+				}
 			}
 		}
 		
@@ -614,11 +634,91 @@ export class subpageIndex_setting{
 			
 			for (let j = 0; j < subpage_rules.length; j++){
 				const subpage_rule = subpage_rules[j];
+				const table_id = `${this.custom_subpageHosts[i]}@${subpage_rule.id}`;
 				
-				if (rules_enable[subpage_rule.id]){
-					this.custom_subpageRules[subpagehosts][j].enable = rules_enable[subpage_rule.id];
+				if (rules_enable[table_id]){
+					this.custom_subpageRules[subpagehosts][j].enable = rules_enable[table_id];
 				}
 			}
 		}
+	}
+
+	newPathnameRuleCreate(host, rule_rex){
+		const now_date = Date.now();
+		const newpathnamerule = {
+			mode: 'pathname',
+			enable: true,
+			id: this.next_rule_id,
+			regex_rule: rule_rex,
+			date: now_date
+		}
+		
+		if (Boolean(this.custom_subpageRules[host])){
+			this.custom_subpageRules[host].push(newpathnamerule);
+		}
+		else{
+			this.custom_subpageRules[host] = [newpathnamerule];
+			this.custom_subpageHosts.push(host);
+		}
+		
+		this.next_rule_id += 1;
+		return newpathnamerule;
+	}
+	
+	newTitleRuleCreate(host, rule_rex){
+		const now_date = Date.now();
+		const newtitlerule = {
+			mode: 'title',
+			enable: true,
+			id: this.next_rule_id,
+			regex_rule: rule_rex,
+			date: now_date
+		}
+		
+		if (Boolean(this.custom_subpageRules[host])){
+			this.custom_subpageRules[host].push(newtitlerule);
+		}
+		else{
+			this.custom_subpageRules[host] = [newtitlerule];
+			this.custom_subpageHosts.push(host);
+		}
+		
+		this.next_rule_id += 1;
+		return newtitlerule;
+	}
+	
+	newParameterRuleCreate(host, parameters_rules){
+		const now_date = Date.now();
+		const newparameterrule = {
+			mode: 'parameter',
+			enable: true,
+			id: this.next_rule_id,
+			judge: [],
+			date: now_date
+		};
+		
+		for (let i = 0; i < parameters_rules.length; i++){
+			const parameters_data = parameters_rules[i];
+			
+			//parameters_data = [parameter, logic, mode, regex]
+			const judges = {
+				param: parameters_data[0],
+				is_regex: parameters_data[2],
+				regex_rule: parameters_data[3],
+				logic: parameters_data[1]
+			};
+			newparameterrule['judge'].push(judges);
+		}
+		
+		if (Boolean(this.custom_subpageRules[host])){
+			this.custom_subpageRules[host].push(newparameterrule);
+		}
+		else{
+			this.custom_subpageRules[host] = [newparameterrule];
+			this.custom_subpageHosts.push(host);
+		}
+		
+		this.next_rule_id += 1;
+		return newparameterrule;
 	}
 }

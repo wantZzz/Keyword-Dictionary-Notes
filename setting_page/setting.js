@@ -1,4 +1,4 @@
-import {formatNote2GoogleDocs} from "/module/Remit2GoogleDocs.js";
+//import {formatNote2GoogleDocs} from "/module/Remit2GoogleDocs.js"; //擱置開發
 import {initSubPageIndexs, initSubPageIndexs_info, subpageIndex_setting} from "/module/SubpageIndex.js";
 
 var subpageSetting = null;//new subpageIndex_setting(initindexs_enable, custom_subpageRules)
@@ -302,11 +302,70 @@ function rulesEnableConfirmClick(event){
 	chrome.runtime.sendMessage({event_name: 'update-subpage-rules-enable', rules_enable: rules_enable}, (t) => {});
 }
 
+function newSubpagePathnameRule(event){
+	const pathnamerule_block = event.target.closest('div#pathnamerule-input');
+	const url_input = pathnamerule_block.querySelector('div.domainname-input input').value;
+	const regex_input = pathnamerule_block.querySelector('div.regex-input input').value;
+	
+	const url_val = new URL(url_input);
+	const host = url_val.host;
+	
+	const rule_data = subpageSetting.newPathnameRuleCreate(host, regex_input);
+	
+	const rules_created_list = document.getElementById('rules-created-table');
+	refrshRulesTable(rules_created_list);
+	
+	chrome.runtime.sendMessage({event_name: 'send-new-subpage-rules', host: host, rule_data: rule_data}, (t) => {});
+}
+function newSubpageTitleRule(event){
+	const titlerule_block = event.target.closest('div#tabnamerule-input');
+	const url_input = titlerule_block.querySelector('div.domainname-input input').value;
+	const regex_input = titlerule_block.querySelector('div.regex-input input').value;
+	
+	const url_val = new URL(url_input);
+	const host = url_val.host;
+	
+	subpageSetting.newTitleRuleCreate(host, regex_input);
+	
+	const rule_data = document.getElementById('rules-created-table');
+	refrshRulesTable(rules_created_list);
+	
+	chrome.runtime.sendMessage({event_name: 'send-new-subpage-rules', host: host, rule_data: rule_data}, (t) => {});
+}
+function newSubpageParameterRule(event){
+	const parameterrule_block = event.target.closest('div#parameterrule-input');
+	const url_input = parameterrule_block.querySelector('div.domainname-input input').value;
+	
+	let parameters_rules = [];
+	
+	const tbody = parameterrule_block.querySelector('table.url-var-input-table').querySelector('tbody');
+	for (let i = 0; i < tbody.children.length; i++){
+		const parameter_ruletr = tbody.children[i];
+		
+		const parameter = parameter_ruletr.querySelector('input[classify="var"]').value;
+		const logic = Boolean(parameter_ruletr.querySelector('select[classify="logic"]')) ? parameter_ruletr.querySelector('select[classify="logic"]').value : 'OR';
+		const mode = Boolean(parameter_ruletr.querySelector('select[classify="mode"]').value == '1');
+		const regex = mode ? parameter_ruletr.querySelector('input[classify="regex"]').value : null;
+		
+		parameters_rules.push([parameter, logic, mode, regex])
+	}
+	
+	const url_val = new URL(url_input);
+	const host = url_val.host;
+	
+	subpageSetting.newParameterRuleCreate(host, parameters_rules);
+	
+	const rule_data = document.getElementById('rules-created-table');
+	refrshRulesTable(rules_created_list);
+	
+	chrome.runtime.sendMessage({event_name: 'send-new-subpage-rules', host: host, rule_data: rule_data}, (t) => {});
+}
+
 function addUrlRule(event){
-	const urlrule_tbody = event.target.closest('tbody');
+	const parameterrulerule_tbody = event.target.closest('tbody');
 	const target_ruleindex = event.target.closest('tr').rowIndex;
 	
-	const urlrule_rows = urlrule_tbody.querySelectorAll('tr');
+	const parameterrulerule_rows = parameterrulerule_tbody.querySelectorAll('tr');
 	
 	const new_rule = document.createElement('tr');
 	
@@ -345,21 +404,21 @@ function addUrlRule(event){
 	new_rule.querySelector('i.remove-rule-conditions svg').addEventListener('click', removeUrlRule);
 	new_rule.querySelector('select[classify="mode"]').addEventListener('change', changeInputDisabled);
 	
-	if (target_ruleindex == (urlrule_rows.length - 1)){
-		urlrule_tbody.appendChild(new_rule);
+	if (target_ruleindex == (parameterrulerule_rows.length - 1)){
+		parameterrulerule_tbody.appendChild(new_rule);
 	}
 	else{
-		urlrule_tbody.insertBefore(new_rule, urlrule_rows[target_ruleindex + 1])
+		parameterrulerule_tbody.insertBefore(new_rule, parameterrulerule_rows[target_ruleindex + 1])
 	}
 }
 function removeUrlRule(event){
-	const urlrule_tbody = event.target.closest('tbody');
+	const parameterrulerule_tbody = event.target.closest('tbody');
 	const target_ruleindex = event.target.closest('tr').rowIndex;
 	
-	const urlrule_rows = urlrule_tbody.querySelectorAll('tr');
+	const parameterrulerule_rows = parameterrulerule_tbody.querySelectorAll('tr');
 	
-	if (target_ruleindex < urlrule_rows.length && target_ruleindex >= 0){
-		urlrule_tbody.removeChild(urlrule_rows[target_ruleindex]);
+	if (target_ruleindex < parameterrulerule_rows.length && target_ruleindex >= 0){
+		parameterrulerule_tbody.removeChild(parameterrulerule_rows[target_ruleindex]);
 	}
 }
 
@@ -505,6 +564,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			exportJsonData(request.backup_data);
 			break;
 			
+		/* //擱置開發
 		case 'format-note2googledocs':
 			formatNote2GoogleDocs(request.tag_name, request.note_data, (output_requests, output_await_requests, process_state) => {
 				const response_note2_googledocs = {
@@ -519,6 +579,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				chrome.runtime.sendMessage(response_note2_googledocs, () => {})
 			});
 			break;
+		*/
 			
 		//--- SubpageIndex.js ---
 		case 'response-init-subpagesetting':
@@ -531,6 +592,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				refrshRulesTable(rules_created_list);
 			}
 			break;
+			
+		/*
+		case 'update-subpage-rules-data':
+			sendResponse({});
+			
+			break;
+		*/
 	}
 });
 
@@ -543,20 +611,23 @@ function runInitial(){
 	});
 	
 	const rules_option_list = document.getElementById('rules-option-list');
+	rules_option_list.querySelector('div#pathnamerule-input div.rule-confirm button').addEventListener('click', newSubpagePathnameRule);
+	rules_option_list.querySelector('div#parameterrule-input div.rule-confirm button').addEventListener('click', newSubpageParameterRule);
+	rules_option_list.querySelector('div#tabnamerule-input div.rule-confirm button').addEventListener('click', newSubpageTitleRule);
 	const drop_down_controls = rules_option_list.querySelectorAll('.drop-down-header .drop-down-control svg');
 	drop_down_controls.forEach(function (drop_down_control){
 		drop_down_control.addEventListener('click', dropDownExpand);
 	});
 	
-	const urlrule_input = document.getElementById('urlrule-input');
-	const urlrule_rows = urlrule_input.querySelectorAll('.url-var-input tr');
+	const parameterrule_input = document.getElementById('parameterrule-input');
+	const parameterrulerule_rows = parameterrule_input.querySelectorAll('.url-var-input tr');
 	
-	urlrule_rows[0].querySelector('i.add-rule-conditions svg').addEventListener('click', addUrlRule);
-	urlrule_rows[0].querySelector('select[classify="mode"]').addEventListener('change', changeInputDisabled);
-	for (let i = 1; i < urlrule_rows.length; i++){
-		urlrule_rows[i].querySelector('i.add-rule-conditions svg').addEventListener('click', addUrlRule);
-		urlrule_rows[i].querySelector('i.remove-rule-conditions svg').addEventListener('click', removeUrlRule);
-		urlrule_rows[i].querySelector('select[classify="mode"]').addEventListener('change', changeInputDisabled);
+	parameterrulerule_rows[0].querySelector('i.add-rule-conditions svg').addEventListener('click', addUrlRule);
+	parameterrulerule_rows[0].querySelector('select[classify="mode"]').addEventListener('change', changeInputDisabled);
+	for (let i = 1; i < parameterrulerule_rows.length; i++){
+		parameterrulerule_rows[i].querySelector('i.add-rule-conditions svg').addEventListener('click', addUrlRule);
+		parameterrulerule_rows[i].querySelector('i.remove-rule-conditions svg').addEventListener('click', removeUrlRule);
+		parameterrulerule_rows[i].querySelector('select[classify="mode"]').addEventListener('change', changeInputDisabled);
 	};
 	
 	const account_tab = document.getElementById('account-tab');
