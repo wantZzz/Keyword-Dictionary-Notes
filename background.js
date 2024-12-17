@@ -2221,7 +2221,7 @@ chrome.runtime.onStartup.addListener(() => {
 	});
 	
 	isConnectGoogle((is_connect) => {
-		if(is_connect){
+		if(!is_connect){
 			setting['is_GoogleConnect'] = [false, ""];
 		}
 		else{

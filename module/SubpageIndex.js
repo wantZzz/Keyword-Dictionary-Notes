@@ -444,7 +444,7 @@ export class subpageIndex_module{
 						enable: bool,
 						id: int(11111~99999),
 						regex_rule: string,
-						date: string
+						date: int
 					}
 					*/
 					const pathname_regex = new RegExp(check_rules.regex_rule);
@@ -473,7 +473,7 @@ export class subpageIndex_module{
 							regex_rule: [null | string],
 							logic: string['AND', 'OR', 'NAND', 'NOR']
 						}],
-						date: string
+						date: int
 					}
 					*/
 					let judges = check_rules.judge;
@@ -501,7 +501,7 @@ export class subpageIndex_module{
 						enable: bool,
 						id: int(11111~99999),
 						regex_rule: string,
-						date: string
+						date: int
 					}
 					*/
 					const title_regex = new RegExp(check_rules.regex_rule);
@@ -607,7 +607,15 @@ export class subpageIndex_setting{
 			for (let j = 0; j < subpage_rules.length; j++){
 				const subpage_rule = subpage_rules[j];
 				const table_id = `${this.custom_subpageHosts[i]}@${subpage_rule.id}`;
-				custom_rules.push([table_id, subpage_rule.date, this.custom_subpageHosts[i], `${mode_info[subpage_rule.mode]}${subpage_rule.regex_rule}`, subpage_rule.enable]);
+				
+				const rule_date = new Date(subpage_rule.date);
+				const datetime = rule_date.getFullYear().toString().slice(-2) + "/"
+				+ (rule_date.getMonth()+1).toString().padStart(2,'0') + "/"
+				+ rule_date.getDate().toString().padStart(2,'0') + " "
+				+ rule_date.getHours().toString().padStart(2,'0') + ":"
+				+ rule_date.getMinutes().toString().padStart(2,'0');
+				
+				custom_rules.push([table_id, datetime, this.custom_subpageHosts[i], `${mode_info[subpage_rule.mode]}${subpage_rule.regex_rule}`, subpage_rule.enable]);
 			
 				if (this.next_rule_id <= subpage_rule.id){
 					this.next_rule_id = (subpage_rule.id + 1);
