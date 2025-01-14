@@ -447,7 +447,7 @@ export class subpageIndex_module{
 						date: int
 					}
 					*/
-					const pathname_regex = new RegExp(check_rules.regex_rule);
+					const pathname_regex = new RegExp(check_rules.regex_rule.replace(/\\/g, "\\"));
 					regex_result = custom_index_url.pathname.match(pathname_regex);
 					
 					if (Boolean(regex_result)){
@@ -484,14 +484,14 @@ export class subpageIndex_module{
 						const has_param = custom_index_url.searchParams.has(judge.param);
 						
 						if (has_param && judge.is_regex){
-							const param_regex = new RegExp(judge.regex_rule);
+							const param_regex = new RegExp(judge.regex_rule.replace(/\\/g, "\\"));
 							has_param = param_regex.test(custom_index_url.searchParams.get(judge.param));
 						}
 						
 						parameter_conform = this.logicOperationSwitching(parameter_conform, has_param, judge.logic);
 					}
 					
-					is_conform = is_conform || parameter_conform;
+					is_conform = parameter_conform;
 					
 					break;
 				case 'title':
@@ -504,7 +504,7 @@ export class subpageIndex_module{
 						date: int
 					}
 					*/
-					const title_regex = new RegExp(check_rules.regex_rule);
+					const title_regex = new RegExp(check_rules.regex_rule.replace(/\\/g, "\\"));
 					regex_result = title.match(title_regex);
 					
 					if (Boolean(regex_result)){
@@ -518,6 +518,10 @@ export class subpageIndex_module{
 					}
 						
 					break;
+			}
+			
+			if (is_conform){
+				break;
 			}
 		}
 		
@@ -541,9 +545,9 @@ export class subpageIndex_module{
 			
 			for (let j = 0; j < subpage_rules.length; j++){
 				const subpage_rule = subpage_rules[j];
-				const table_id = `${this.custom_subpageHosts[i]}${subpage_rule.id}`;
+				const table_id = `${this.custom_subpageHosts[i]}@${subpage_rule.id}`;
 				
-				if (rules_enable[table_id]){
+				if (rules_enable[table_id] !== undefined){
 					this.custom_subpageRules[subpagehosts][j].enable = rules_enable[table_id];
 				}
 			}
@@ -562,7 +566,35 @@ export class subpageIndex_module{
 			this.custom_subpageRules[host] = [rule_data];
 		}
 		
+		this.custom_subpageHosts.push(host);
 		this.moduleDataWrite(this.modulename, 'custom_subpageRules', this.custom_subpageRules, (t) => {});
+	}
+	
+	removeRules(ruleid){
+		const [host, rule_id] = ruleid.split('@');
+		
+		if (Boolean(this.custom_subpageRules[host])){
+			const subpage_rules = this.custom_subpageRules[host];
+			
+			for (let j = 0; j < subpage_rules.length; j++){
+				if (this.custom_subpageRules[host][j]['id'] == rule_id){
+					this.custom_subpageRules[host].splice(j, 1);
+					
+					if (this.custom_subpageRules[host].length <= 0){
+						delete this.custom_subpageRules[host];
+						const host_index = this.custom_subpageHosts.indexOf(host);
+						this.custom_subpageHosts.splice(host_index, 1);
+					}
+					break;
+				}
+			}
+			
+			this.moduleDataWrite(this.modulename, 'custom_subpageRules', this.custom_subpageRules, (t) => {});
+			return true;
+		}
+		else{
+			return false;
+		}
 	}
 }
 
@@ -728,5 +760,30 @@ export class subpageIndex_setting{
 		
 		this.next_rule_id += 1;
 		return newparameterrule;
+	}
+	
+	removeRules(ruleid){
+		const [host, rule_id] = ruleid.split('@');
+		
+		if (Boolean(this.custom_subpageRules[host])){
+			const subpage_rules = this.custom_subpageRules[host];
+			
+			for (let j = 0; j < subpage_rules.length; j++){
+				if (this.custom_subpageRules[host][j]['id'] == rule_id){
+					this.custom_subpageRules[host].splice(j, 1);
+					
+					if (this.custom_subpageRules[host].length <= 0){
+						delete this.custom_subpageRules[host];
+						const host_index = this.custom_subpageHosts.indexOf(host);
+						this.custom_subpageHosts.splice(host_index, 1);
+					}
+					break;
+				}
+			}
+			return true;
+		}
+		else{
+			return false;
+		}
 	}
 }

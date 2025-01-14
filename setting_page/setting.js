@@ -155,22 +155,41 @@ function refrshRulesTable(table){
 			</td>
 		`;
 		
-		ruletr_innerhtml += is_initsubpage ? "<td></td>" : `
-			<td>
-				<div class="rule-created-control">
-					<i class="svg-24button edit-rule-conditions">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-2 -2 28 28">
-							<path fill="currentColor" fill-rule="evenodd" d="M15.586 3a2 2 0 0 1 2.828 0L21 5.586a2 2 0 0 1 0 2.828L19.414 10L14 4.586zm-3 3l-9 9A2 2 0 0 0 3 16.414V19a2 2 0 0 0 2 2h2.586A2 2 0 0 0 9 20.414l9-9z" clip-rule="evenodd" />
-						</svg>
-					</i>
-					<i class="svg-24button delete-rule-conditions">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-2 -2 28 28">
-							<path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
-						</svg>
-					</i>
-				</div>
-			</td>`;
-		ruletr.innerHTML = ruletr_innerhtml;
+		if (is_initsubpage){
+			ruletr_innerhtml += "<td></td>"
+			ruletr.innerHTML = ruletr_innerhtml;
+		}
+		else{
+			/*
+			ruletr_innerhtml += `<td>
+									<div class="rule-created-control">
+										<i class="svg-24button edit-rule-conditions">
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-2 -2 28 28">
+												<path fill="currentColor" fill-rule="evenodd" d="M15.586 3a2 2 0 0 1 2.828 0L21 5.586a2 2 0 0 1 0 2.828L19.414 10L14 4.586zm-3 3l-9 9A2 2 0 0 0 3 16.414V19a2 2 0 0 0 2 2h2.586A2 2 0 0 0 9 20.414l9-9z" clip-rule="evenodd" />
+											</svg>
+										</i>
+										<i class="svg-24button delete-rule-conditions">
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-2 -2 28 28">
+												<path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
+											</svg>
+										</i>
+									</div>
+								</td>`;
+			*/
+			ruletr_innerhtml += `<td>
+									<div class="rule-created-control">
+										<i class="svg-24button delete-rule-conditions">
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="-2 -2 28 28">
+												<path fill="currentColor" d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6z" />
+											</svg>
+										</i>
+									</div>
+								</td>`;
+			ruletr.innerHTML = ruletr_innerhtml;
+			
+			//ruletr.querySelector('i.edit-rule-conditions svg').addEventListener('click', rulesEditConditions);
+			ruletr.querySelector('i.delete-rule-conditions svg').addEventListener('click', rulesDeleteConditions);
+		}
 		
 		return ruletr;
 	}
@@ -269,7 +288,7 @@ function displaySwitchOnClick(event){
 
 function rulesSwitchOnClick(event){
 	const collapse_content = event.target.closest('tr');
-	collapse_content.classList.toggle('on')
+	collapse_content.classList.toggle('on');
 }
 function dropDownExpand(event){
 	//const collapse_list = event.target.closest('ul.collapse-list');
@@ -279,9 +298,24 @@ function dropDownExpand(event){
 	collapse_content.classList.toggle('expand');
 }
 
+function rulesEditConditions(event){
+	return;
+}
+function rulesDeleteConditions(event){
+	const ruletr = event.target.closest('tr');
+	const rule_id = ruletr.getAttribute('ruleid');
+	
+	if (subpageSetting.removeRules(rule_id)){
+		const rules_created_list = document.getElementById('rules-created-table');
+		refrshRulesTable(rules_created_list);
+	}
+	
+	chrome.runtime.sendMessage({event_name: 'send-delete-subpage-rules', rule_id: rule_id}, (t) => {});
+}
+
 function rulesEnableConfirmClick(event){
 	const tbody = event.target.closest('div#rule-tab').querySelector('tbody');
-	let rules_enable = new Object();
+	let rules_enable = {};
 	
 	for (let i = 0; i < tbody.children.length; i++){
 		const ruletr = tbody.children[i];

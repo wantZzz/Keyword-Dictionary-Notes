@@ -1191,7 +1191,8 @@ function inportBackupJsonData(import_data, is_overwrite){
 				"KeywordsDisplayCRF": import_data.KeywordsDisplayCRF,
 				"KeywordsNotePriority": import_data.KeywordsNotePriority,
 				"KeywordsSetting": keywords_settings,
-				"ModuleData": import_data.ModuleData
+				"ModuleData": import_data.ModuleData,
+				"NoIndexNote": import_data.NoIndexNote
 			}
 			
 			chrome.storage.local.get(["RecordedUrls"]).then((result) => {
@@ -1970,12 +1971,20 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			sendResponse({});
 			
 			subpageIndex.updateRulesEnable(request.rules_enable);
+			triggerNotificationMessage('設定已應用', 'ok');
 			break;
 			
 		case 'send-new-subpage-rules':
 			sendResponse({});
 			
 			subpageIndex.updateRules(request.host, request.rule_data);
+			triggerNotificationMessage('規則已添加', 'ok');
+			break;
+		case 'send-delete-subpage-rules':
+			sendResponse({});
+			
+			subpageIndex.removeRules(request.rule_id);
+			triggerNotificationMessage('規則已刪除', 'ok');
 			break;
 	}
 	console.log(request.event_name);
