@@ -67,7 +67,7 @@ function sendNewKeywordquest(newkeyword){
 
 // ====== 元素事件 ====== 
 function triggerAlertWindow(message, type){
-	notification = {
+	const notification = {
 		event_name: 'send-notification-message',
 		message: message,
 		notification_type: type

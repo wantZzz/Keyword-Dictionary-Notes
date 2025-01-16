@@ -7,7 +7,15 @@
 		"message": "New note",
 		"description": "(sidepanel) Add a new note to the keyword or URL index displayed in the sidebar"
 	},
-	"windos_message_header_control_delete__title": {
+	"windos_message_header_control_more_options__title": {
+		"message": "More actions",
+		"description": "(sidepanel) Open and display more action floating windows in the keyword or URL index displayed in the sidebar"
+	},
+	"windos_message_header_control_popup_reload": {
+		"message": "重新整理索引",
+		"description": "(sidepanel) 重新整理網址索引"
+	},
+	"windos_message_header_control_popup_delete": {
 		"message": "Delete all notes and index",
 		"description": "(sidepanel) In the keyword or URL index displayed in the sidebar, delete all notes under the index and the index."
 	},

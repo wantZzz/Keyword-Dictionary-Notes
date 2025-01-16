@@ -7,7 +7,15 @@
 		"message": "新增筆記",
 		"description": "(sidepanel) 在側邊欄顯示的關鍵字或網址索引中為新增一筆筆記"
 	},
-	"windos_message_header_control_delete__title": {
+	"windos_message_header_control_more_options__title": {
+		"message": "更多操作",
+		"description": "(sidepanel) 在側邊欄顯示的關鍵字或網址索引中為開啟並展示更多操作浮動視窗"
+	},
+	"windos_message_header_control_popup_reload": {
+		"message": "重新整理索引",
+		"description": "(sidepanel) 重新整理網址索引"
+	},
+	"windos_message_header_control_popup_delete": {
 		"message": "刪除整個筆記",
 		"description": "(sidepanel) 在側邊欄顯示的關鍵字或網址索引中為刪除該索引下所有筆記與該索引"
 	},

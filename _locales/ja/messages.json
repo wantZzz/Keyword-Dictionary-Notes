@@ -7,7 +7,15 @@
 		"message": "新しいメモを追加",
 		"description": "(sidepanel) サイドバーに表示されているキーワードまたはURLインデックスに新しいメモを追加します"
 	},
-	"windos_message_header_control_delete__title": {
+	"windos_message_header_control_more_options__title": {
+		"message": "さらなるアクション",
+		"description": "(sidepanel) サイドバーに表示されるキーワードまたは URL インデックス内で、さらにアクションのフローティング ウィンドウを開いて表示します。"
+	},
+	"windos_message_header_control_popup_reload": {
+		"message": "重新整理索引",
+		"description": "(sidepanel) 重新整理網址索引"
+	},
+	"windos_message_header_control_popup_delete": {
 		"message": "メモ全体を削除する",
 		"description": "(sidepanel) サイドバーに表示されているキーワードやURLのインデックスにおいて、インデックスとインデックスの下にあるメモをすべて削除します。"
 	},

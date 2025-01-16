@@ -1115,7 +1115,7 @@ function recordedKeywordsUpdate(update_recorded_keywords){
 
 // ====== 元素事件 ====== 
 function triggerAlertWindow(message, type){
-	notification = {
+	const notification = {
 		event_name: 'send-notification-message',
 		message: message,
 		notification_type: type
@@ -1172,7 +1172,7 @@ function pinned_note_button_click(event){
 	}
 }
 function more_options_button_click(event){
-	const levitate_options_popup = document.getElementById("more_options_popup");
+	const more_options_popup = document.getElementById("more_options_popup");
 	
 	const x = event.clientX;
 	const y = event.clientY;
@@ -1303,6 +1303,30 @@ function url_new_note_button_click(event){
 	keyword_note_container.scrollTop = 0;
 	is_UrlNewNoteEdit = count_id;
 }
+function title_more_options_button_click(event){
+	const title_control_popup = document.getElementById("title_control_popup");
+	
+	const x = event.clientX;
+	const y = event.clientY;
+	
+	title_control_popup.style.left = `${x - 145}px`;
+	title_control_popup.style.top = `${y - 5}px`;
+	
+	/*
+	const note_id = parseInt(event.target.closest('.more_options').getAttribute('note_id'));
+	const trigger_type = event.target.closest('.windos_message_container').id;
+	
+	title_control_popup.setAttribute('note_id', note_id);
+	if (trigger_type === 'url_note_container'){
+		title_control_popup.setAttribute('trigger_type', 'url');
+	}
+	else if (trigger_type === 'keyword_note_container'){
+		title_control_popup.setAttribute('trigger_type', 'keyword');
+	}
+	*/
+	
+	title_control_popup.classList.add('popup_show');
+}
 function url_delete_button_click(event){
 	const host = current_Host;
 		
@@ -1319,6 +1343,9 @@ function url_delete_button_click(event){
 	else{
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_url_warning'), 'warning');
 	}
+}
+function url_reload_button_click(event){
+	chrome.runtime.sendMessage({event_name: 'quest-current-tab-sidepanel'}, (t) => {});
 }
 
 // --- suggestion area keyword buttons ---
@@ -2283,7 +2310,8 @@ function runInitial(){
 	const title_area = document.getElementById("title_area");
 	title_area.querySelector('.title_boder').addEventListener("dblclick", switch_host_urlindex);
 	title_area.querySelector('.control_url_area button.new_note').addEventListener('click', url_new_note_button_click, false);
-	title_area.querySelector('.control_url_area button.delete_keyword').addEventListener('click', url_delete_button_click, false);
+	//title_area.querySelector('.control_url_area button.delete_url').addEventListener('click', url_delete_button_click, false);
+	title_area.querySelector('.control_url_area button.more_options').addEventListener('click', title_more_options_button_click);
 	
 	const suggestion_area = document.getElementById("suggestion_area");
 	suggestion_area.querySelector("button#more_suggestion").addEventListener("click", more_suggestion_button_click);
@@ -2309,6 +2337,7 @@ function runInitial(){
 	const more_options_popup = document.getElementById("more_options_popup");
 	const edit_options_popup = document.getElementById("edit_options_popup");
 	const all_suggestion_popup = document.getElementById("all_suggestion_popup");
+	const title_control_popup = document.getElementById("title_control_popup");
 	
 	more_options_popup.addEventListener("mouseleave", levitate_popup_mouseleave_event);
 	more_options_popup.querySelector("button.edit_note").addEventListener("click", options_edit_button_click);
@@ -2323,6 +2352,10 @@ function runInitial(){
 	all_suggestion_popup.querySelector("input").addEventListener("compositionstart", () => {is_SuggestionSearch_Composition = true;});
 	all_suggestion_popup.querySelector("input").addEventListener("compositionend", (event) => {is_SuggestionSearch_Composition = false;keywordSearchAlgorithmProcess(event);});
 	all_suggestion_popup.querySelector("input").addEventListener("input", keywordSearchAlgorithmProcess);
+	
+	title_control_popup.addEventListener("mouseleave", levitate_popup_mouseleave_event);
+	title_control_popup.querySelector("button.delete_url").addEventListener("click", url_delete_button_click);
+	title_control_popup.querySelector("button.reload_url").addEventListener("click", url_reload_button_click);
 	
 	function levitate_popup_mouseleave_event(event){
 		this.style.left = '';

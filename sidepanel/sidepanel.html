@@ -20,12 +20,10 @@
                             </svg>
                         </i>
                     </button>
-                    <button class="delete_keyword" data-i18n="windos_message_header_control_delete__title" title="刪除整個筆記">
-                        <i class="svg_icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24">
-                                <path fill="currentColor" d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v11l-5 5zm10-14-3 3-3-3-1 1 3 3-3 3 1 1 3-3 3 3 1-1-3-3 3-3ZM15 19l4-4h-2q-.825 0-1.412.588T15 17z" />
-                            </svg>
-                        </i>
+                    <button class="more_options" data-i18n="windos_message_header_control_more_options__title" title="更多操作">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="-2 0 22 24">
+							<path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+						</svg>
                     </button>
                 </div>
             </div>
@@ -176,7 +174,38 @@
 				</div>
 			</div>
 		</div>
-        <script src="../ckeditor5-41.2.0/build/ckeditor.js"></script>
+        <div class="levitate_options_popup" id="title_control_popup">
+			<button class="reload_url">
+                <i class="svg_icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+						<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+							<path d="M19.933 13.041a8 8 0 1 1-9.925-8.788c3.899-1 7.935 1.007 9.425 4.747"/>
+							<path d="M20 4v5h-5"/>
+						</g>
+					</svg>
+				</i>
+                <span data-i18n="windos_message_header_control_popup_reload" class="button-text">重新整理索引</span>
+            </button>
+			<button class="delete_url">
+                <i class="svg_icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+						<path fill="currentColor" d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v11l-5 5zm10-14-3 3-3-3-1 1 3 3-3 3 1 1 3-3 3 3 1-1-3-3 3-3ZM15 19l4-4h-2q-.825 0-1.412.588T15 17z" />
+					</svg>
+				</i>
+                <span data-i18n="windos_message_header_control_popup_delete" class="button-text">刪除整個筆記</span>
+            </button>
+		</div>
+		<div class="levitate_options_popup" id="keyword_control_popup">
+			<button class="delete_url">
+                <i class="svg_icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+						<path fill="currentColor" d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v11l-5 5zm10-14-3 3-3-3-1 1 3 3-3 3 1 1 3-3 3 3 1-1-3-3 3-3ZM15 19l4-4h-2q-.825 0-1.412.588T15 17z" />
+					</svg>
+				</i>
+                <span data-i18n="windos_message_header_control_popup_delete" class="button-text">刪除整個筆記</span>
+            </button>
+		</div>
+		<script src="../ckeditor5-41.2.0/build/ckeditor.js"></script>
 		<script src="sidepanel.js"></script>
     </body>
 </html>
