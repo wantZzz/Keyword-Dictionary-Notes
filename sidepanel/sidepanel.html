@@ -6,7 +6,7 @@
         <link rel="stylesheet" href="sidepanel.css">
     </head>
     <body class="dark">
-        <div class="title_area" id="title_area">
+        <div class="title_area" id="title_area" style="height: 25%">
             <div class="windos_message_header">
                 <div class="title_boder">
                     <span id="url_note_host">Welcome!</span>
@@ -40,7 +40,8 @@
                     </div>
                 </div>
             </div>
-        </div>
+			<div class="drag_block dr_down"></div>
+		</div>
         <div class="suggestion_area" id="suggestion_area">
             <button id="more_suggestion" data-i18n="suggestion_area_more_suggestion__title" title="更多關鍵字">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24">
@@ -58,7 +59,8 @@
             <div class="suggestion_container">
             </div>
         </div>
-        <div class="keyword_area" id="keyword_area">
+        <div class="keyword_area" id="keyword_area" style="height: calc(75% - 59px);">
+			<div class="drag_block dr_top"></div>
             <div class="windos_message_header">
                 <div class="title_boder">
                     <span id="keyword_note_host">Welcome!</span>
@@ -185,6 +187,14 @@
 					</svg>
 				</i>
                 <span data-i18n="windos_message_header_control_popup_reload" class="button-text">重新整理索引</span>
+            </button>
+			<button class="summary_url">
+                <i class="svg_icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="3 3 24 24">
+						<path fill="currentColor" d="m10.192 9.083v11.829h1.808v-8.912l5.662 9.018h1.908v-12.018h-1.989v8.68l-5.175-8.633h-2.214zM15 25q-2.075 0-3.9-.788t-3.175-2.137-2.137-3.175-.788-3.9.788-3.9 2.137-3.175 3.175-2.137 3.9-.788 3.9.788 3.175 2.137 2.138 3.175.787 3.9-.788 3.9-2.137 3.175-3.175 2.138-3.9.787"/>
+					</svg>
+				</i>
+                <span class="button-text">概要網頁</span>
             </button>
 			<button class="delete_url">
                 <i class="svg_icon">

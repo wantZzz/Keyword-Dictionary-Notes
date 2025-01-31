@@ -40,11 +40,12 @@ export class subpageIndex_module{
 	}
 	
 	loadSubPageIndexData(){
+		this.is_dataloaded = true;
 		this.moduleDataRead(this.modulename, ['custom_subpageRules', 'initindexs_enable'], (module_data) => {
-			this.custom_subpageHosts = Object.keys(module_data.custom_subpageRules);
-			this.custom_subpageRules = module_data.custom_subpageRules;
+			this.custom_subpageHosts = Object.keys(module_data.custom_subpageRules) || [];
+			this.custom_subpageRules = module_data.custom_subpageRules || {};
 			
-			const initindexs_enable_data = module_data.initindexs_enable;
+			const initindexs_enable_data = module_data.initindexs_enable || {};
 			this.initindexs_enable = {};
 			for (let i = 0; i < initSubPageIndexs.length; i++){
 				if (initindexs_enable_data[initSubPageIndexs[i]]){
@@ -56,7 +57,6 @@ export class subpageIndex_module{
 			}
 		});
 		this.conformSubpage = {};
-		this.is_dataloaded = true;
 		
 		console.log('subpageIndex 設定載入完成');
 	}

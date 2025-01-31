@@ -7,7 +7,8 @@ var subpageSetting = null;//new subpageIndex_setting(initindexs_enable, custom_s
 var settings = {
 	is_DarkMode: [true, -1],
 	is_SwitchWithTab: [true, -1],
-	is_GoogleConnect: [false, ""]
+	//is_GoogleConnect: [false, ""],
+	is_NotebooklmConnect: [false, ""]
 }
 
 //資料控制項
@@ -48,6 +49,7 @@ function UpdateDisplaySwitch(setting_name, value){
 	}, 3200);
 }
 
+/*
 function UpdateAccountGoogleInfo(){
 	const account_tab = document.getElementById('account-tab');
 	const google_account_button = account_tab.querySelector('.google-account-block button.account-connect-button');
@@ -66,6 +68,24 @@ function UpdateAccountGoogleInfo(){
 	}
 	
 	google_account_button.disabled = false;
+}
+*/
+
+function UpdateAccountNotebooklmInfo(button_disabled = false){
+	const account_tab = document.getElementById('account-tab');
+	const notebooklm_account_button = account_tab.querySelector('.notebooklm-account-block button.notebooklm-connect-confirm');
+	const notebooklm_account_select = account_tab.querySelector('.notebooklm-account-block select.notebooklm-account-select');
+	const notebooklm_account_info = account_tab.querySelector('.notebooklm-account-block p.notebooklm-account-info');
+	
+	if (settings['is_NotebooklmConnect'][0]){
+		notebooklm_account_info.innerText = "已與帳號 [" + settings['is_NotebooklmConnect'][1] + "] 建立連接";
+	}
+	else{
+		notebooklm_account_info.innerText = "未選擇 NotebookLM 連接的帳戶";
+	}
+	
+	notebooklm_account_button.disabled = button_disabled;
+	notebooklm_account_select.disabled = false;
 }
 
 function exportJsonData(backup_output){
@@ -231,6 +251,35 @@ function refrshRulesTable(table){
 	
 	const rule_tab = table.closest('div#rule-tab');
 	rule_tab.querySelector('div.rules-enable-confirm button').addEventListener('click', rulesEnableConfirmClick);
+}
+
+function UpdateAccountNotebooklmOption(data) {
+	const account_tab = document.getElementById('account-tab');
+	const notebooklm_account_button = account_tab.querySelector('.notebooklm-account-block button.notebooklm-connect-confirm');
+    const selectElement = account_tab.querySelector('.notebooklm-account-block .notebooklm-account-select');
+
+    selectElement.innerHTML = '';
+	selectElement.removeEventListener('click', getNotebooklmAccountlist);
+
+    const defaultOption = document.createElement('option');
+    defaultOption.value = -1;
+    defaultOption.textContent = '不連接帳戶';
+    selectElement.appendChild(defaultOption);
+
+	let counter = 0;
+    data.forEach(email => {
+        const option = document.createElement('option');
+        option.value = counter;
+        option.textContent = email;
+        selectElement.appendChild(option);
+		
+		counter += 1;
+    });
+
+	notebooklm_account_button.innerText = "與選取帳號連結";
+	notebooklm_account_button.disabled = false;
+	
+    selectElement.selectedIndex = 0;
 }
 // ====== 元素事件 ====== 
 function triggerAlertWindow(message, type){
@@ -541,6 +590,7 @@ function inportCoverJsonData(event){
 	}
 }
 
+/*
 function connectGoogleAccount(event){
 	const google_account_button = event.target.closest('button');
 	google_account_button.querySelector('span').innerText = "處理中...";
@@ -558,6 +608,28 @@ function disconnectGoogleAccount(event){
 	chrome.runtime.sendMessage({event_name: 'disconnect-account-google'}, (t) => {});
 	google_account_button.removeEventListener('click', disconnectGoogleAccount);
 }
+*/
+
+function getNotebooklmAccountlist(event){
+	const notebooklm_block = account_tab.querySelector('.notebooklm-account-block');
+	const notebooklm_account_button = notebooklm_block.querySelector('.notebooklm-connect-confirm');
+	notebooklm_account_button.innerText = "載入中";
+	
+	chrome.runtime.sendMessage({event_name: 'quest-account-notebooklm-list'}, (t) => {});
+}
+
+function connectNotebooklmAccount(event) {
+    const notebooklm_account_button = event.target.closest('button');
+    notebooklm_account_button.disabled = true;
+	notebooklm_account_button.innerText = "操作中";
+	
+    const selectElement = document.querySelector('.notebooklm-account-select');
+    const account_index = parseInt(selectElement.value);
+	
+    selectElement.disabled = true;
+
+	chrome.runtime.sendMessage({event_name: 'connect-account-notebooklm', account_index: account_index}, (t) => {});
+}
 
 // ====== 資料接收 ====== 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
@@ -574,6 +646,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			}
 			break;
 	
+		/*
 		case 'response-check-account-google'://備用
 			sendResponse({});
 			break;
@@ -592,6 +665,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				UpdateAccountGoogleInfo();
 			});
 			break;
+		*/
 			
 		case 'response-backupdata-export':
 			sendResponse({});
@@ -633,6 +707,20 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			
 			break;
 		*/
+		
+		//--- notebooklmCaller.js ---
+		case 'response-account-notebooklm-list':
+			sendResponse({});
+			UpdateAccountNotebooklmOption(request.authusers);
+			
+			break;
+			
+		case 'response-connect-account-notebooklm':
+			sendResponse({});
+			chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
+				settings['is_NotebooklmConnect'] = response.is_notebooklmconnect;
+				UpdateAccountNotebooklmInfo(false);
+			});
 	}
 });
 
@@ -670,10 +758,16 @@ function runInitial(){
 	account_tab.querySelector('button.cover-jsondata-button').addEventListener('click', inportCoverJsonData);
 	account_tab.querySelector('button.add-jsondata-button').addEventListener('click', inportADDJsonData);
 	
+	//--- notebooklmCaller.js ---
+	const notebooklm_block = account_tab.querySelector('.notebooklm-account-block');
+	notebooklm_block.querySelector('.notebooklm-connect-confirm').addEventListener('click', connectNotebooklmAccount);
+	notebooklm_block.querySelector('.notebooklm-account-select').addEventListener('click', getNotebooklmAccountlist);
+	
 	chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
 		settings['is_DarkMode'][0] = response.is_darkmode;
 		settings['is_SwitchWithTab'][0] = response.is_switchwithtab;
-		settings['is_GoogleConnect'] = response.is_googleconnect;
+		//settings['is_GoogleConnect'] = response.is_googleconnect;
+		settings['is_NotebooklmConnect'] = response.is_notebooklmconnect;
 		
 		const display_option_list = document.getElementById('display-option-list');
 		const displays_switch_toggles = display_option_list.querySelectorAll('.switch-toggle span.toggle-box');
@@ -700,7 +794,8 @@ function runInitial(){
 			}
 		});
 		
-		UpdateAccountGoogleInfo();
+		//UpdateAccountGoogleInfo();
+		UpdateAccountNotebooklmInfo(true);
 	});
 	
 	//--- SubpageIndex.js ---

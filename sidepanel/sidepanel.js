@@ -2372,6 +2372,54 @@ function runInitial(){
 		}
 	}
 
+	const drag_block = document.querySelectorAll('div.drag_block');
+	drag_block.forEach((drager_element) => {
+	  drager_element.addEventListener('mousedown', drag_mousedown);
+	});
+	document.body.addEventListener('mousemove', drag_mousemove);
+	document.body.addEventListener('mouseup', drag_mouseup);
+	
+	function drag_mousedown(e){
+		is_Dragging = true;
+		dragging_OffsetY = e.clientY;
+		
+		const title_area = document.getElementById("title_area");
+		const keyword_area = document.getElementById("keyword_area");
+
+		title_OffsetHeight = title_area.offsetHeight;
+		keyword_OffsetHeight =  keyword_area.offsetHeight;
+		document.body.style.userSelect = "none";
+	}
+	function drag_mousemove(e){
+		if (is_Dragging) {
+			const offset = e.clientY - dragging_OffsetY;
+			
+			const title_area = document.getElementById("title_area");
+			const keyword_area = document.getElementById("keyword_area");
+			
+			const maxheight = (document.body.offsetHeight - 231);
+			
+			title_area.style.height = Math.max(150, Math.min(title_OffsetHeight + offset, maxheight)) + 'px';
+			keyword_area.style.height = Math.max(150, Math.min(keyword_OffsetHeight - offset, maxheight)) + 'px';
+		}
+	}
+	function drag_mouseup(e){
+		if (is_Dragging) {
+			is_Dragging = false;
+			const bodyHeight = document.body.offsetHeight;
+			const offset = e.clientY - dragging_OffsetY;
+			
+			const title_area = document.getElementById("title_area");
+			const keyword_area = document.getElementById("keyword_area");
+			
+			const maxheight = (document.body.offsetHeight - 231);
+
+			const title_area_precent = (Math.max(150, Math.min(title_OffsetHeight + offset, maxheight)) / bodyHeight * 100);
+			title_area.style.height = (title_area_precent) + '%';
+			keyword_area.style.height = 'calc(' + (100 - title_area_precent) + '% - 59px)';
+			document.body.style.userSelect = "auto";
+		}
+	}
 	// ====== 請求設定資料 ====== 
 	chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
 		is_DarkMode = response.is_darkmode;

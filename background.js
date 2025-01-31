@@ -1,5 +1,5 @@
-//import {newNoteGoogleDocs, remitNoteGoogleDocs} from "./module/Remit2GoogleDocs.js"; //擱置開發
 import {initSubPageIndexs, subpageIndex_module} from "./module/SubpageIndex.js";
+import {summaryWithNotebooklm_module} from "./module/notebooklmCaller.js";
 
 //外部腳本資料
 var currentpage_TabId = null;
@@ -12,7 +12,8 @@ var portWithSidepanel = null;
 var setting = {
 	is_DarkMode: true,
 	is_SwitchWithTab: true,
-	is_GoogleConnect: [false, ""]
+	is_GoogleConnect: [false, ""],
+	is_NotebooklmConnect: [false, ""]
 }
 
 var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
@@ -22,6 +23,7 @@ var recorded_Keywords = [];
 var current_Keyword = '';
 
 const subpageIndex = new subpageIndex_module(responseUrlNoteData, getNotePriority, responseSidepanelUrlNoteData, moduleDataRead, moduleDataWrite);
+const summaryNotebooklm = new summaryWithNotebooklm_module(moduleDataRead, moduleDataWrite, setting.is_NotebooklmConnect);
 
 // ====== 資料回傳 ====== 
 function responseCurrentPageStatus(callback){
@@ -102,7 +104,8 @@ function responseCurrentPageStatus(callback){
 function responseSetting(callback){
 	callback({is_darkmode: setting['is_DarkMode'],
 			  is_switchwithtab: setting['is_SwitchWithTab'],
-			  is_googleconnect: setting['is_GoogleConnect'],
+			  //is_googleconnect: setting['is_GoogleConnect'],
+			  is_notebooklmconnect: setting['is_NotebooklmConnect'],
 			  current_Keyword: current_Keyword
 			  });
 }
@@ -1208,6 +1211,9 @@ function inportBackupJsonData(import_data, is_overwrite){
 							triggerNotificationMessage(chrome.i18n.getMessage('inport_backupdata_finish'), 'ok');
 							
 							subpageIndex.loadSubPageIndexData();
+							summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
+								setting['is_NotebooklmConnect'] = account_info;
+							});
 							
 							if (Boolean(portWithSidepanel)){
 								responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
@@ -1433,7 +1439,7 @@ chrome.tabs.onUpdated.addListener(function(tabId) {
 	}
 });
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
+chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse){
 	switch (request.event_name) {
 		//初始化
 		case 'quest-current-tab-popup':
@@ -1874,6 +1880,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			break;
 			
 		//帳戶連接
+		/*
 		case 'check-account-google'://備用
 			sendResponse({});
 			getGoogleAccountInfo((account_info) => {
@@ -1908,6 +1915,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				chrome.runtime.sendMessage(response_disconnect_account, (t) => {});
 			});
 			break;
+		*/
 			
 		//備份資料
 		case 'quest-backupdata-export':
@@ -1985,6 +1993,42 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 			
 			subpageIndex.removeRules(request.rule_id);
 			triggerNotificationMessage('規則已刪除', 'ok');
+			break;
+			
+		//--- notebooklmCaller.js ---
+		case 'quest-account-notebooklm-list':
+			sendResponse({});
+			const authusers = await summaryNotebooklm.listNotebookAuthUsers();
+			chrome.runtime.sendMessage({event_name: 'response-account-notebooklm-list', authusers: authusers}, () => {});
+			break;
+			
+		case 'connect-account-notebooklm':
+			sendResponse({});
+
+			let set_data = {
+				index: -1,
+				id: ""
+			}
+			if (request.account_index >= 0){
+				const authUserData = await summaryNotebooklm.testAuthUserIndex(request.account_index);
+				set_data.id = authUserData.id;
+				set_data.index = request.account_index;
+			}
+			
+			summaryNotebooklm.setAuthUser(set_data.index, set_data.id, () => {
+				summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
+					setting['is_NotebooklmConnect'] = account_info;
+					chrome.runtime.sendMessage({event_name: 'response-connect-account-notebooklm'}, () => {});
+				});
+			});
+			
+			break;
+			
+		case 'quest-summary-url':
+			sendResponse({});
+			
+			const summary_response = await summaryNotebooklm.summaryUrl(request.current_Url, request.current_Host);
+			chrome.runtime.sendMessage({event_name: 'response-summary-url', summary_response: summary_response}, () => {});
 			break;
 	}
 	console.log(request.event_name);
@@ -2142,6 +2186,9 @@ chrome.runtime.onInstalled.addListener(function (details){
 			current_Keyword = '標籤';
 			
 			subpageIndex.loadSubPageIndexData();
+			summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
+				setting['is_NotebooklmConnect'] = account_info;
+			});
 			console.log('安裝初始化完成');
 		})
 	}
@@ -2204,6 +2251,9 @@ chrome.runtime.onInstalled.addListener(function (details){
 			*/
 			
 			subpageIndex.loadSubPageIndexData();
+			summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
+				setting['is_NotebooklmConnect'] = account_info;
+			});
 			console.log('擴充功能初始化完成');
 		});
 	}
@@ -2229,6 +2279,7 @@ chrome.runtime.onStartup.addListener(() => {
 		setting['is_SwitchWithTab'] = response;
 	});
 	
+	/*
 	isConnectGoogle((is_connect) => {
 		if(!is_connect){
 			setting['is_GoogleConnect'] = [false, ""];
@@ -2242,9 +2293,13 @@ chrome.runtime.onStartup.addListener(() => {
 			}, 2000);
 		}
 	});
+	*/
 	
 	checkForNewRelease();
 	subpageIndex.loadSubPageIndexData();
+	summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
+		setting['is_NotebooklmConnect'] = account_info;
+	});
 	
 	console.log('擴充功能初始化完成');
 });

@@ -449,6 +449,49 @@ li.switch-content.on .switch-toggle .toggle-box::before{
     justify-content: space-around;
 }
 
+.notebooklm-account-block{
+	display: flex;
+}
+.notebooklm-account-block div{
+	margin-left: 8px;
+	font-size: 10px;
+}
+.notebooklm-account-block p{
+	margin: 0;
+}
+.notebooklm-account-block .notebooklm-account-select {
+	width: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+	
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	padding: 0px 8px;
+	border: 1px solid #999;
+	border-radius: 5px;
+	background-color: var(--primary-color-light-popup);
+	color: var(--text-color);
+	font-size: 16px;
+}
+.notebooklm-account-block .notebooklm-account-select option {
+	padding: 5px;
+	background-color: var(--primary-color-light-popup);
+	color: var(--text-color);
+}
+.notebooklm-account-block .notebooklm-account-select option:hover {
+    background-color: var(--primary-color);
+}
+.notebooklm-account-block .notebooklm-connect-confirm{
+	margin-left: 8px;
+	
+	width: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
 #center-area {
   background: var(--primary-color);
   

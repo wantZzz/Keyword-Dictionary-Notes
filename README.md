@@ -77,3 +77,4 @@ Keyword Dictionary Notes 能 **同時搜尋多個關鍵字並標記** 出來，�
 ## 第三方開源程式
 
 - 本插件使用了 [CKSource Holding sp.](https://cksource.com/) 的 Ckeditor 5 的客製化編輯器用於輸入筆記內容
+- 本插件對操作 NotebookLM 的操作方法與部分程式由對 [wong2](https://github.com/wong2) 的 [NotebookLM Web Importer](https://chromewebstore.google.com/detail/notebooklm-web-importer/ijdefdijdmghafocfmmdojfghnpelnfn) 解析而來

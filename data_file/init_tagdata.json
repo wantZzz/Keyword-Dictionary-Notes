@@ -36,6 +36,13 @@
 					"date": "11/4 05:14"
 				}]
 			}
+		},
+		"NotebooklmSummary": {
+			"authuser": {
+				"account_id": "",
+				"index": -1
+			},
+			"notebooks": {}
 		}
 	},
 	"標籤": [

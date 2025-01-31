@@ -63,10 +63,7 @@ div.title_area {
   background-color: var(--primary-color-light);
   border-radius: 5px;
   padding: 8px;
-  
-  /* max-height: 35%; */
-  flex-grow: 0;
-  flex-shrink: 35;
+  position: relative;
 }
 p.title_name {
   margin: 0 8px 8px;
@@ -76,20 +73,16 @@ p.title_name {
 }
 
 div.suggestion_area {
-  /* height: 35px;*/
+  height: 35px;
   display: flex;
   flex-direction: row;
-  overflow-x: hidden;
-  
-  flex-grow: 0;
-  flex-basis: 35px;
-  flex-shrink: 0;
+  overflow: hidden;
 }
 div.suggestion_area .suggestion_container{
-  height: 100%;
+  height: 35px;
   display: flex;
   flex-direction: row;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 div.suggestion_area button {
   margin-right: 8px;
@@ -119,11 +112,21 @@ div.keyword_area {
   background-color: var(--primary-color-light);
   border-radius: 5px;
   padding: 8px;
-  /* max-height: calc(65% - 67px); */
-  
-  flex-grow: 1;
-  flex-shrink: 65;
-  overflow: hidden;
+  position: relative;
+}
+
+.drag_block{
+  position: absolute;
+  width: 100%;
+  height: 12px;
+  left: 0px;
+  cursor: n-resize; 
+}
+.drag_block.dr_top{
+  top: -4px;
+}
+.drag_block.dr_down{
+  bottom: -4px;
 }
 
 div.windos_message_header {
