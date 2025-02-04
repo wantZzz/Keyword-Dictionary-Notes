@@ -227,6 +227,9 @@ div.windos_message_block {
     border-bottom: 1px solid #e3e3e3;
 	position: relative;
 }
+div.windos_message_block.no_border {
+    border-bottom: none;
+}
 div.windos_message_box {
     display: flex;
     flex-direction: column;

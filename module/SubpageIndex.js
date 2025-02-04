@@ -42,8 +42,14 @@ export class subpageIndex_module{
 	loadSubPageIndexData(){
 		this.is_dataloaded = true;
 		this.moduleDataRead(this.modulename, ['custom_subpageRules', 'initindexs_enable'], (module_data) => {
-			this.custom_subpageHosts = Object.keys(module_data.custom_subpageRules) || [];
-			this.custom_subpageRules = module_data.custom_subpageRules || {};
+			if (module_data.custom_subpageRules == undefined){
+				callback([false, ""]);
+				r.updateRulesEnable(() => {});
+			}
+			else{
+				this.custom_subpageHosts = Object.keys(module_data.custom_subpageRules);
+				this.custom_subpageRules = module_data.custom_subpageRules;
+			}
 			
 			const initindexs_enable_data = module_data.initindexs_enable || {};
 			this.initindexs_enable = {};
@@ -555,6 +561,7 @@ export class subpageIndex_module{
 	
 		this.conformSubpage = {};
 		this.custom_subpageHosts = Object.keys(this.custom_subpageRules);
+		this.moduleDataWrite(this.modulename, 'initindexs_enable', this.initindexs_enable, (t) => {});
 		this.moduleDataWrite(this.modulename, 'custom_subpageRules', this.custom_subpageRules, (t) => {});
 	}
 	

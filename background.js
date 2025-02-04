@@ -1031,16 +1031,21 @@ function moduleDataRead(modulename, keys, callback){
 		
 		let reply_data = new Object();
 		
-		while(keys.length){
-			const key = keys.pop();
-			const data = module_datas[modulename][key];
-			
-			if (data){
-				reply_data[key] = data;
-			}
+		if (module_datas[modulename] == undefined){
+			callback(undefined);
 		}
-		
-		callback(reply_data);
+		else{
+			while(keys.length){
+				const key = keys.pop();
+				const data = module_datas[modulename][key];
+				
+				if (data){
+					reply_data[key] = data;
+				}
+			}
+			
+			callback(reply_data);
+		}
 	});
 }
 
@@ -1138,7 +1143,7 @@ function initialDataProcess(){
 				recorded_Keywords = ['標籤', '無標籤'];
 				current_Keyword = '標籤';
 				
-				triggerNotificationMessage('已成功初始化筆記', 'ok');
+				triggerNotificationMessage(chrome.i18n.getMessage('initial_extension_data'), 'ok');
 				if (Boolean(portWithSidepanel)){
 					responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
 						const response_keyword_notedata = {
@@ -1186,6 +1191,8 @@ function inportBackupJsonData(import_data, is_overwrite){
 			keywords_settings[update_keywords_settings[i]] = import_data["KeywordsSetting"][update_keywords_settings[i]];
 		}
 		
+		import_data.ModuleData['SubpageIndex'] = import_data.ModuleData['SubpageIndex'] || {};
+		import_data.ModuleData['NotebooklmSummary'] = import_data.ModuleData['NotebooklmSummary'] || {};
 		if (is_overwrite){
 			const control_data = {
 				"RecordedKeywords": import_data.RecordedKeywords,
@@ -1979,20 +1986,20 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
 			sendResponse({});
 			
 			subpageIndex.updateRulesEnable(request.rules_enable);
-			triggerNotificationMessage('設定已應用', 'ok');
+			triggerNotificationMessage(chrome.i18n.getMessage('SubpageIndex_subpage_rules_enable'), 'ok');
 			break;
 			
 		case 'send-new-subpage-rules':
 			sendResponse({});
 			
 			subpageIndex.updateRules(request.host, request.rule_data);
-			triggerNotificationMessage('規則已添加', 'ok');
+			triggerNotificationMessage(chrome.i18n.getMessage('SubpageIndex_new_subpage_rules'), 'ok');
 			break;
 		case 'send-delete-subpage-rules':
 			sendResponse({});
 			
 			subpageIndex.removeRules(request.rule_id);
-			triggerNotificationMessage('規則已刪除', 'ok');
+			triggerNotificationMessage(chrome.i18n.getMessage('SubpageIndex_delete_subpage_rules'), 'ok');
 			break;
 			
 		//--- notebooklmCaller.js ---
@@ -2027,7 +2034,7 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
 		case 'quest-summary-url':
 			sendResponse({});
 			
-			const summary_response = await summaryNotebooklm.summaryUrl(request.current_Url, request.current_Host);
+			const summary_response = await summaryNotebooklm.summaryUrl(request.current_url, request.current_host);
 			chrome.runtime.sendMessage({event_name: 'response-summary-url', summary_response: summary_response}, () => {});
 			break;
 	}

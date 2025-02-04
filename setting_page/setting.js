@@ -85,6 +85,7 @@ function UpdateAccountNotebooklmInfo(button_disabled = false){
 	}
 	
 	notebooklm_account_button.disabled = button_disabled;
+	notebooklm_account_button.innerText = button_disabled ? notebooklm_account_button.innerText : "與選取帳號連結";
 	notebooklm_account_select.disabled = false;
 }
 
@@ -331,7 +332,7 @@ function displaySwitchOnClick(event){
 		}
 	}
 	else{
-		triggerAlertWindow('該設定未被註冊\n建議重新載入頁面再操作', 'error');
+		triggerAlertWindow(chrome.i18n.getMessage('unregister_setting'), 'error');
 	}
 }
 
@@ -538,7 +539,7 @@ function inportADDJsonData(event){
 			}
 			
 			if (jsonObj['KeywordsSetting']['note_version'] > 2){
-				triggerAlertWindow('該備份資料版本高於當前版本，無法匯入', 'error');
+				triggerAlertWindow(chrome.i18n.getMessage('inport_backupdata_version_too_high'), 'error');
 			}
 			else{
 				chrome.runtime.sendMessage({event_name: 'quest-backupdata-inport', is_overwrite:false, json_data: jsonObj}, (response) => {});
@@ -546,7 +547,7 @@ function inportADDJsonData(event){
 			}
 			
 		}catch{
-			triggerAlertWindow('錯誤檔案類型', 'error');
+			triggerAlertWindow(chrome.i18n.getMessage('inport_backupdata_wrong_type'), 'error');
 		}
 	}
 	
@@ -554,7 +555,7 @@ function inportADDJsonData(event){
 		reader.readAsText(input_backupfile);
 	}
 	else{
-		triggerAlertWindow('未選取檔案', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('inport_backupdata_no_file'), 'warning');
 	}
 }
 
@@ -570,7 +571,7 @@ function inportCoverJsonData(event){
 			}
 			
 			if (jsonObj['KeywordsSetting']['note_version'] > 2){
-				triggerAlertWindow('該備份資料版本高於當前版本，無法匯入', 'error');
+				triggerAlertWindow(chrome.i18n.getMessage('inport_backupdata_version_too_high'), 'error');
 			}
 			else{
 				chrome.runtime.sendMessage({event_name: 'quest-backupdata-inport', is_overwrite:true, json_data: jsonObj}, (response) => {});
@@ -578,7 +579,7 @@ function inportCoverJsonData(event){
 			}
 			
 		}catch{
-			triggerAlertWindow('錯誤檔案類型', 'error');
+			triggerAlertWindow(chrome.i18n.getMessage('inport_backupdata_wrong_type'), 'error');
 		}
 	}
 	
@@ -586,7 +587,7 @@ function inportCoverJsonData(event){
 		reader.readAsText(input_backupfile);
 	}
 	else{
-		triggerAlertWindow('未選取檔案', 'warning');
+		triggerAlertWindow(chrome.i18n.getMessage('inport_backupdata_no_file'), 'warning');
 	}
 }
 
@@ -611,7 +612,7 @@ function disconnectGoogleAccount(event){
 */
 
 function getNotebooklmAccountlist(event){
-	const notebooklm_block = account_tab.querySelector('.notebooklm-account-block');
+	const notebooklm_block = event.target.closest('.notebooklm-account-block');
 	const notebooklm_account_button = notebooklm_block.querySelector('.notebooklm-connect-confirm');
 	notebooklm_account_button.innerText = "載入中";
 	
@@ -642,7 +643,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){
 				UpdateDisplaySwitch(request.setting_name, request.value);
 			}
 			else{
-				triggerAlertWindow('該設定更新失敗', 'error');
+				triggerAlertWindow(chrome.i18n.getMessage('unsaved_setting'), 'error');
 			}
 			break;
 	

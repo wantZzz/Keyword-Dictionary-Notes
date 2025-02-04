@@ -19,6 +19,10 @@
 		"message": "刪除整個筆記",
 		"description": "(sidepanel) 在側邊欄顯示的關鍵字或網址索引中為刪除該索引下所有筆記與該索引"
 	},
+	"windos_message_header_control_delete__title": {
+		"message": "刪除整個筆記",
+		"description": "(sidepanel) 在側邊欄顯示的關鍵字或網址索引中為刪除該索引下所有筆記與該索引"
+	},
 	"windos_message_header_control_previous_mark__title": {
 		"message": "上一個關鍵字位置",
 		"description": "(sidepanel) 在當前已搜尋的網頁中跳轉至上一個現側邊欄顯示的關鍵字的位置"
@@ -157,15 +161,15 @@
 	},
 	"confirm_notification_message_default": {
 		"message": "! 執行動作前確認",
-		"description": "(background) 彈出確認通知事件發生 未知 的標題"
+		"description": "(background) 彈出沒有任何類型的標題確認通知事件發生 "
 	},
 	"confirm_notification_message_default_0confirm": {
 		"message": "✔ 確認動作",
-		"description": "(background) 彈出確認通知事件發生 未知 的確認選項"
+		"description": "(background) 彈出沒有任何類型的標題確認通知事件發生 的確認選項"
 	},
 	"confirm_notification_message_default_0cancel": {
 		"message": "✖ 取消動作",
-		"description": "(background) 彈出確認通知事件發生 未知 的取消選項"
+		"description": "(background) 彈出沒有任何類型的標題確認通知事件發生 的取消選項"
 	},
 	"confirm_notification_message_newVersion": {
 		"message": "✔ 有新版本可用",
@@ -324,8 +328,12 @@
 		"description": "(sidepanel) 側邊欄警告 先儲存正在編輯的筆記 的訊息"
 	},
 	"sidepanel_unrecord_url_warning": {
-		"message": "你無法刪除未被紀錄的網址索引",
+		"message": "未被紀錄的網址索引不可被操作",
 		"description": "(sidepanel) 側邊欄警告 刪除未被紀錄網址索引 的訊息"
+	},
+	"sidepanel_unrecord_keyword_warning": {
+		"message": "未被紀錄的關鍵字索引不可被操作",
+		"description": "(sidepanel) 側邊欄警告 刪除未被紀錄關鍵字索引 的訊息"
 	},
 	"sidepanel_unsearched_warning": {
 		"message": "請先搜尋後在使用本功能",
@@ -382,5 +390,41 @@
 	"noindexnote_delete_button_warning": {
 		"message": "純筆記下無法一次刪除所有筆記",
 		"description": "(sidepanel) 純筆記下無法一次刪除所有筆記的訊息"
+	},
+	"initial_extension_data": {
+		"message": "已成功初始化筆記",
+		"description": "(background) 初始化筆記事件結束的訊息"
+	},
+	"unregister_setting": {
+		"message": "該設定未被註冊\n建議重新載入頁面再操作",
+		"description": "(setting) 被操作的設定未被註冊的訊息"
+	},
+	"unsaved_setting": {
+		"message": "該設定更新失敗",
+		"description": "(setting) 該設定更新失敗的錯誤訊息"
+	},
+	"inport_backupdata_version_too_high": {
+		"message": "該備份資料版本高於當前版本，無法匯入",
+		"description": "(setting) 無法匯入版本高於當前版本的備份資料的錯誤訊息"
+	},
+	"inport_backupdata_wrong_type": {
+		"message": "錯誤檔案類型",
+		"description": "(setting) 匯入的備份資料檔案格式的錯誤訊息"
+	},
+	"inport_backupdata_no_file": {
+		"message": "未選取檔案",
+		"description": "(setting) 未選取備份資料的錯誤訊息"
+	},
+	"SubpageIndex_subpage_rules_enable": {
+		"message": "設定已應用",
+		"description": "(SubpageIndex) 請求分頁索引規則啟用與否資料儲存事件結束的訊息"
+	},
+	"SubpageIndex_new_subpage_rules": {
+		"message": "規則已添加",
+		"description": "(SubpageIndex) 新增分頁索引規則啟用與否資料儲存事件結束的訊息"
+	},
+	"SubpageIndex_delete_subpage_rules": {
+		"message": "規則已刪除",
+		"description": "(SubpageIndex) 刪除分頁索引規則啟用與否資料儲存事件結束的訊息"
 	}
 }

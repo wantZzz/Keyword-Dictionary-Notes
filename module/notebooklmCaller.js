@@ -297,7 +297,7 @@ class notebooklmInteractiveControl {
 			for (let r = 0; r < source_ids.length; r++) sources.push([[source_ids[r]]]);
 			const k = [type, [["[CONTEXT]",""]], ""];
 		
-			return (await this.execute([{ id: "yyryJe", args: [sources, null, null, null, null, [question]] }]))[0].data[0];
+			return (await this.execute([{ id: "yyryJe", args: [sources, null, null, null, null, k] }]))[0].data[0];
 		}
 		else{
 			return [];
@@ -350,7 +350,14 @@ export class summaryWithNotebooklm_module{
 		
 		let r = this;
 		r.moduleDataRead(r.modulename, ['authuser', 'notebooks'], async function (module_data){
-			r.authuser = module_data.authuser || {"account_id": "", "index": -1};
+			if (module_data.authuser == undefined){
+				callback([false, ""]);
+				r.saveNotebooklmAuthuserData(() => {});
+			}
+			else{
+				r.authuser = module_data.authuser;
+			}
+			
 			let account_info = (r.authuser.index == -1) ? {"id": "", "email": ""} : ((await r.testAuthUserIndex(r.authuser.index)) || {"id": "", "email": ""});
 			
 			if (r.authuser.account_id != account_info.id){
@@ -380,6 +387,9 @@ export class summaryWithNotebooklm_module{
 						r.saveNotebooklmSummaryData(() => {});
 					}
 				}
+			}
+			else{
+				r.saveNotebooklmSummaryData(() => {});
 			}
 			
 			console.log('NotebooklmSummary 設定載入完成');
@@ -429,12 +439,13 @@ export class summaryWithNotebooklm_module{
 	
 	saveNotebooklmSummaryData(callback){
 		this.moduleDataRead(this.modulename, ['notebooks'], (module_data) => {
-			module_data.notebooks[this.authuser.account_id] = {
+			const notebooks = module_data.notebooks || {}
+			notebooks[this.authuser.account_id] = {
 				"notebook_sources": this.authuser_notebook_sources,
 				"notebook_url_index": this.authuser_notebook_url_index
 			};
 			
-			this.moduleDataWrite(this.modulename, 'notebooks', module_data.notebooks, (t) => {callback();});
+			this.moduleDataWrite(this.modulename, 'notebooks', notebooks, (t) => {callback();});
 		});
 	}
 	saveNotebooklmAuthuserData(callback){
@@ -526,27 +537,54 @@ export class summaryWithNotebooklm_module{
 		return {is_done: true, is_remove: (remove_list.length != 0), remove_source_list: remove_list};
 	}
 	
-	async addUrlsToNotebooklm(source_urls, current_Host){
-		if (!this.notebooklm){
-			return {is_done: false, is_error: true, error_source_list: []};
+	async createNewNotebook(current_Host){
+		const create_response = await this.notebooklm.createNotebook(current_Host, '🔗');
+			
+		if (create_response.id == undefined){
+			return false;
 		}
 		
-		if (this.authuser_notebook_url_index[current_Host] == undefined){
-			const create_response = await this.notebooklm.createNotebook(current_Host, emoji);
+		this.authuser_notebook_url_index[current_Host] = create_response.id;
+		this.authuser_notebook_sources[create_response.id] = {
+			"main_sources": {},
+			"quote_sources": {},
+			"sources_count": 0
+		};
+		
+		let r = this;
+		return new Promise((resolve) => {
+			r.saveNotebooklmSummaryData(() => {
+				resolve(true);
+			});
+		});
+	}
+	
+	async tryAllocateSharedNotebook(current_Host){
+		let found_notebook = false;
 			
-			if (create_response.id == undefined){
-				return {is_done: false, is_error: true, error_source_list: []};
+		const notebooks = Object.keys(this.authuser_notebook_sources);
+		for (let r = 0; r < notebooks.length; r++){
+			if (this.authuser_notebook_sources[notebooks[r]]["sources_count"] < 50){
+				this.authuser_notebook_url_index[current_Host] = notebooks[r];
+				found_notebook = true;
+				break;
 			}
-			
-			this.authuser_notebook_url_index[current_Host] = create_response.id;
-			this.authuser_notebook_sources[create_response.id] = {
-				"main_sources": {},
-				"quote_sources": {},
-				"sources_count": 0
-			};
 		}
 		
-		const target_id = this.authuser_notebook_url_index[current_Host];
+		if (found_notebook){
+			let r = this;
+			return new Promise((resolve) => {
+				r.saveNotebooklmSummaryData(() => {
+					resolve(found_notebook);
+				});
+			});
+		}
+		else{
+			return found_notebook;
+		}
+	}
+	
+	async addUrlsToNotebooklm(source_urls, target_id){
 		const already_main_source = Object.keys(this.authuser_notebook_sources[target_id]["main_sources"]);
 		let add_error = [];
 		let add_done = false;
@@ -564,10 +602,21 @@ export class summaryWithNotebooklm_module{
 			}
 			
 			this.authuser_notebook_sources[target_id]["main_sources"][source_urls[r]] = add_response.id;
+			this.authuser_notebook_sources[target_id]["sources_count"] += 1;
 			add_done = true;
 		}
 		
-		return {is_done: add_done, is_error: (add_error.length != 0), error_source_list: add_error};
+		if (add_done){
+			let r = this;
+			return new Promise((resolve) => {
+				r.saveNotebooklmSummaryData(() => {
+					resolve({is_done: add_done, is_error: (add_error.length != 0), error_source_list: add_error});
+				});
+			});
+		}
+		else{
+			return {is_done: add_done, is_error: (add_error.length != 0), error_source_list: add_error};
+		}
 	}
 	
 	async summaryUrl(current_Url, current_Host){
@@ -575,50 +624,28 @@ export class summaryWithNotebooklm_module{
 			return {is_done: false, tidy_response: null};
 		}
 		
-		let has_nodtbook = true;
+		let has_notebook = true;
 		if (this.authuser_notebook_url_index[current_Host] == undefined){
-			has_nodtbook = false;
-			
-			const notebooks = Object.keys(this.authuser_notebook_sources);
-			for (let r = 0; r < notebooks.length; r++){
-				if (this.authuser_notebook_sources[notebooks[r]]["sources_count"] < 50){
-					this.authuser_notebook_url_index[current_Host] = notebooks[r];
-					has_nodtbook = true;
-					break;
-				}
-			}
+			has_notebook = await this.tryAllocateSharedNotebook(current_Host);
 		}
-		if (!has_nodtbook){
-			const create_response = await this.notebooklm.createNotebook(current_Host, emoji);
+		if (!has_notebook){
+			const create_response = await this.createNewNotebook(current_Host);
 			
-			if (create_response.id == undefined){
+			if (!create_response){
 				return {is_done: false, tidy_response: null};
 			}
-			
-			this.authuser_notebook_url_index[current_Host] = create_response.id;
-			this.authuser_notebook_sources[create_response.id] = {
-				"main_sources": {},
-				"quote_sources": {},
-				"sources_count": 0
-			};
 		}
 		
 		const target_id = this.authuser_notebook_url_index[current_Host];
 		if (Object.keys(this.authuser_notebook_sources[target_id]["main_sources"]).length == 0){
-			const add_response = await this.notebooklm.addUrlSource(target_id, current_Url);
+			const add_response = await this.addUrlsToNotebooklm([current_Url], target_id);
 			
-			if (add_response.id == undefined){
+			if (add_response.error_source_list.includes(current_Url)){
 				return {is_done: false, tidy_response: null};
 			}
-			
-			this.authuser_notebook_sources[target_id]["main_sources"][current_Url] = add_response.id;
 		}
 			
 		const tidy_response = await this.notebooklm.tidyWithNotebook([this.authuser_notebook_sources[target_id]["main_sources"][current_Url]], 'briefing_doc')
-		
-		if (tidy_response != []){
-			return {is_done: true, tidy_response: tidy_response};
-			return;
-		}	
+		return {is_done: (tidy_response != []), tidy_response: tidy_response};		
 	}
 }

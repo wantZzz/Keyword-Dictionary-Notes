@@ -27,6 +27,11 @@ var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
 var is_SuggestionSearch_Composition = false;
 var is_First_SuggestionSearch = true;
 var current_SuggestionSearch = "";
+
+let is_Dragging = false;
+let dragging_OffsetY = 0;
+let title_OffsetHeight = 0;
+let keyword_OffsetHeight = 0;
 //編輯器控制項
 var current_EditingEditor = [null, null];
 const language_Code = chrome.i18n.getUILanguage();
@@ -49,6 +54,10 @@ var recorded_Keywords = {};//{keyword: [[data......], is_searched]}
 function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
 	if(is_support && is_script_run){
 		if (page_status.is_special_urls && (currentpage_Url != page_status.url)){
+			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: page_status.title, host: page_status.host, url: page_status.url}, (t) => {});
+			current_HostTilte = page_status.title;
+		}
+		else if (page_status.is_special_urls && !is_SpecialUrls && (currentpage_Url == page_status.url)){
 			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: page_status.title, host: page_status.host, url: page_status.url}, (t) => {});
 			current_HostTilte = page_status.title;
 		}
@@ -804,6 +813,53 @@ function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
 	current_SuggestionSearch = "";
 }
 
+function refreshKeywordAreaAsSummary(summary){
+	if (is_KeywordNewNoteEdit != null){
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+		return;
+	}
+	
+	const keyword_area = document.getElementById("keyword_area");
+	
+	const host_title = keyword_area.querySelector('span#keyword_note_host');
+	host_title.innerText = '網頁概要';
+	
+	const keyword_note_container = document.getElementById("keyword_note_container");
+	
+	const keyword_note_block = Array.from(keyword_note_container.querySelectorAll(".windos_message_block")).reverse();
+	
+	current_Keyword = null;
+	const message_block = document.createElement('div');
+	message_block.classList.add('windos_message_block');
+	message_block.classList.add('no_border');
+	
+	message_block.innerHTML = `<div class="interactive_block">
+							   </div>
+							   <div class="windos_message_content ck-content"></div>
+							   <div class="windos_timestamp_container">
+								 <div class="windos_message_timestamp"></div>
+							   </div>`;
+	message_block.querySelector('.windos_message_content').innerText = summary;
+	message_block.querySelector('.windos_message_timestamp').innerText = '';
+	
+	keyword_note_container.innerHTML = "";
+	keyword_note_container.appendChild(message_block);
+	
+	is_KeywordNoteExist = 0;
+	display_KeywordNotes = [-1];
+
+	current_EditingEditor[1] = null;
+	initial_EditContent[1] = null;
+	initial_EditPriority[1] = null;
+	initial_EditTimestamp[1] = null;
+	
+	is_KeywordNewNoteEdit = null;
+	
+	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
+	is_First_SuggestionSearch = true;
+	current_SuggestionSearch = "";
+}
+
 function afterEditRefreshProcess(note_type, process_state, note_id, save_datetime){
 	if (note_type === 'url'){
 		const url_note_container = document.getElementById("url_note_container");
@@ -1328,6 +1384,7 @@ function title_more_options_button_click(event){
 	title_control_popup.classList.add('popup_show');
 }
 function url_delete_button_click(event){
+	const more_options_popup = event.target.closest('.levitate_options_popup');
 	const host = current_Host;
 		
 	const send_url_note_delete = {
@@ -1343,9 +1400,30 @@ function url_delete_button_click(event){
 	else{
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_url_warning'), 'warning');
 	}
+
+	more_options_popup.style.left = '';
+	more_options_popup.style.top = '';
+
+	more_options_popup.classList.remove('popup_show');
 }
 function url_reload_button_click(event){
+	const more_options_popup = event.target.closest('.levitate_options_popup');
 	chrome.runtime.sendMessage({event_name: 'quest-current-tab-sidepanel'}, (t) => {});
+	
+	more_options_popup.style.left = '';
+	more_options_popup.style.top = '';
+
+	more_options_popup.classList.remove('popup_show');
+}
+function url_summary_button_click(event){
+	const more_options_popup = event.target.closest('.levitate_options_popup');
+	chrome.runtime.sendMessage({event_name: 'quest-summary-url', current_url: current_Url, current_host: currentpage_Host}, (t) => {});
+
+	more_options_popup.style.left = '';
+	more_options_popup.style.top = '';
+
+	more_options_popup.classList.remove('popup_show');
+	refreshKeywordAreaAsSummary('處理請求中......');
 }
 
 // --- suggestion area keyword buttons ---
@@ -1505,6 +1583,10 @@ function keyword_new_note_button_click(event){
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 		return;
 	}
+	if (current_Keyword == null){
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+		return;
+	}
 	
 	const keyword_note_container = document.getElementById("keyword_note_container");
 	const keyword_note_block = keyword_note_container.querySelectorAll(".windos_message_block");
@@ -1580,12 +1662,17 @@ function keyword_delete_button_click(event){
 		return;
 	}
 
-	const send_keyword_note_delete = {
-		notification_type: 'message',
-		event_name: 'send-keyword-note-delete',
-		keyword: keyword
-	};
-	confirmNotificationMessage(chrome.i18n.getMessage('options_delete_keyword'), 'delete', send_keyword_note_delete);
+	if (is_KeywordNoteExist > 0){
+		const send_keyword_note_delete = {
+			notification_type: 'message',
+			event_name: 'send-keyword-note-delete',
+			keyword: keyword
+		};
+		confirmNotificationMessage(chrome.i18n.getMessage('options_delete_keyword'), 'delete', send_keyword_note_delete);
+	}
+	else{
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+	}
 }
 
 // --- more_options_popup buttons ---
@@ -2193,6 +2280,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 			
 			afterPinRefreshProcess('keyword', request.process_state, request.note_id);
 			break;
+			
+		//--- notebooklmCaller.js ---
+		case 'response-summary-url':
+			sendResponse({});
+			
+			refreshKeywordAreaAsSummary(request.summary_response.tidy_response[0]);
+			break;
 	}
 	console.log(request.event_name);
 });
@@ -2356,6 +2450,7 @@ function runInitial(){
 	title_control_popup.addEventListener("mouseleave", levitate_popup_mouseleave_event);
 	title_control_popup.querySelector("button.delete_url").addEventListener("click", url_delete_button_click);
 	title_control_popup.querySelector("button.reload_url").addEventListener("click", url_reload_button_click);
+	title_control_popup.querySelector("button.summary_url").addEventListener("click", url_summary_button_click);
 	
 	function levitate_popup_mouseleave_event(event){
 		this.style.left = '';

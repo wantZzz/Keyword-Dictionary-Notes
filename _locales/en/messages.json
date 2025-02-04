@@ -12,10 +12,14 @@
 		"description": "(sidepanel) Open and display more action floating windows in the keyword or URL index displayed in the sidebar"
 	},
 	"windos_message_header_control_popup_reload": {
-		"message": "重新整理索引",
-		"description": "(sidepanel) 重新整理網址索引"
+		"message": "Reorganize index",
+		"description": "(sidepanel) Reorganize URL index"
 	},
 	"windos_message_header_control_popup_delete": {
+		"message": "Delete all notes and index",
+		"description": "(sidepanel) In the keyword or URL index displayed in the sidebar, delete all notes under the index and the index."
+	},
+	"windos_message_header_control_delete__title": {
 		"message": "Delete all notes and index",
 		"description": "(sidepanel) In the keyword or URL index displayed in the sidebar, delete all notes under the index and the index."
 	},
@@ -324,8 +328,12 @@
 		"description": "(sidepanel) Warning: Save the note being edited first."
 	},
 	"sidepanel_unrecord_url_warning": {
-		"message": "You cannot delete unindexed URLs",
+		"message": "Unrecorded URL index cannot be operated",
 		"description": "(sidepanel) Warning: Delete messages for unrecorded URL indexes"
+	},
+	"sidepanel_unrecord_keyword_warning": {
+		"message": "Unrecorded keyword indexes cannot be operated on",
+		"description": "(sidepanel) Warning: Delete messages for unrecorded keyword indexes"
 	},
 	"sidepanel_unsearched_warning": {
 		"message": "Please perform a keyword search before using this function",
@@ -382,5 +390,41 @@
 	"noindexnote_delete_button_warning": {
 		"message": "It is not possible to delete all notes at once under pure notes",
 		"description": "(sidepanel) Note-only messages cannot delete all notes at once"
+	},
+	"initial_extension_data": {
+		"message": "Notes initialized successfully",
+		"description": "(background) Initialize note event end message"
+	},
+	"unregister_setting": {
+		"message": "This setting has not been registered\nIt is recommended to reload the page before proceeding.",
+		"description": "(setting) The message that the operated setting is not registered"
+	},
+	"unsaved_setting": {
+		"message": "The Setting update failed",
+		"description": "(setting) Error message for failed update of this setting"
+	},
+	"inport_backupdata_version_too_high": {
+		"message": "The backup data version is higher than the current version and cannot be imported.",
+		"description": "(setting) Unable to import backup data with a version higher than the current version error message"
+	},
+	"inport_backupdata_wrong_type": {
+		"message": "Wrong file type",
+		"description": "(setting) Error message for imported backup data file format"
+	},
+	"inport_backupdata_no_file": {
+		"message": "No file selected",
+		"description": "(setting) No backup data selected error message"
+	},
+	"SubpageIndex_subpage_rules_enable": {
+		"message": "Settings applied",
+		"description": "(SubpageIndex) Request whether the paging index rule is enabled or not. The message at the end of the data storage event"
+	},
+	"SubpageIndex_new_subpage_rules": {
+		"message": "Rule added",
+		"description": "(SubpageIndex) Added message about whether the paging index rule is enabled or not and the data storage event ends."
+	},
+	"SubpageIndex_delete_subpage_rules": {
+		"message": "Rule deleted",
+		"description": "(SubpageIndex) Delete the message at the end of the data storage event whether the paging index rule is enabled or not"
 	}
 }
