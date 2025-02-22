@@ -1,1233 +1,560 @@
-//外部腳本資料
-var currentpage_TabId = null;
-var is_CurrentPageSearch = true;
+var sidepanel_Info = {
+	keywordShow: {
+		title: "",
+		indexKey: "",
+		dataMode: 0,
+		displayOrder: [],
+		isEditing: false,
+		module: {}
+	},
+	urlShow: {
+		title: "",
+		indexKey: "",
+		dataMode: 0,
+		displayOrder: [],
+		isEditing: false,
+		module: {}
+	},
+	isDraggingEdge: false,
+	draggingOffsetY: 0,
+	titleOffsetHeight: 0,
+	keywordOffsetHeight: 0,
+	isDraggingBlock: false,
+	blockDragging: null,
+	blockContainerOffsetHeight: 0,
+	blockInitY: 0
+}
 
-var currentpage_Host = null;
-var currentpage_Url = null;
-//通用設定資料
-var is_DarkMode = true;
-var is_SwitchWithTab = true;
-//資料控制項
-var current_Host = null;
-var current_Url = null;
-var current_Keyword = '';
+var editing_DataInfo = {
+	isUsing: false,
+	isNew: false,
+	editEngine: null,
+	editBlock: null,
+	beforeEditData: "",
+	beforeEditTimestamp: ""
+}
+var searching_DataInfo = {
+	isSuggestionOnSearched: false,
+	isClicked: false,
+	allKeywordKeyIndex: [],
+	isComposition: false
+}
 
-var is_SpecialUrls = false;
-var view_MainIndex = false;
-var current_HostTilte = '';
-
-var is_UrlNoteExist = 0;
-var is_KeywordNoteExist = 0;
-
-var display_UrlNotes = [-1];
-var display_KeywordNotes = [-1];
-
-var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
-
-var is_SuggestionSearch_Composition = false;
-var is_First_SuggestionSearch = true;
-var current_SuggestionSearch = "";
-
-let is_Dragging = false;
-let dragging_OffsetY = 0;
-let title_OffsetHeight = 0;
-let keyword_OffsetHeight = 0;
-//編輯器控制項
-var current_EditingEditor = [null, null];
-const language_Code = chrome.i18n.getUILanguage();
-
-var initial_EditContent = [null, null];
-var initial_EditPriority = [null, null];
-var initial_EditTimestamp = [null, null];
-
-var is_UrlNewNoteEdit = null;
-var is_KeywordNewNoteEdit = null;
-
-var is_Connect = false;
-//儲存資料
-var searched_Keywords = {};//{keyword: count_in_page}
-var recorded_Keywords = {};//{keyword: [[data......], is_searched]}
-
-// ====== 資料回傳 ====== 
+var current_PageInfo = {
+	url: "",
+	indexKey: "",
+	title: "",
+	isSearched: null,
+	isSupport: false,
+	keywordFound: {},
+	module: {}
+}
+var background_Info = {
+	isConnect: false,
+	connectPort: null,
+	currentKeyword: "",
+	identificationToken: ""
+}
 
 // ====== 資料處理 ====== 
-function currentPagePageStatusUpdate(is_support, is_script_run, page_status){
-	if(is_support && is_script_run){
-		if (page_status.is_special_urls && (currentpage_Url != page_status.url)){
-			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: page_status.title, host: page_status.host, url: page_status.url}, (t) => {});
-			current_HostTilte = page_status.title;
-		}
-		else if (page_status.is_special_urls && !is_SpecialUrls && (currentpage_Url == page_status.url)){
-			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: page_status.title, host: page_status.host, url: page_status.url}, (t) => {});
-			current_HostTilte = page_status.title;
-		}
-		else if (currentpage_Host != page_status.host){
-			chrome.runtime.sendMessage({event_name: 'quest-url-notedata', host: page_status.host}, (t) => {});
-		}
-		
-		currentpage_Host = page_status.host;
-		currentpage_Url = page_status.url;
-		view_MainIndex = false;
-		
-		if (page_status.is_areadysearch && (currentpage_TabId != null)){
-			const searched_keywords_quest = {
-			event_name: 'quest-searched-keywords'
-			};
-			chrome.tabs.sendMessage(currentpage_TabId, searched_keywords_quest, (response) => {
-				searched_Keywords = response.searched_keywords;
-				
-				if (is_SwitchWithTab){
-					is_CurrentPageSearch = true;
-					refreshSuggestionArea(false, null);
-				}
-				
-			});
-		}
-		else {
-			if (is_CurrentPageSearch){
-				is_CurrentPageSearch = false;
-				refreshSuggestionArea(false, null);
-			}
-		}
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function refreshSidepanelStatus(msg){
+	current_PageInfo.url = msg.url;
+	current_PageInfo.indexKey = msg.indexKey;
+	current_PageInfo.title = msg.title;
+	current_PageInfo.keywordFound = msg.keywordFound;
+	current_PageInfo.isSupport = msg.isSupport;
+	current_PageInfo.module = msg.module;
+	
+	background_Info.identificationToken = msg.identificationToken;
+	
+	if ((sidepanel_Info.urlShow.indexKey != current_PageInfo.indexKey) && current_PageInfo.isSupport){
+		refreshUrlShow(msg.indexKey);
 	}
-	else{
-		currentpage_Host = null;
-		currentpage_Url = null;
-		
-		if (is_CurrentPageSearch){
-			is_CurrentPageSearch = false;
-			refreshSuggestionArea(false, null);
-		}
+	if (sidepanel_Info.keywordShow.indexKey == ""){
+		const QuestData = {
+			event_name: 'quest-current-keyword',
+			token: background_Info.identificationToken
+		};
+	
+		chrome.runtime.sendMessage(QuestData, function (returnData){
+			background_Info.currentKeyword = returnData.currentKeyword;
+			if (background_Info.currentKeyword !== undefined){
+				refreshKeywordShow(background_Info.currentKeyword, true);
+			}
+		});
+	}
+	
+	const isSearchedDiff = (current_PageInfo.isSearched != msg.isSearched);
+	current_PageInfo.isSearched = msg.isSearched;
+	if (isSearchedDiff || background_Info.identificationToken == ""){
+		refreshKeywordSuggestionShow();
 	}
 }
 
-function refreshTitleArea(host, host_notedata, keywords_priority){
-	if (is_UrlNewNoteEdit != null){
-		return;
-	}
+function createNoteBlock(noteContent, noteTimestamp, noteId = -1){
+	const MessageBlock = document.createElement('div');
+	MessageBlock.classList.add('windos_message_block');
 	
-	const title_area = document.getElementById("title_area");
-	
-	const host_title = title_area.querySelector('span#url_note_host');
-	host_title.innerText = host;
-	
-	const url_note_container = document.getElementById("url_note_container");
-	
-	const url_note_block = Array.from(url_note_container.querySelectorAll(".windos_message_block")).reverse();
-	
-	if (host_notedata === null){
-		const message_block = document.createElement('div');
-		message_block.classList.add('windos_message_block');
-		
-		message_block.innerHTML = `<div class="interactive_block">
-								   </div>
-								   <div class="windos_message_content ck-content"></div>
-								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp"></div>
-								   </div>`
-		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0noindex');
-		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0noindex');
-		
-		url_note_container.innerHTML = "";
-		url_note_container.appendChild(message_block);
-		
-		is_UrlNoteExist = 0;
-		display_UrlNotes = [-1];
-	}
-	else if (host_notedata.length === 0){
-		const message_block = document.createElement('div');
-		message_block.classList.add('windos_message_block');
-		
-		message_block.innerHTML = `<div class="interactive_block">
-								   </div>
-								   <div class="windos_message_content ck-content"></div>
-								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp"></div>
-								   </div>`;
-		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0emptyindex');
-		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0emptyindex');
-		
-		url_note_container.innerHTML = "";
-		url_note_container.appendChild(message_block);
-		
-		is_UrlNoteExist = 1;
-		display_UrlNotes = [-1];
-	}
-	else{
-		let count_id = 0;
-		
-		if(is_UrlNoteExist < 2){
-			const first_message_interactive_block = url_note_block[0].querySelector(".interactive_block");
-
-			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
-														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-														   </svg>
-														 </button>
-														 <button class="more_options" note_id="0" title="更多操作">
-														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-														   </svg>
-														 </button>`;
-														 
-			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-			first_message_interactive_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-			
-			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-			first_message_interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-			
-			display_UrlNotes[0] = 0;
-		}
-		
-		let display_UrlNotes_copy = display_UrlNotes.reverse();
-		
-		const priority_note = new Array(keywords_priority.length);
-		const priority_count = keywords_priority.length;
-		let priority_jump = 0;
-		
-		const pinned_note_i18n = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-		const more_options_i18n = chrome.i18n.getMessage('interactive_block_more_options__title');
-		
-		host_notedata.forEach(function (note_data) {
-			const [note_content, note_timestamp, undefind_value] = note_data;
-			const priority_note_index = keywords_priority.indexOf(count_id);
-			
-			if (priority_note_index >= 0){
-				const message_block = document.createElement('div');
-				message_block.classList.add('windos_message_block');
-				
-				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-											   </svg>
-											 </button>
-											 <button class="more_options" note_id="${count_id}" title="更多操作">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-											   </svg>
-											 </button>
-										   </div>
-										   <div class="windos_message_content ck-content">
-											 ${note_content}
-										   </div>
-										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp">
-											   ${note_timestamp}
-											 </div>
-										   </div>`;
-				message_block.querySelector(".interactive_block button.pinned_note").title = pinned_note_i18n;
-				message_block.querySelector(".interactive_block button.more_options").title = more_options_i18n;
-				
-				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-				
-				priority_note[priority_note_index] = message_block;
-				priority_jump += 1;
-			}
-			else if(!url_note_block[count_id - priority_jump]){
-				const message_block = document.createElement('div');
-				message_block.classList.add('windos_message_block');
-				
-				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-											   </svg>
-											 </button>
-											 <button class="more_options" note_id="${count_id}" title="更多操作">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-											   </svg>
-											 </button>
-										   </div>
-										   <div class="windos_message_content ck-content">
-											 ${note_content}
-										   </div>
-										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp">
-											   ${note_timestamp}
-											 </div>
-										   </div>`;
-				message_block.querySelector(".interactive_block button.pinned_note").title = pinned_note_i18n;
-				message_block.querySelector(".interactive_block button.more_options").title = more_options_i18n;
-				
-				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-				
-				
-				url_note_container.insertBefore(message_block, url_note_container.firstChild);
-				//url_note_container.appendChild(message_block);
-				display_UrlNotes_copy.push(count_id);
-			}
-			else{
-				const exist_block = url_note_block[count_id + priority_jump];
-				
-				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
-				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
-				
-				exist_block.querySelector(".interactive_block button.pinned_note").setAttribute('note_id', count_id);
-				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
-				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
-				
-				display_UrlNotes_copy[count_id - priority_jump] = count_id;
-			}
-			
-			count_id += 1;
-		});
-		
-		if((count_id - priority_count) < url_note_block.length){
-			for (var i = (count_id - priority_count); i < url_note_block.length; i++) {
-				url_note_block[i].remove();
-				//url_note_container.removeChild(url_note_block[i]);
-			}
-			display_UrlNotes_copy.splice((count_id - priority_count), url_note_block.length - (count_id - priority_count));
-		}
-	
-		priority_note.reverse().forEach(function (message_block) {
-			url_note_container.insertBefore(message_block, url_note_container.firstChild);
-		});
-		
-		display_KeywordNotes = keywords_priority.concat(display_UrlNotes_copy.reverse());
-		
-		is_UrlNoteExist = 2;
-	}
-
-	current_EditingEditor[0] = null;
-	initial_EditContent[0] = null;
-	initial_EditPriority[0] = null;
-	initial_EditTimestamp[0] = null;
-	
-	is_UrlNewNoteEdit = null;
-	
-	current_Host = currentpage_Host;
-	current_Url = currentpage_Url;
-	is_SpecialUrls = false;
-}
-
-function refreshSpecialTitleArea(title, key_index, host_notedata, keywords_priority){
-	if (is_UrlNewNoteEdit != null){
-		return;
-	}
-	
-	const title_area = document.getElementById("title_area");
-	
-	if (title != null){
-		const host_title = title_area.querySelector('span#url_note_host');
-		host_title.innerHTML = title;
-	}
-	
-	const url_note_container = document.getElementById("url_note_container");
-	
-	const url_note_block = Array.from(url_note_container.querySelectorAll(".windos_message_block")).reverse();
-	
-	if (host_notedata === null){
-		const message_block = document.createElement('div');
-		message_block.classList.add('windos_message_block');
-		
-		message_block.innerHTML = `<div class="interactive_block">
-								   </div>
-								   <div class="windos_message_content ck-content"></div>
-								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp"></div>
-								   </div>`
-		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0noindex');
-		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0noindex');
-								
-		url_note_container.innerHTML = "";
-		url_note_container.appendChild(message_block);
-		
-		is_UrlNoteExist = 0;
-		display_UrlNotes = [-1];
-	}
-	else if (host_notedata.length === 0){
-		const message_block = document.createElement('div');
-		message_block.classList.add('windos_message_block');
-		
-		message_block.innerHTML = `<div class="interactive_block">
-								   </div>
-								   <div class="windos_message_content ck-content"></div>
-								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp"></div>
-								   </div>`;
-		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0emptyindex');
-		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0emptyindex');
-								
-		url_note_container.innerHTML = "";
-		url_note_container.appendChild(message_block);
-		
-		is_UrlNoteExist = 1;
-		display_UrlNotes = [-1];
-	}
-	else{
-		let count_id = 0;
-		
-		if(is_UrlNoteExist < 2){
-			const first_message_interactive_block = url_note_block[0].querySelector(".interactive_block");
-
-			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
-														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-														   </svg>
-														 </button>
-														 <button class="more_options" note_id="0" title="更多操作">
-														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-														   </svg>
-														 </button>`;
-			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-			first_message_interactive_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-			
-			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-			first_message_interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-			
-			display_UrlNotes[0] = 0;
-		}
-		
-		let display_UrlNotes_copy = display_UrlNotes.reverse();
-		
-		const priority_note = new Array(keywords_priority.length);
-		const priority_count = keywords_priority.length;
-		let priority_jump = 0;
-		
-		host_notedata.forEach(function (note_data) {
-			const [note_content, note_timestamp, undefind_value] = note_data;
-			const priority_note_index = keywords_priority.indexOf(count_id);
-			
-			if (priority_note_index >= 0){
-				const message_block = document.createElement('div');
-				message_block.classList.add('windos_message_block');
-				
-				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-											   </svg>
-											 </button>
-											 <button class="more_options" note_id="${count_id}" title="更多操作">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-											   </svg>
-											 </button>
-										   </div>
-										   <div class="windos_message_content ck-content">
-											 ${note_content}
-										   </div>
-										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp">
-											   ${note_timestamp}
-											 </div>
-										   </div>`;
-				message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-				message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-				
-				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-				
-				priority_note[priority_note_index] = message_block;
-				priority_jump += 1;
-			}
-			else if(!url_note_block[count_id - priority_jump]){
-				const message_block = document.createElement('div');
-				message_block.classList.add('windos_message_block');
-				
-				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-											   </svg>
-											 </button>
-											 <button class="more_options" note_id="${count_id}" title="更多操作">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-											   </svg>
-											 </button>
-										   </div>
-										   <div class="windos_message_content ck-content">
-											 ${note_content}
-										   </div>
-										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp">
-											   ${note_timestamp}
-											 </div>
-										   </div>`;
-				message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-				message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-				
-				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-				
-				
-				url_note_container.insertBefore(message_block, url_note_container.firstChild);
-				//url_note_container.appendChild(message_block);
-				display_UrlNotes_copy.push(count_id);
-			}
-			else{
-				const exist_block = url_note_block[count_id - priority_jump];
-				
-				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
-				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
-				
-				exist_block.querySelector(".interactive_block button.pinned_note").setAttribute('note_id', count_id);
-				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
-				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
-				
-				display_UrlNotes_copy[count_id - priority_jump] = count_id;
-			}
-			
-			count_id += 1;
-		});
-		
-		if((count_id - priority_count) < url_note_block.length){
-			for (var i = (count_id - priority_count); i < url_note_block.length; i++) {
-				url_note_block[i].remove();
-				//url_note_container.removeChild(url_note_block[i]);
-			}
-			display_UrlNotes_copy.splice((count_id - priority_count), url_note_block.length - (count_id - priority_count));
-		}
-	
-		priority_note.reverse().forEach(function (message_block) {
-			url_note_container.insertBefore(message_block, url_note_container.firstChild);
-		});
-		
-		display_KeywordNotes = keywords_priority.concat(display_UrlNotes_copy.reverse());
-		
-		is_UrlNoteExist = 2;
-	}
-
-	current_EditingEditor[0] = null;
-	initial_EditContent[0] = null;
-	initial_EditPriority[0] = null;
-	initial_EditTimestamp[0] = null;
-	
-	is_UrlNewNoteEdit = null;
-	
-	current_Host = key_index;
-	current_Url = currentpage_Url;
-	is_SpecialUrls = true;
-}
-
-function refreshSuggestionArea(is_data_ready, display_Keywords){
-	if (!is_data_ready && !is_CurrentPageSearch){
-		chrome.runtime.sendMessage({event_name: 'quest-display-keywords'}, (t) => {});
-		return;
-	}
-	
-	const suggestion_area = document.getElementById("suggestion_area");
-	const suggestion_container = suggestion_area.querySelector(".suggestion_container");
-	
-	suggestion_container.scrollLeft = 0;
-	
-	if (is_CurrentPageSearch){
-		const keywords = Object.keys(searched_Keywords);
-		if (keywords.length === 0){
-			const suggestion_button = suggestion_container.querySelectorAll(".keyword_suggestion");
-			
-			suggestion_button.forEach(function (suggestion) {
-				suggestion_container.removeChild(suggestion);
-			});
-			
-			const button_block = document.createElement('button');
-			button_block.classList.add('keyword_suggestion');
-			button_block.setAttribute('keyword', 'none');
-									
-			button_block.innerText = "該網頁未有關鍵字紀錄";
-			suggestion_container.appendChild(button_block);
-		}
-		else{
-			let count_id = 0;
-			const suggestion_button = suggestion_container.querySelectorAll(".keyword_suggestion");
-			
-			keywords.forEach(function (suggestion) {
-				if(!suggestion_button[count_id]){
-					const button_block = document.createElement('button');
-					button_block.classList.add('keyword_suggestion');
-					button_block.setAttribute('keyword', suggestion);
-											
-					button_block.innerText = `${suggestion} ${searched_Keywords[suggestion]}`;
-					button_block.addEventListener('click', suggestion_button_click, false);
-					suggestion_container.appendChild(button_block);
-				}
-				else{
-					suggestion_button[count_id].innerText = `${suggestion} ${searched_Keywords[suggestion]}`;
-					suggestion_button[count_id].setAttribute('keyword', suggestion);
-				}
-				
-				count_id += 1;
-			});
-			
-			if(count_id < suggestion_button.length){
-				for (var i = count_id; i < suggestion_button.length; i++) {
-					suggestion_container.removeChild(suggestion_button[i]);
-				}
-			}
-		}
-	}
-	else{
-		const keywords = display_Keywords;
-		if (keywords.length === 0){
-			const suggestion_button = suggestion_container.querySelectorAll(".keyword_suggestion");
-			
-			suggestion_button.forEach(function (suggestion) {
-				suggestion_container.removeChild(suggestion);
-			});
-			
-			const button_block = document.createElement('button');
-			button_block.classList.add('keyword_suggestion');
-			button_block.setAttribute('keyword', 'none');
-									
-			button_block.innerText = "未有關鍵字紀錄";
-			suggestion_container.appendChild(button_block);
-		}
-		else{
-			let count_id = 0;
-			const suggestion_button = suggestion_container.querySelectorAll(".keyword_suggestion");
-			
-			keywords.forEach(function (suggestion) {
-				if(!suggestion_button[count_id]){
-					const button_block = document.createElement('button');
-					button_block.classList.add('keyword_suggestion');
-					button_block.setAttribute('keyword', suggestion);
-											
-					button_block.innerText = `${suggestion}`;
-					button_block.addEventListener('click', suggestion_button_click, false);
-					suggestion_container.appendChild(button_block);
-				}
-				else{
-					suggestion_button[count_id].innerText = `${suggestion}`;
-					suggestion_button[count_id].setAttribute('keyword', suggestion);
-				}
-				
-				count_id += 1;
-			});
-			
-			if(count_id < suggestion_button.length){
-				for (var i = count_id; i < suggestion_button.length; i++) {
-					suggestion_container.removeChild(suggestion_button[i]);
-				}
-			}
-		}
-	}
-
-	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
-	is_First_SuggestionSearch = true;
-	current_SuggestionSearch = "";
-}
-
-function refreshKeywordArea(keyword, keyword_notedata, keywords_priority){
-	if (is_KeywordNewNoteEdit != null){
-		return;
-	}
-	
-	const keyword_area = document.getElementById("keyword_area");
-	
-	const host_title = keyword_area.querySelector('span#keyword_note_host');
-	host_title.innerText = keyword;
-	
-	const keyword_note_container = document.getElementById("keyword_note_container");
-	
-	const keyword_note_block = Array.from(keyword_note_container.querySelectorAll(".windos_message_block")).reverse();
-	
-	current_Keyword = keyword;
-	if (keyword_notedata === null){
-		const message_block = document.createElement('div');
-		message_block.classList.add('windos_message_block');
-		
-		message_block.innerHTML = `<div class="interactive_block">
-								   </div>
-								   <div class="windos_message_content ck-content"></div>
-								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp"></div>
-								   </div>`;
-		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_keyword_0noindex');
-		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0noindex');
-		
-		keyword_note_container.innerHTML = "";
-		keyword_note_container.appendChild(message_block);
-		
-		is_KeywordNoteExist = 0;
-		display_KeywordNotes = [-1];
-	}
-	else if (keyword_notedata.length === 0){
-		const message_block = document.createElement('div');
-		message_block.classList.add('windos_message_block');
-		
-		message_block.innerHTML = `<div class="interactive_block">
-								   </div>
-								   <div class="windos_message_content ck-content"></div>
-								   <div class="windos_timestamp_container">
-								     <div class="windos_message_timestamp"></div>
-								   </div>`;
-		message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
-		message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
-								
-		keyword_note_container.innerHTML = "";
-		keyword_note_container.appendChild(message_block);
-		
-		is_KeywordNoteExist = 1;
-		display_KeywordNotes = [-1];
-	}
-	else{
-		let count_id = 0;
-		
-		if(is_KeywordNoteExist < 2){
-			const first_message_interactive_block = keyword_note_block[0].querySelector(".interactive_block");
-
-			first_message_interactive_block.innerHTML = `<button class="pinned_note" note_id="0" title="釘選筆記">
-														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-														     <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-														   </svg>
-														 </button>
-														 <button class="more_options" note_id="0" title="更多選項">
-														   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-														     <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-														   </svg>
-														 </button>`;
-			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-			first_message_interactive_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-			
-			first_message_interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-			first_message_interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-			display_KeywordNotes[0] = 0;
-		}
-		
-		let display_KeywordNotes_copy = display_KeywordNotes.reverse();
-		
-		const priority_note = new Array(keywords_priority.length);
-		const priority_count = keywords_priority.length;
-		let priority_jump = 0;
-		
-		keyword_notedata.forEach(function (note_data) {
-			const [note_content, note_timestamp, is_pinned] = note_data;
-			const priority_note_index = keywords_priority.indexOf(count_id);
-			
-			if (priority_note_index >= 0){
-				const message_block = document.createElement('div');
-				message_block.classList.add('windos_message_block');
-				
-				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note is_pinned" note_id="${count_id}" title="釘選筆記">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-											   </svg>
-											 </button>
-											 <button class="more_options" note_id="${count_id}" title="更多選項">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-											   </svg>
-											 </button>
-										   </div>
-										   <div class="windos_message_content ck-content">
-											 ${note_content}
-										   </div>
-										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp">
-											   ${note_timestamp}
-											 </div>
-										   </div>`;
-				message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-				message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-				
-				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-				
-				priority_note[priority_note_index] = message_block;
-				priority_jump += 1;
-			}
-			else if(!keyword_note_block[count_id - priority_jump]){
-				const message_block = document.createElement('div');
-				message_block.classList.add('windos_message_block');
-				
-				message_block.innerHTML = `<div class="interactive_block">
-											 <button class="pinned_note" note_id="${count_id}" title="釘選筆記">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-											   </svg>
-											 </button>
-											 <button class="more_options" note_id="${count_id}" title="更多選項">
-											   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-												 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-											   </svg>
-											 </button>
-										   </div>
-										   <div class="windos_message_content ck-content">
-											   ${note_content}
-										   </div>
-										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp">
-											   ${note_timestamp}
-											 </div>
-										   </div>`;
-				message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-				message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-				
-				message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-				message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-					   
-				keyword_note_container.insertBefore(message_block, keyword_note_container.firstChild);
-				//keyword_note_container.appendChild(message_block);
-				display_KeywordNotes_copy.push(count_id);
-			}
-			else{
-				const exist_block = keyword_note_block[count_id - priority_jump];
-				
-				exist_block.querySelector(".windos_message_content").innerHTML = note_content;
-				exist_block.querySelector(".windos_message_timestamp").innerText = note_timestamp;
-				
-				exist_block.querySelector(".interactive_block button.pinned_note").setAttribute('note_id', count_id);
-				exist_block.querySelector(".interactive_block button.pinned_note").classList.remove('is_pinned');
-				exist_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', count_id);
-				
-				display_KeywordNotes_copy[count_id - priority_jump] = count_id;
-			}
-			
-			count_id += 1;
-		});
-		
-		if((count_id - priority_count) < keyword_note_block.length){
-			for (var i = (count_id - priority_count); i < keyword_note_block.length; i++) {
-				keyword_note_block[i].remove();
-				//keyword_note_container.removeChild(keyword_note_block[i]);
-			}
-			display_KeywordNotes_copy.splice((count_id - priority_count), keyword_note_block.length - (count_id - priority_count));
-		}
-		
-		priority_note.reverse().forEach(function (message_block) {
-			keyword_note_container.insertBefore(message_block, keyword_note_container.firstChild);
-		});
-		
-		display_KeywordNotes = keywords_priority.concat(display_KeywordNotes_copy.reverse());
-
-		is_KeywordNoteExist = 2;
-	}
-
-	current_EditingEditor[1] = null;
-	initial_EditContent[1] = null;
-	initial_EditPriority[1] = null;
-	initial_EditTimestamp[1] = null;
-	
-	is_KeywordNewNoteEdit = null;
-	
-	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
-	is_First_SuggestionSearch = true;
-	current_SuggestionSearch = "";
-}
-
-function refreshKeywordAreaAsSummary(summary){
-	if (is_KeywordNewNoteEdit != null){
-		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
-		return;
-	}
-	
-	const keyword_area = document.getElementById("keyword_area");
-	
-	const host_title = keyword_area.querySelector('span#keyword_note_host');
-	host_title.innerText = '網頁概要';
-	
-	const keyword_note_container = document.getElementById("keyword_note_container");
-	
-	const keyword_note_block = Array.from(keyword_note_container.querySelectorAll(".windos_message_block")).reverse();
-	
-	current_Keyword = null;
-	const message_block = document.createElement('div');
-	message_block.classList.add('windos_message_block');
-	message_block.classList.add('no_border');
-	
-	message_block.innerHTML = `<div class="interactive_block">
+	MessageBlock.innerHTML = `<div class="interactive_block">
 							   </div>
-							   <div class="windos_message_content ck-content"></div>
+							   <div class="windos_message_content ck-content">
+								 ${noteContent}
+							   </div>
 							   <div class="windos_timestamp_container">
-								 <div class="windos_message_timestamp"></div>
+								 <div class="windos_message_timestamp">
+								   ${noteTimestamp}
+								 </div>
 							   </div>`;
-	message_block.querySelector('.windos_message_content').innerText = summary;
-	message_block.querySelector('.windos_message_timestamp').innerText = '';
 	
-	keyword_note_container.innerHTML = "";
-	keyword_note_container.appendChild(message_block);
+	if (noteId >= 0){
+		insertInteractiveBlockStructure(MessageBlock, noteId);
+	}
 	
-	is_KeywordNoteExist = 0;
-	display_KeywordNotes = [-1];
+	return MessageBlock;
+}
+function insertInteractiveBlockStructure(noteBlock, noteId = 0){
+	const interactive_block = noteBlock.querySelector(".interactive_block");
+	
+	interactive_block.innerHTML = `<button class="pinned_note" note_id="${noteId}" title="釘選筆記">
+										<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 48 48">
+											<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="m12 33l12-12l12 12M12 13h24"/>
+										</svg>
+									</button>
+									<button class="more_options" note_id="${noteId}" title="更多操作">
+										<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+											<path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+										</svg>
+									</button>`;
+									
+	interactive_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
+	interactive_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+	
+	interactive_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', orderEditButtonClick, false);
+	interactive_block.querySelector(".interactive_block button.more_options").addEventListener('click', moreOptionsButtonClick, false);
 
-	current_EditingEditor[1] = null;
-	initial_EditContent[1] = null;
-	initial_EditPriority[1] = null;
-	initial_EditTimestamp[1] = null;
+	return;
+}
+function changeNoteBlock(noteBlock, noteContent, noteTimestamp, noteId = 0){
+	noteBlock.querySelector(".windos_message_content").innerHTML = noteContent;
+	noteBlock.querySelector(".windos_message_timestamp").innerText = noteTimestamp;
+		
+	noteBlock.querySelector(".interactive_block button.pinned_note").setAttribute('note_id', noteId);
+	noteBlock.querySelector(".interactive_block button.more_options").setAttribute('note_id', noteId);
 	
-	is_KeywordNewNoteEdit = null;
-	
-	document.getElementById("all_suggestion_popup").querySelector("input").value = "";
-	is_First_SuggestionSearch = true;
-	current_SuggestionSearch = "";
+	return;
 }
 
-function afterEditRefreshProcess(note_type, process_state, note_id, save_datetime){
-	if (note_type === 'url'){
-		const url_note_container = document.getElementById("url_note_container");
-		const url_note_block = Array.from(url_note_container.querySelectorAll(".windos_message_block"));
-		
-		if (process_state){
-			if (is_UrlNoteExist < 2){
-				const notify_index = display_UrlNotes.indexOf(-1);
-				
-				url_note_block[notify_index].remove();
-				
-				url_note_block.splice(notify_index, 1);
-				display_UrlNotes.splice(notify_index, 1);
-				is_UrlNoteExist = 2;
+function createEditBlock(noteId, isNew = true, noteContent = ""){
+	const MessageBlock = document.createElement('div');
+	MessageBlock.classList.add('windos_message_block');
+	
+	MessageBlock.innerHTML = `<div class="interactive_block edit">
+								<button class="more_options" note_id="${noteId}">
+									<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
+										<path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
+									</svg>
+								</button>
+								</div>
+								<div class="windos_content_editor">
+									${noteContent}
+								</div>
+								<div class="windos_timestamp_container">
+									<div class="windos_message_timestamp">
+										Powered by
+										<svg class="ck ck-icon ck-reset_all-excluded" viewBox="0 0 53 10" style="width: 53px; height: 10px;"><path fill="#1C2331" d="M31.724 1.492a15.139 15.139 0 0 0 .045 1.16 2.434 2.434 0 0 0-.687-.34 3.68 3.68 0 0 0-1.103-.166 2.332 2.332 0 0 0-1.14.255 1.549 1.549 0 0 0-.686.87c-.15.41-.225.98-.225 1.712 0 .939.148 1.659.444 2.161.297.503.792.754 1.487.754.452.015.9-.094 1.294-.316.296-.174.557-.4.771-.669l.14.852h1.282V.007h-1.623v1.485ZM31 6.496a1.77 1.77 0 0 1-.494.061.964.964 0 0 1-.521-.127.758.758 0 0 1-.296-.466 3.984 3.984 0 0 1-.093-.992 4.208 4.208 0 0 1 .098-1.052.753.753 0 0 1 .307-.477 1.08 1.08 0 0 1 .55-.122c.233-.004.466.026.69.089l.483.144v2.553c-.11.076-.213.143-.307.2a1.73 1.73 0 0 1-.417.189ZM35.68 0l-.702.004c-.322.002-.482.168-.48.497l.004.581c.002.33.164.493.486.49l.702-.004c.322-.002.481-.167.48-.496L36.165.49c-.002-.33-.164-.493-.486-.491ZM36.145 2.313l-1.612.01.034 5.482 1.613-.01-.035-5.482ZM39.623.79 37.989.8 38 2.306l-.946.056.006 1.009.949-.006.024 2.983c.003.476.143.844.419 1.106.275.26.658.39 1.148.387.132 0 .293-.01.483-.03.19-.02.38-.046.57-.08.163-.028.324-.068.482-.119l-.183-1.095-.702.004a.664.664 0 0 1-.456-.123.553.553 0 0 1-.14-.422l-.016-2.621 1.513-.01-.006-1.064-1.514.01-.01-1.503ZM46.226 2.388c-.41-.184-.956-.274-1.636-.27-.673.004-1.215.101-1.627.29-.402.179-.72.505-.888.91-.18.419-.268.979-.264 1.68.004.688.1 1.24.285 1.655.172.404.495.724.9.894.414.18.957.268 1.63.264.68-.004 1.224-.099 1.632-.284.4-.176.714-.501.878-.905.176-.418.263-.971.258-1.658-.004-.702-.097-1.261-.28-1.677a1.696 1.696 0 0 0-.888-.9Zm-.613 3.607a.77.77 0 0 1-.337.501 1.649 1.649 0 0 1-1.317.009.776.776 0 0 1-.343-.497 4.066 4.066 0 0 1-.105-1.02 4.136 4.136 0 0 1 .092-1.03.786.786 0 0 1 .337-.507 1.59 1.59 0 0 1 1.316-.008.79.79 0 0 1 .344.502c.078.337.113.683.105 1.03.012.343-.019.685-.092 1.02ZM52.114 2.07a2.67 2.67 0 0 0-1.128.278c-.39.191-.752.437-1.072.73l-.157-.846-1.273.008.036 5.572 1.623-.01-.024-3.78c.35-.124.646-.22.887-.286.26-.075.53-.114.8-.118l.45-.003.144-1.546-.286.001ZM22.083 7.426l-1.576-2.532a2.137 2.137 0 0 0-.172-.253 1.95 1.95 0 0 0-.304-.29.138.138 0 0 1 .042-.04 1.7 1.7 0 0 0 .328-.374l1.75-2.71c.01-.015.025-.028.024-.048-.01-.01-.021-.007-.031-.007L20.49 1.17a.078.078 0 0 0-.075.045l-.868 1.384c-.23.366-.46.732-.688 1.099a.108.108 0 0 1-.112.06c-.098-.005-.196-.001-.294-.002-.018 0-.038.006-.055-.007.002-.02.002-.039.005-.058a4.6 4.6 0 0 0 .046-.701V1.203c0-.02-.009-.032-.03-.03h-.033L16.93 1.17c-.084 0-.073-.01-.073.076v6.491c-.001.018.006.028.025.027h1.494c.083 0 .072.007.072-.071v-2.19c0-.055-.003-.11-.004-.166a3.366 3.366 0 0 0-.05-.417h.06c.104 0 .209.002.313-.002a.082.082 0 0 1 .084.05c.535.913 1.07 1.824 1.607 2.736a.104.104 0 0 0 .103.062c.554-.003 1.107-.002 1.66-.002l.069-.003-.019-.032-.188-.304ZM27.112 6.555c-.005-.08-.004-.08-.082-.08h-2.414c-.053 0-.106-.003-.159-.011a.279.279 0 0 1-.246-.209.558.558 0 0 1-.022-.15c0-.382 0-.762-.002-1.143 0-.032.007-.049.042-.044h2.504c.029.003.037-.012.034-.038V3.814c0-.089.013-.078-.076-.078h-2.44c-.07 0-.062.003-.062-.06v-.837c0-.047.004-.093.013-.14a.283.283 0 0 1 .241-.246.717.717 0 0 1 .146-.011h2.484c.024.002.035-.009.036-.033l.003-.038.03-.496c.01-.183.024-.365.034-.548.005-.085.003-.087-.082-.094-.218-.018-.437-.038-.655-.05a17.845 17.845 0 0 0-.657-.026 72.994 72.994 0 0 0-1.756-.016 1.7 1.7 0 0 0-.471.064 1.286 1.286 0 0 0-.817.655c-.099.196-.149.413-.145.633v3.875c0 .072.003.144.011.216a1.27 1.27 0 0 0 .711 1.029c.228.113.48.167.734.158.757-.005 1.515.002 2.272-.042.274-.016.548-.034.82-.053.03-.002.043-.008.04-.041-.008-.104-.012-.208-.019-.312a69.964 69.964 0 0 1-.05-.768ZM16.14 7.415l-.127-1.075c-.004-.03-.014-.04-.044-.037a13.125 13.125 0 0 1-.998.073c-.336.01-.672.02-1.008.016-.116-.001-.233-.014-.347-.039a.746.746 0 0 1-.45-.262c-.075-.1-.132-.211-.167-.33a3.324 3.324 0 0 1-.126-.773 9.113 9.113 0 0 1-.015-.749c0-.285.022-.57.065-.852.023-.158.066-.312.127-.46a.728.728 0 0 1 .518-.443 1.64 1.64 0 0 1 .397-.048c.628-.001 1.255.003 1.882.05.022.001.033-.006.036-.026l.003-.031.06-.55c.019-.177.036-.355.057-.532.004-.034-.005-.046-.04-.056a5.595 5.595 0 0 0-1.213-.21 10.783 10.783 0 0 0-.708-.02c-.24-.003-.48.01-.719.041a3.477 3.477 0 0 0-.625.14 1.912 1.912 0 0 0-.807.497c-.185.2-.33.433-.424.688a4.311 4.311 0 0 0-.24 1.096c-.031.286-.045.572-.042.86-.006.43.024.86.091 1.286.04.25.104.497.193.734.098.279.26.53.473.734.214.205.473.358.756.446.344.11.702.17 1.063.177a8.505 8.505 0 0 0 1.578-.083 6.11 6.11 0 0 0 .766-.18c.03-.008.047-.023.037-.057a.157.157 0 0 1-.003-.025Z"></path><path fill="#AFE229" d="M6.016 6.69a1.592 1.592 0 0 0-.614.21c-.23.132-.422.32-.56.546-.044.072-.287.539-.287.539l-.836 1.528.009.006c.038.025.08.046.123.063.127.046.26.07.395.073.505.023 1.011-.007 1.517-.003.29.009.58.002.869-.022a.886.886 0 0 0 .395-.116.962.962 0 0 0 .312-.286c.056-.083.114-.163.164-.249.24-.408.48-.816.718-1.226.075-.128.148-.257.222-.386l.112-.192a1.07 1.07 0 0 0 .153-.518l-1.304.023s-1.258-.005-1.388.01Z"></path><path fill="#771BFF" d="m2.848 9.044.76-1.39.184-.352c-.124-.067-.245-.14-.367-.21-.346-.204-.706-.384-1.045-.6a.984.984 0 0 1-.244-.207c-.108-.134-.136-.294-.144-.46-.021-.409-.002-.818-.009-1.227-.003-.195 0-.39.003-.585.004-.322.153-.553.427-.713l.833-.488c.22-.13.44-.257.662-.385.05-.029.105-.052.158-.077.272-.128.519-.047.76.085l.044.028c.123.06.242.125.358.196.318.178.635.357.952.537.095.056.187.117.275.184.194.144.254.35.266.578.016.284.007.569.006.853-.001.28.004.558 0 .838.592-.003 1.259 0 1.259 0l.723-.013c-.003-.292-.007-.584-.007-.876 0-.524.015-1.048-.016-1.571-.024-.42-.135-.8-.492-1.067a5.02 5.02 0 0 0-.506-.339A400.52 400.52 0 0 0 5.94.787C5.722.664 5.513.524 5.282.423 5.255.406 5.228.388 5.2.373 4.758.126 4.305-.026 3.807.21c-.097.046-.197.087-.29.14A699.896 699.896 0 0 0 .783 1.948c-.501.294-.773.717-.778 1.31-.004.36-.009.718-.001 1.077.016.754-.017 1.508.024 2.261.016.304.07.6.269.848.127.15.279.28.448.382.622.4 1.283.734 1.92 1.11l.183.109Z"></path></svg>
+									</div>
+								</div>`;
+							   
+	MessageBlock.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
+	MessageBlock.querySelector(".interactive_block button.more_options").addEventListener('click', moreEditOptionsButtonClick, false);
+
+	setEditEngine(MessageBlock);
+	editing_DataInfo.isNew = isNew;
+	return MessageBlock;
+}
+function setEditEngine(MessageBlock){
+	const BalloonEditor = window.BalloonEditor;
+	BalloonEditor.create(MessageBlock.querySelector('div.windos_content_editor'), {
+		placeholder: 'Enter new note here',
+		language: chrome.i18n.getUILanguage(),
+		link: {
+			decorators: {
+				addTargetToExternalLinks: {
+					mode: 'automatic',
+					callback: url => true,
+					attributes: {
+						target: '_blank',
+						rel: 'noopener noreferrer'
+					}
+				}
 			}
-			
-			const note_content = current_EditingEditor[0].getData();
-			
-			const message_block = document.createElement('div');
-			message_block.classList.add('windos_message_block');
-			
-			let class_tag = "pinned_note";
-			if (initial_EditPriority[0]){
-				class_tag = "pinned_note is_pinned";
-			}
-			
-			message_block.innerHTML = `<div class="interactive_block">
-										 <button class="${class_tag}" note_id="${note_id}" title="釘選筆記">
-										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-											 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-										   </svg>
-										 </button>
-										 <button class="more_options" note_id="${note_id}" title="更多選項">
-										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-											 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-										   </svg>
-										 </button>
-									   </div>
-									   <div class="windos_message_content ck-content">
-										   ${note_content}
-									   </div>
-									   <div class="windos_timestamp_container">
-										 <div class="windos_message_timestamp">
-										   ${save_datetime}
-										 </div>
-									   </div>`;
-			message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-			message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-			
-			message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-			message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-				   
-			const note_index = display_UrlNotes.indexOf('e');
-			
-			url_note_block[note_index].replaceWith(message_block);
-			display_UrlNotes[note_index] = note_id;
-			
-			current_EditingEditor[0] = null;
-			initial_EditContent[0] = null;
-			initial_EditTimestamp[0] = null;
-			initial_EditPriority[0] = null;
-			is_UrlNewNoteEdit = null;
 		}
+	})
+	.then((editor) => {
+		editing_DataInfo.isUsing = true;
+		editing_DataInfo.editEngine = editor;
+		
+		const windos_content_editor = MessageBlock.querySelector('.windos_content_editor');
+		editing_DataInfo.editBlock = MessageBlock;
+		editing_DataInfo.beforeEditData = windos_content_editor.innerHTML;
+	} )
+	.catch((error) => {
+		console.error(error);
+	} );	
+}
+function clearEditEngine(needRemove = true){
+	sidepanel_Info.keywordShow.isEditing = false;
+	sidepanel_Info.urlShow.isEditing = false;
+	
+	if (needRemove){
+		editing_DataInfo.editBlock.remove();
 	}
-	else if (note_type === 'keyword'){
-		const keyword_note_container = document.getElementById("keyword_note_container");
-		const keyword_note_block = Array.from(keyword_note_container.querySelectorAll(".windos_message_block"));
-		
-		if (process_state){
-			if (is_KeywordNoteExist < 2){
-				const notify_index = display_KeywordNotes.indexOf(-1);
-				
-				keyword_note_block[notify_index].remove();
-				
-				keyword_note_block.splice(notify_index, 1);
-				display_KeywordNotes.splice(notify_index, 1);
-				is_KeywordNoteExist = 2;
-			}
-			
-			const note_content = current_EditingEditor[1].getData();
-			
-			const message_block = document.createElement('div');
-			message_block.classList.add('windos_message_block');
-			
-			let class_tag = "pinned_note";
-			if (initial_EditPriority[1]){
-				class_tag = "pinned_note is_pinned";
-			}
-			
-			message_block.innerHTML = `<div class="interactive_block">
-										 <button class="${class_tag}" note_id="${note_id}" title="釘選筆記">
-										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-											 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-										   </svg>
-										 </button>
-										 <button class="more_options" note_id="${note_id}" title="更多選項">
-										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-											 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-										   </svg>
-										 </button>
-									   </div>
-									   <div class="windos_message_content ck-content">
-										   ${note_content}
-									   </div>
-									   <div class="windos_timestamp_container">
-										 <div class="windos_message_timestamp">
-										   ${save_datetime}
-										 </div>
-									   </div>`;
-			message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-			message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-			
-			message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-			message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-				
-			const note_index = display_KeywordNotes.indexOf('e');
-			
-			keyword_note_block[note_index].replaceWith(message_block);
-			display_KeywordNotes[note_index] = note_id;
-			
-			current_EditingEditor[1] = null;
-			initial_EditContent[1] = null;
-			initial_EditTimestamp[1] = null;
-			initial_EditPriority[1] = null;
-			is_KeywordNewNoteEdit = null;
-		}
+	
+	editing_DataInfo = {
+		isUsing: false,
+		isNew: false,
+		editEngine: null,
+		editBlock: null,
+		beforeEditData: "",
+		beforeEditTimestamp: ""
 	}
 }
 
-function afterDeleteRefreshProcess(note_type, process_state, target_id){
-	if (note_type === 'url'){
-		const url_note_container = document.getElementById("url_note_container");
-		const url_note_block = url_note_container.querySelectorAll(".windos_message_block");
-		
-		if (process_state){
-			let count_index = 0
-			url_note_block.forEach(function (message_block) {
-				const note_id = parseInt(message_block.querySelector(".interactive_block button.more_options").getAttribute('note_id'));
-				
-				if (target_id < note_id){
-					message_block.querySelector(".interactive_block button.pinned_note").setAttribute('note_id', (note_id - 1));
-					message_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', (note_id - 1));
-					
-					display_UrlNotes[count_index] = note_id - 1;
-				}
-				else if (target_id === note_id){
-					message_block.remove();
-				}
-			});
-			
-			if (target_id == 0){
-				const message_block = document.createElement('div');
-				message_block.classList.add('windos_message_block');
-				
-				message_block.innerHTML = `<div class="interactive_block">
-										   </div>
-										   <div class="windos_message_content ck-content"></div>
-										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp"></div>
-										   </div>`;
-				message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_url_0emptyindex');
-				message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_url_0emptyindex');
-				
-				url_note_container.innerHTML = "";
-				url_note_container.appendChild(message_block);
-				
-				is_UrlNoteExist = 1;
-				display_UrlNotes = [-1];
-			}
-			
-			const delete_index = display_UrlNotes.indexOf(target_id);
-			display_UrlNotes.splice(delete_index, 1);
-		}
+async function refreshUrlShow(urlIndexKey){
+	if (sidepanel_Info.urlShow.isEditing){
+		return;
 	}
-	else if (note_type === 'keyword'){
-		const keyword_note_container = document.getElementById("keyword_note_container");
-		const keyword_note_block = keyword_note_container.querySelectorAll(".windos_message_block");
-		
-		if (process_state){
-			let count_index = 0
-			keyword_note_block.forEach(function (message_block) {
-				const note_id = parseInt(message_block.querySelector(".interactive_block button.more_options").getAttribute('note_id'));
-				
-				if (target_id < note_id){
-					message_block.querySelector(".interactive_block button.pinned_note").setAttribute('note_id', (note_id - 1));
-					message_block.querySelector(".interactive_block button.more_options").setAttribute('note_id', (note_id - 1));
-					
-					display_KeywordNotes[count_index] = note_id - 1;
-				}
-				else if (target_id === note_id){
-					message_block.remove();
-				}
-			});
-			
-			if (target_id == 0){
-				const message_block = document.createElement('div');
-				message_block.classList.add('windos_message_block');
-				
-				message_block.innerHTML = `<div class="interactive_block">
-										   </div>
-										   <div class="windos_message_content ck-content"></div>
-										   <div class="windos_timestamp_container">
-											 <div class="windos_message_timestamp"></div>
-										   </div>`;
-				message_block.querySelector('.windos_message_content').innerText = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
-				message_block.querySelector('.windos_message_timestamp').innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
-				
-				keyword_note_container.innerHTML = "";
-				keyword_note_container.appendChild(message_block);
-				
-				is_KeywordNoteExist = 1;
-				display_KeywordNotes = [-1];
-			}
-			
-			const delete_index = display_KeywordNotes.indexOf(target_id);
-			display_KeywordNotes.splice(delete_index, 1);
-		}
-	}
-}
-
-function afterPinRefreshProcess(note_type, process_state, target_id){
-	if (note_type === 'url'){
-		const url_note_container = document.getElementById("url_note_container");
-		const url_note_block = url_note_container.querySelectorAll(".windos_message_block");
-		
-		if (process_state){
-			const note_index = display_UrlNotes.indexOf(target_id);
-			
-			url_note_block[note_index].querySelector('button.pinned_note').classList.toggle("is_pinned");
-		}
-	}
-	else if (note_type === 'keyword'){
-		const keyword_note_container = document.getElementById("keyword_note_container");
-		const keyword_note_block = Array.from(keyword_note_container.querySelectorAll(".windos_message_block"));
-		
-		if (process_state){
-			const note_index = display_KeywordNotes.indexOf(target_id);
-			
-			keyword_note_block[note_index].querySelector('button.pinned_note').classList.toggle("is_pinned");
-		}
-	}
-}
-
-function confirmNotificationMessage(message, type, senddata){
-	const options = {
-	  type: "basic",
-	  iconUrl: "../images/icon.png",
-	  title: "",
-	  message: message
+	
+	const QuestData = {
+		event_name: 'quest-url-notedata',
+		urlKeyIndex: urlIndexKey,
+		token: background_Info.identificationToken
 	};
 	
-	switch (type) {
-		case 'delete':
-			options.title = chrome.i18n.getMessage('confirm_notification_message_delete');
-			options.buttons = [{
-				title: chrome.i18n.getMessage('confirm_notification_message_delete_0confirm')
-			}, {
-				title: chrome.i18n.getMessage('confirm_notification_message_delete_0cancel')
-			}];
-			break;
-		case 'reconnect':
-			options.title = chrome.i18n.getMessage('confirm_notification_message_reconnect');
-			options.buttons = [{
-				title: chrome.i18n.getMessage('confirm_notification_message_reconnect_0confirm')
-			}, {
-				title: chrome.i18n.getMessage('confirm_notification_message_reconnect_0cancel')
-			}];
-			break;
-		default:
-			options.title = chrome.i18n.getMessage('confirm_notification_message_default');
-			options.buttons = [{
-				title: chrome.i18n.getMessage('confirm_notification_message_default_0confirm')
-			}, {
-				title: chrome.i18n.getMessage('confirm_notification_message_default_0cancel')
-			}];
-	}
-	
-	chrome.notifications.create(options, function(notificationId) {
-		confirmnotifications_Data[notificationId] = senddata;
+	await chrome.runtime.sendMessage(QuestData, function (returnData){
+		const title_area = document.getElementById("title_area");
+		sidepanel_Info.urlShow.title = returnData.isExist ? returnData.data.title : urlIndexKey;
+		sidepanel_Info.urlShow.indexKey = urlIndexKey;
+		sidepanel_Info.urlShow.displayOrder = returnData.isExist ? returnData.data.displayOrder : [];
 		
-		setTimeout(() => {
-			if (Boolean(confirmnotifications_Data[notificationId])) {
-				delete confirmnotifications_Data[notificationId];
-				
-				chrome.notifications.clear(notificationId, (wasCleared) => {});
-			}
-		}, 10000);
-	});
-}
-
-function recordedKeywordsUpdate(update_recorded_keywords){
-	const keywords = Object.keys(recorded_Keywords);
-	let new_recorded_keywords = [];
-	
-	update_recorded_keywords.forEach((check_keyword) => {
-		if (!recorded_Keywords[check_keyword]){
-			new_recorded_keywords[check_keyword] = [[], false];
+		const UrlIndexTitle = title_area.querySelector('span#url_note_host');
+		UrlIndexTitle.innerText = sidepanel_Info.urlShow.title;
+		
+		const url_note_container = document.getElementById("url_note_container");
+		const url_note_block = url_note_container.querySelectorAll(".windos_message_block");
+		
+		if (!returnData.isExist){
+			const NoteContent = chrome.i18n.getMessage('windos_message_content_url_0emptyindex');
+			const NoteTimestamp = chrome.i18n.getMessage('windos_message_timestamp_url_0emptyindex');
+			
+			const MessageBlock = createNoteBlock(NoteContent, NoteTimestamp);
+			
+			url_note_container.innerHTML = "";
+			url_note_container.appendChild(MessageBlock);
+			
+			sidepanel_Info.urlShow.dataMode = 0;
+		}
+		else if (sidepanel_Info.urlShow.displayOrder.length > 0){
+			const NoteContent = chrome.i18n.getMessage('windos_message_content_url_0noindex');
+			const NoteTimestamp = chrome.i18n.getMessage('windos_message_timestamp_url_0noindex');
+			
+			const MessageBlock = createNoteBlock(NoteContent, NoteTimestamp);
+			
+			url_note_container.innerHTML = "";
+			url_note_container.appendChild(MessageBlock);
+			
+			sidepanel_Info.urlShow.dataMode = 1;
 		}
 		else{
-			new_recorded_keywords[check_keyword] = recorded_Keywords[check_keyword];
+			if(sidepanel_Info.urlShow.dataMode < 2){
+				insertInteractiveBlockStructure(url_note_block[0]);
+			}
+			
+			const NoteBlockLength = url_note_block.length;
+			const NoteLength = sidepanel_Info.urlShow.displayOrder.length;
+			const Min = Math.min(NoteBlockLength, NoteLength);
+			
+			for (let i = 0; i < Min; i++){
+				const NoteIndex = sidepanel_Info.urlShow.displayOrder[i];
+				const [NoteContent, NoteTimestamp, UndefindValue] = returnData.data.note[NoteIndex];
+					
+				changeNoteBlock(url_note_block[i], NoteContent, NoteTimestamp, NoteIndex);
+			}
+			for (let i = 0; i < (NoteLength - Min); i++){
+				const NoteIndex = sidepanel_Info.urlShow.displayOrder[Min + i];
+				const [NoteContent, NoteTimestamp, UndefindValue] = returnData.data.note[NoteIndex];
+					
+				const MessageBlock = createNoteBlock(NoteContent, NoteTimestamp, NoteIndex);
+				url_note_container.appendChild(MessageBlock);
+			}
+			for (let i = 0; i < (NoteBlockLength - Min); i++){
+				url_note_block[Min + i].remove();
+			}
+			
+			sidepanel_Info.urlShow.dataMode = 2;
 		}
 	});
+}
+async function refreshKeywordShow(keywordKeyIndex, isFirst = false){
+    if (sidepanel_Info.keywordShow.isEditing) {
+        return;
+    }
+
+	const QuestData = {
+		event_name: 'quest-keyword-notedata',
+		keywordKeyIndex: keywordKeyIndex,
+		isFirst: isFirst,
+		token: background_Info.identificationToken
+	};
 	
-	//console.log(new_recorded_keywords);
-	//console.log(recorded_Keywords);
+	await chrome.runtime.sendMessage(QuestData, function (returnData){
+		const keyword_area = document.getElementById("keyword_area");
+		sidepanel_Info.keywordShow.title = returnData.isExist ? returnData.data.title : keywordKeyIndex;
+		sidepanel_Info.keywordShow.indexKey = keywordKeyIndex;
+		sidepanel_Info.keywordShow.displayOrder = returnData.isExist ? returnData.data.displayOrder : [];
+
+		const KeywordIndexTitle = keyword_area.querySelector('span#keyword_note_host');
+		KeywordIndexTitle.innerText = sidepanel_Info.keywordShow.title;
+
+		const keyword_note_container = document.getElementById("keyword_note_container");
+		const keyword_note_block = keyword_note_container.querySelectorAll(".windos_message_block");
+
+		if (!returnData.isExist) {
+			const NoteContent = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
+			const NoteTimestamp = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
+			
+			const MessageBlock = createNoteBlock(NoteContent, NoteTimestamp);
+			
+			keyword_note_container.innerHTML = "";
+			keyword_note_container.appendChild(MessageBlock);
+			
+			sidepanel_Info.keywordShow.dataMode = 0;
+		}
+		else if (sidepanel_Info.keywordShow.displayOrder.length === 0) {
+			const NoteContent = chrome.i18n.getMessage('windos_message_content_keyword_0noindex');
+			const NoteTimestamp = chrome.i18n.getMessage('windos_message_timestamp_keyword_0noindex');
+			
+			const MessageBlock = createNoteBlock(NoteContent, NoteTimestamp);
+			
+			keyword_note_container.innerHTML = "";
+			keyword_note_container.appendChild(MessageBlock);
+			
+			sidepanel_Info.keywordShow.dataMode = 1;
+		}
+		else {
+			if (sidepanel_Info.keywordShow.dataMode < 2) {
+				insertInteractiveBlockStructure(keyword_note_block[0]);
+			}
+
+			const NoteBlockLength = keyword_note_block.length;
+			const NoteLength = sidepanel_Info.keywordShow.displayOrder.length;
+			const Min = Math.min(NoteBlockLength, NoteLength);
+			
+			for (let i = 0; i < Min; i++) {
+				const NoteIndex = sidepanel_Info.keywordShow.displayOrder[i];
+				
+				const exist_block = keyword_note_block[i];
+				const [NoteContent, NoteTimestamp, is_pinned] = returnData.data.note[NoteIndex];
+				
+				changeNoteBlock(keyword_note_block[i], NoteContent, NoteTimestamp, NoteIndex);
+			}
+			for (let i = 0; i < (NoteLength - Min); i++) {
+				const NoteIndex = sidepanel_Info.keywordShow.displayOrder[Min + i];
+				const [NoteContent, NoteTimestamp, is_pinned] = returnData.data.note[NoteIndex];
+				
+				const MessageBlock = createNoteBlock(NoteContent, NoteTimestamp, NoteIndex);
+				
+				keyword_note_container.appendChild(MessageBlock);
+			}
+			for (let i = 0; i < (NoteBlockLength - Min); i++) {
+				keyword_note_block[Min + i].remove();
+			}
+
+			sidepanel_Info.keywordShow.dataMode = 2;
+		}
+	});
+}
+async function refreshKeywordSuggestionShow(){
+    const suggestion_area = document.getElementById("suggestion_area");
+    const suggestion_container = suggestion_area.querySelector(".suggestion_container");
+    suggestion_container.scrollLeft = 0;
 	
-	recorded_Keywords = new_recorded_keywords;
+	const keywordFound = Object.keys(current_PageInfo.keywordFound);
+	
+	if (current_PageInfo.isSearched && (keywordFound.length > 0)){
+		let count_id = 0;
+		const SuggestionButtons = suggestion_container.querySelectorAll(".keyword_suggestion");
+		
+		keywordFound.forEach(function (suggestion) {
+			if(!SuggestionButtons[count_id]){
+				const ButtonBlock = document.createElement('button');
+				ButtonBlock.classList.add('keyword_suggestion');
+				ButtonBlock.setAttribute('keywordindex', suggestion);
+										
+				ButtonBlock.innerText = `${suggestion} ${current_PageInfo.keywordFound[suggestion]}`;
+				ButtonBlock.addEventListener('click', suggestionButtonClick, false);
+				suggestion_container.appendChild(ButtonBlock);
+			}
+			else{
+				SuggestionButtons[count_id].innerText = `${suggestion} ${current_PageInfo.keywordFound[suggestion]}`;
+				SuggestionButtons[count_id].setAttribute('keyword', suggestion);
+			}
+			
+			count_id += 1;
+		});
+		if(count_id < SuggestionButtons.length){
+			for (var i = count_id; i < SuggestionButtons.length; i++) {
+				suggestion_container.removeChild(SuggestionButtons[i]);
+			}
+		}
+	}
+	else{
+		const QuestData = {
+			event_name: 'quest-keyword-display-order',
+			token: background_Info.identificationToken
+		};
+		
+		await chrome.runtime.sendMessage(QuestData, function (returnData){
+			if (!returnData.isFinish){
+				suggestion_container.innerHTML = "";
+				
+				const ButtonBlock = document.createElement('button');
+				ButtonBlock.classList.add('keyword_suggestion');
+				ButtonBlock.setAttribute('keywordindex', 'none');
+										
+				ButtonBlock.innerText = "未有關鍵字紀錄";
+				suggestion_container.appendChild(ButtonBlock);
+			}
+			else if (returnData.displayOrder.length == 0){
+				suggestion_container.innerHTML = "";
+				
+				const ButtonBlock = document.createElement('button');
+				ButtonBlock.classList.add('keyword_suggestion');
+				ButtonBlock.setAttribute('keywordindex', 'none');
+										
+				ButtonBlock.innerText = "未有關鍵字紀錄";
+				suggestion_container.appendChild(ButtonBlock);
+			}
+			else{
+				let count_id = 0;
+				const SuggestionButtons = suggestion_container.querySelectorAll(".keyword_suggestion");
+				
+				returnData.displayOrder.forEach(function (suggestion) {
+					if(!SuggestionButtons[count_id]){
+						const ButtonBlock = document.createElement('button');
+						ButtonBlock.classList.add('keyword_suggestion');
+						ButtonBlock.setAttribute('keywordindex', suggestion);
+												
+						ButtonBlock.innerText = `${suggestion}`;
+						ButtonBlock.addEventListener('click', suggestionButtonClick, false);
+						suggestion_container.appendChild(ButtonBlock);
+					}
+					else{
+						SuggestionButtons[count_id].innerText = `${suggestion}`;
+						SuggestionButtons[count_id].setAttribute('keyword', suggestion);
+					}
+					
+					count_id += 1;
+				});
+				
+				if(count_id < SuggestionButtons.length){
+					for (var i = count_id; i < SuggestionButtons.length; i++) {
+						suggestion_container.removeChild(SuggestionButtons[i]);
+					}
+				}
+			}
+		});
+	}
 }
 
-// ====== 元素事件 ====== 
-function triggerAlertWindow(message, type){
-	const notification = {
+function closeSuggestionPopup(){
+	all_suggestion_popup.style.left = '';
+	all_suggestion_popup.style.top = '';
+
+	all_suggestion_popup.classList.remove('popup_show');
+	
+	if (!searching_DataInfo.isSuggestionOnSearched){
+		popup_suggestion_container.innerHTML = "";
+	}
+	
+	return;
+}
+
+// ====== 資料處理 ====== 
+async function triggerAlertWindow(message, type){
+	const Notification = {
 		event_name: 'send-notification-message',
 		message: message,
 		notification_type: type
 	};
 	
-	chrome.runtime.sendMessage(notification, (t) => {});
+	await chrome.runtime.sendMessage(Notification);
 }
 
+// ====== 元素事件 ====== 
 // --- message block buttons ---
-function pinned_note_button_click(event){
-	const pin_button = event.target.closest('.pinned_note');
-	const note_id = parseInt(pin_button.getAttribute('note_id'));
-	const trigger_type = event.target.closest('.windos_message_container').id;
+function orderEditButtonClick(event){//v
+	const PinButton = event.target.closest('.pinned_note');
+	const NoteId = parseInt(PinButton.getAttribute('note_id'));
+	const BlockContainer = event.target.closest('.windos_message_container');
 	
-	if (trigger_type === 'url_note_container'){
-		const host = current_Host;
+	const QuestData = {
+		event_name: 'update-keyword-display-order',
+		token: background_Info.identificationToken
+	}
+	
+	if (BlockContainer.id === 'url_note_container'){
+		const DisplayOrder = sidepanel_Info.urlShow.displayOrder;
+		let NewDisplayOrder = JSON.parse(JSON.stringify(DisplayOrder));
+		const NoteIndex = NewDisplayOrder.indexOf(NoteId);
 		
-		if (pin_button.classList.contains("is_pinned")){
-			const send_url_note_unpin = {
-				event_name: 'send-url-note-unpin',
-				host: host,
-				note_id: note_id
-			};
-			chrome.runtime.sendMessage(send_url_note_unpin, (t) => {});
-		}
-		else{
-			const send_url_note_pin = {
-				event_name: 'send-url-note-pin',
-				host: host,
-				note_id: note_id
-			};
-			chrome.runtime.sendMessage(send_url_note_pin, (t) => {});
+		if (NoteIndex >= 0){
+			NewDisplayOrder.splice(NoteIndex, 1);
+			NewDisplayOrder.unshift(NoteId);
+			
+			QuestData.urlKeyIndex = sidepanel_Info.urlShow.indexKey;
+			QuestData.displayOrder = NewDisplayOrder;
 		}
 	}
-	else if (trigger_type === 'keyword_note_container'){
-		const keyword = current_Keyword;
+	else if (BlockContainer.id === 'keyword_note_container'){
+		const DisplayOrder = sidepanel_Info.keywordShow.displayOrder;
+		let NewDisplayOrder = JSON.parse(JSON.stringify(DisplayOrder));
+		const NoteIndex = NewDisplayOrder.indexOf(NoteId);
 		
-		if (pin_button.classList.contains("is_pinned")){
-			const send_keyword_note_unpin = {
-				event_name: 'send-keyword-note-unpin',
-				keyword: keyword,
-				note_id: note_id
-			};
-			chrome.runtime.sendMessage(send_keyword_note_unpin, (t) => {});
-		}
-		else{
-			const send_keyword_note_pin = {
-				event_name: 'send-keyword-note-pin',
-				keyword: keyword,
-				note_id: note_id
-			};
-			chrome.runtime.sendMessage(send_keyword_note_pin, (t) => {});
+		if (NoteIndex >= 0){
+			NewDisplayOrder.splice(NoteIndex, 1);
+			NewDisplayOrder.unshift(NoteId);
+			
+			QuestData.keywordKeyIndex = sidepanel_Info.keywordShow.indexKey;
+			QuestData.displayOrder = NewDisplayOrder;
 		}
 	}
+	else{
+		return;
+	}
+	
+	chrome.runtime.sendMessage(QuestData, function (returnData){
+		if (returnData.isFinish){
+			let NodeInContainer = BlockContainer.querySelectorAll('.windos_message_block');
+			let displayNode = [];
+			
+			for (let i = 0; i < sidepanel_Info.keywordShow.displayOrder.length; i++){
+				displayNode.push(NodeInContainer[sidepanel_Info.keywordShow.displayOrder[i]]);
+			}
+			
+			returnData.displayOrder.forEach((TargetNodeIndex) => {
+				BlockContainer.appendChild(displayNode[TargetNodeIndex]);
+			});
+			
+			sidepanel_Info.keywordShow.displayOrder = returnData.displayOrder;
+		}
+	});
 }
-function more_options_button_click(event){
+function moreOptionsButtonClick(event){//v
 	const more_options_popup = document.getElementById("more_options_popup");
 	
 	const x = event.clientX;
@@ -1236,20 +563,20 @@ function more_options_button_click(event){
 	more_options_popup.style.left = `${x - 145}px`;
 	more_options_popup.style.top = `${y - 5}px`;
 	
-	const note_id = parseInt(event.target.closest('.more_options').getAttribute('note_id'));
-	const trigger_type = event.target.closest('.windos_message_container').id;
+	const NoteId = parseInt(event.target.closest('.more_options').getAttribute('note_id'));
+	const TriggerType = event.target.closest('.windos_message_container').id;
 	
-	more_options_popup.setAttribute('note_id', note_id);
-	if (trigger_type === 'url_note_container'){
+	more_options_popup.setAttribute('note_id', NoteId);
+	if (TriggerType === 'url_note_container'){
 		more_options_popup.setAttribute('trigger_type', 'url');
 	}
-	else if (trigger_type === 'keyword_note_container'){
+	else if (TriggerType === 'keyword_note_container'){
 		more_options_popup.setAttribute('trigger_type', 'keyword');
 	}
 	
 	more_options_popup.classList.add('popup_show');
 }
-function more_editoptions_button_click(event){
+function moreEditOptionsButtonClick(event){//v
 	const edit_options_popup = document.getElementById("edit_options_popup");
 	
 	const x = event.clientX;
@@ -1258,14 +585,14 @@ function more_editoptions_button_click(event){
 	edit_options_popup.style.left = `${x - 155}px`;
 	edit_options_popup.style.top = `${y + 5}px`;
 	
-	const note_id = parseInt(event.target.closest('.more_options').getAttribute('note_id'));
-	const trigger_type = event.target.closest('.windos_message_container').id;
+	const NoteId = parseInt(event.target.closest('.more_options').getAttribute('note_id'));
+	const TriggerType = event.target.closest('.windos_message_container').id;
 	
-	edit_options_popup.setAttribute('note_id', note_id);
-	if (trigger_type === 'url_note_container'){
+	edit_options_popup.setAttribute('note_id', NoteId);
+	if (TriggerType === 'url_note_container'){
 		edit_options_popup.setAttribute('trigger_type', 'url');
 	}
-	else if (trigger_type === 'keyword_note_container'){
+	else if (TriggerType === 'keyword_note_container'){
 		edit_options_popup.setAttribute('trigger_type', 'keyword');
 	}
 	
@@ -1273,7 +600,7 @@ function more_editoptions_button_click(event){
 }
 
 // --- title area title buttons ---
-function switch_host_urlindex(event){
+function switch_host_urlindex(event){//x
 	if (is_SpecialUrls || view_MainIndex){
 		if (view_MainIndex){
 			chrome.runtime.sendMessage({event_name: 'quest-special-url-notedata', title: current_HostTilte, host: currentpage_Host, url: currentpage_Url}, (t) => {});
@@ -1285,81 +612,32 @@ function switch_host_urlindex(event){
 		}
 	}
 }
-function url_new_note_button_click(event){
-	if (is_UrlNewNoteEdit != null){
+function urlNewNoteButtonClick(event){//v
+	if (sidepanel_Info.urlShow.isEditing) {
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 		return;
 	}
+	if (!Boolean(sidepanel_Info.urlShow.indexKey)){
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+		return;
+	}
+	if (editing_DataInfo.isUsing){
+		//needErrorMessage
+		return;
+	}
+	sidepanel_Info.urlShow.isEditing = true;
+	
+	sidepanel_Info.keywordShow.isEditing = true;
 	
 	const url_note_container = document.getElementById("url_note_container");
-	const url_note_block = url_note_container.querySelectorAll(".windos_message_block");
-	const count_id = (is_UrlNoteExist < 2) ? (url_note_block.length - 1) : (url_note_block.length);
+	const NoteBlocks = url_note_container.querySelectorAll(".windos_message_block");
+	const NewNoteId = (sidepanel_Info.urlShow.dataMode < 2) ? 0 : (NoteBlocks.length);
 	
-	const message_block = document.createElement('div');
-	message_block.classList.add('windos_message_block');
-	
-	message_block.innerHTML = `<div class="interactive_block edit">
-								 <button class="more_options" note_id="${count_id}">
-								   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-									 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-								   </svg>
-								 </button>
-							   </div>
-							   <div class="windos_content_editor"></div>
-							   <div class="windos_timestamp_container">
-								 <div class="windos_message_timestamp">
-								   Powered by
-								   <svg class="ck ck-icon ck-reset_all-excluded" viewBox="0 0 53 10" style="width: 53px; height: 10px;"><path fill="#1C2331" d="M31.724 1.492a15.139 15.139 0 0 0 .045 1.16 2.434 2.434 0 0 0-.687-.34 3.68 3.68 0 0 0-1.103-.166 2.332 2.332 0 0 0-1.14.255 1.549 1.549 0 0 0-.686.87c-.15.41-.225.98-.225 1.712 0 .939.148 1.659.444 2.161.297.503.792.754 1.487.754.452.015.9-.094 1.294-.316.296-.174.557-.4.771-.669l.14.852h1.282V.007h-1.623v1.485ZM31 6.496a1.77 1.77 0 0 1-.494.061.964.964 0 0 1-.521-.127.758.758 0 0 1-.296-.466 3.984 3.984 0 0 1-.093-.992 4.208 4.208 0 0 1 .098-1.052.753.753 0 0 1 .307-.477 1.08 1.08 0 0 1 .55-.122c.233-.004.466.026.69.089l.483.144v2.553c-.11.076-.213.143-.307.2a1.73 1.73 0 0 1-.417.189ZM35.68 0l-.702.004c-.322.002-.482.168-.48.497l.004.581c.002.33.164.493.486.49l.702-.004c.322-.002.481-.167.48-.496L36.165.49c-.002-.33-.164-.493-.486-.491ZM36.145 2.313l-1.612.01.034 5.482 1.613-.01-.035-5.482ZM39.623.79 37.989.8 38 2.306l-.946.056.006 1.009.949-.006.024 2.983c.003.476.143.844.419 1.106.275.26.658.39 1.148.387.132 0 .293-.01.483-.03.19-.02.38-.046.57-.08.163-.028.324-.068.482-.119l-.183-1.095-.702.004a.664.664 0 0 1-.456-.123.553.553 0 0 1-.14-.422l-.016-2.621 1.513-.01-.006-1.064-1.514.01-.01-1.503ZM46.226 2.388c-.41-.184-.956-.274-1.636-.27-.673.004-1.215.101-1.627.29-.402.179-.72.505-.888.91-.18.419-.268.979-.264 1.68.004.688.1 1.24.285 1.655.172.404.495.724.9.894.414.18.957.268 1.63.264.68-.004 1.224-.099 1.632-.284.4-.176.714-.501.878-.905.176-.418.263-.971.258-1.658-.004-.702-.097-1.261-.28-1.677a1.696 1.696 0 0 0-.888-.9Zm-.613 3.607a.77.77 0 0 1-.337.501 1.649 1.649 0 0 1-1.317.009.776.776 0 0 1-.343-.497 4.066 4.066 0 0 1-.105-1.02 4.136 4.136 0 0 1 .092-1.03.786.786 0 0 1 .337-.507 1.59 1.59 0 0 1 1.316-.008.79.79 0 0 1 .344.502c.078.337.113.683.105 1.03.012.343-.019.685-.092 1.02ZM52.114 2.07a2.67 2.67 0 0 0-1.128.278c-.39.191-.752.437-1.072.73l-.157-.846-1.273.008.036 5.572 1.623-.01-.024-3.78c.35-.124.646-.22.887-.286.26-.075.53-.114.8-.118l.45-.003.144-1.546-.286.001ZM22.083 7.426l-1.576-2.532a2.137 2.137 0 0 0-.172-.253 1.95 1.95 0 0 0-.304-.29.138.138 0 0 1 .042-.04 1.7 1.7 0 0 0 .328-.374l1.75-2.71c.01-.015.025-.028.024-.048-.01-.01-.021-.007-.031-.007L20.49 1.17a.078.078 0 0 0-.075.045l-.868 1.384c-.23.366-.46.732-.688 1.099a.108.108 0 0 1-.112.06c-.098-.005-.196-.001-.294-.002-.018 0-.038.006-.055-.007.002-.02.002-.039.005-.058a4.6 4.6 0 0 0 .046-.701V1.203c0-.02-.009-.032-.03-.03h-.033L16.93 1.17c-.084 0-.073-.01-.073.076v6.491c-.001.018.006.028.025.027h1.494c.083 0 .072.007.072-.071v-2.19c0-.055-.003-.11-.004-.166a3.366 3.366 0 0 0-.05-.417h.06c.104 0 .209.002.313-.002a.082.082 0 0 1 .084.05c.535.913 1.07 1.824 1.607 2.736a.104.104 0 0 0 .103.062c.554-.003 1.107-.002 1.66-.002l.069-.003-.019-.032-.188-.304ZM27.112 6.555c-.005-.08-.004-.08-.082-.08h-2.414c-.053 0-.106-.003-.159-.011a.279.279 0 0 1-.246-.209.558.558 0 0 1-.022-.15c0-.382 0-.762-.002-1.143 0-.032.007-.049.042-.044h2.504c.029.003.037-.012.034-.038V3.814c0-.089.013-.078-.076-.078h-2.44c-.07 0-.062.003-.062-.06v-.837c0-.047.004-.093.013-.14a.283.283 0 0 1 .241-.246.717.717 0 0 1 .146-.011h2.484c.024.002.035-.009.036-.033l.003-.038.03-.496c.01-.183.024-.365.034-.548.005-.085.003-.087-.082-.094-.218-.018-.437-.038-.655-.05a17.845 17.845 0 0 0-.657-.026 72.994 72.994 0 0 0-1.756-.016 1.7 1.7 0 0 0-.471.064 1.286 1.286 0 0 0-.817.655c-.099.196-.149.413-.145.633v3.875c0 .072.003.144.011.216a1.27 1.27 0 0 0 .711 1.029c.228.113.48.167.734.158.757-.005 1.515.002 2.272-.042.274-.016.548-.034.82-.053.03-.002.043-.008.04-.041-.008-.104-.012-.208-.019-.312a69.964 69.964 0 0 1-.05-.768ZM16.14 7.415l-.127-1.075c-.004-.03-.014-.04-.044-.037a13.125 13.125 0 0 1-.998.073c-.336.01-.672.02-1.008.016-.116-.001-.233-.014-.347-.039a.746.746 0 0 1-.45-.262c-.075-.1-.132-.211-.167-.33a3.324 3.324 0 0 1-.126-.773 9.113 9.113 0 0 1-.015-.749c0-.285.022-.57.065-.852.023-.158.066-.312.127-.46a.728.728 0 0 1 .518-.443 1.64 1.64 0 0 1 .397-.048c.628-.001 1.255.003 1.882.05.022.001.033-.006.036-.026l.003-.031.06-.55c.019-.177.036-.355.057-.532.004-.034-.005-.046-.04-.056a5.595 5.595 0 0 0-1.213-.21 10.783 10.783 0 0 0-.708-.02c-.24-.003-.48.01-.719.041a3.477 3.477 0 0 0-.625.14 1.912 1.912 0 0 0-.807.497c-.185.2-.33.433-.424.688a4.311 4.311 0 0 0-.24 1.096c-.031.286-.045.572-.042.86-.006.43.024.86.091 1.286.04.25.104.497.193.734.098.279.26.53.473.734.214.205.473.358.756.446.344.11.702.17 1.063.177a8.505 8.505 0 0 0 1.578-.083 6.11 6.11 0 0 0 .766-.18c.03-.008.047-.023.037-.057a.157.157 0 0 1-.003-.025Z"></path><path fill="#AFE229" d="M6.016 6.69a1.592 1.592 0 0 0-.614.21c-.23.132-.422.32-.56.546-.044.072-.287.539-.287.539l-.836 1.528.009.006c.038.025.08.046.123.063.127.046.26.07.395.073.505.023 1.011-.007 1.517-.003.29.009.58.002.869-.022a.886.886 0 0 0 .395-.116.962.962 0 0 0 .312-.286c.056-.083.114-.163.164-.249.24-.408.48-.816.718-1.226.075-.128.148-.257.222-.386l.112-.192a1.07 1.07 0 0 0 .153-.518l-1.304.023s-1.258-.005-1.388.01Z"></path><path fill="#771BFF" d="m2.848 9.044.76-1.39.184-.352c-.124-.067-.245-.14-.367-.21-.346-.204-.706-.384-1.045-.6a.984.984 0 0 1-.244-.207c-.108-.134-.136-.294-.144-.46-.021-.409-.002-.818-.009-1.227-.003-.195 0-.39.003-.585.004-.322.153-.553.427-.713l.833-.488c.22-.13.44-.257.662-.385.05-.029.105-.052.158-.077.272-.128.519-.047.76.085l.044.028c.123.06.242.125.358.196.318.178.635.357.952.537.095.056.187.117.275.184.194.144.254.35.266.578.016.284.007.569.006.853-.001.28.004.558 0 .838.592-.003 1.259 0 1.259 0l.723-.013c-.003-.292-.007-.584-.007-.876 0-.524.015-1.048-.016-1.571-.024-.42-.135-.8-.492-1.067a5.02 5.02 0 0 0-.506-.339A400.52 400.52 0 0 0 5.94.787C5.722.664 5.513.524 5.282.423 5.255.406 5.228.388 5.2.373 4.758.126 4.305-.026 3.807.21c-.097.046-.197.087-.29.14A699.896 699.896 0 0 0 .783 1.948c-.501.294-.773.717-.778 1.31-.004.36-.009.718-.001 1.077.016.754-.017 1.508.024 2.261.016.304.07.6.269.848.127.15.279.28.448.382.622.4 1.283.734 1.92 1.11l.183.109Z"></path></svg>
-								 </div>
-							   </div>`;
-	message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-	
-	url_note_container.insertBefore(message_block, url_note_container.firstChild);
-	display_UrlNotes.splice(0, 0, 'e');
-	//url_note_container.appendChild(message_block);
-	
-	const BalloonEditor = window.BalloonEditor;
-	
-	BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-			placeholder: 'Enter new note here',
-			language: language_Code,
-			link: {
-				decorators: {
-					addTargetToExternalLinks: {
-						mode: 'automatic',
-						callback: url => true,
-						attributes: {
-							target: '_blank',
-							rel: 'noopener noreferrer'
-						}
-					}
-				}
-			}
-		})
-		.then( editor => {
-			function windos_message_KeyPress(e) {
-				var evtobj = window.event? event : e
-				if (evtobj.keyCode == 83 && evtobj.ctrlKey){
-					event.preventDefault();
-					editor_ctrlS_press(0);//儲存
-					
-				}
-			}
-			
-			editor.onkeydown = windos_message_KeyPress;
-			current_EditingEditor[0] = editor;
-		} )
-		.catch( error => {
-			console.error( error );
-		} );
-	
-	message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_editoptions_button_click, false);
-				
-	//url_note_container.scrollTop = url_note_container.scrollHeight;
-	keyword_note_container.scrollTop = 0;
-	is_UrlNewNoteEdit = count_id;
+	const MessageBlock = createEditBlock(NewNoteId);
+	url_note_container.insertBefore(MessageBlock, url_note_container.firstChild);
+	url_note_container.scrollTop = 0;
 }
-function title_more_options_button_click(event){
+function titleMoreOptionsButtonClick(event){//v
 	const title_control_popup = document.getElementById("title_control_popup");
 	
 	const x = event.clientX;
@@ -1368,47 +646,46 @@ function title_more_options_button_click(event){
 	title_control_popup.style.left = `${x - 145}px`;
 	title_control_popup.style.top = `${y - 5}px`;
 	
-	/*
-	const note_id = parseInt(event.target.closest('.more_options').getAttribute('note_id'));
-	const trigger_type = event.target.closest('.windos_message_container').id;
-	
-	title_control_popup.setAttribute('note_id', note_id);
-	if (trigger_type === 'url_note_container'){
-		title_control_popup.setAttribute('trigger_type', 'url');
-	}
-	else if (trigger_type === 'keyword_note_container'){
-		title_control_popup.setAttribute('trigger_type', 'keyword');
-	}
-	*/
-	
 	title_control_popup.classList.add('popup_show');
 }
-function url_delete_button_click(event){
-	const more_options_popup = event.target.closest('.levitate_options_popup');
-	const host = current_Host;
-		
-	const send_url_note_delete = {
-		notification_type: 'message',
-		event_name: 'send-url-note-delete',
-		host: host,
-		is_special_url: is_SpecialUrls
-	};
-	
-	if (is_UrlNoteExist > 0){
-		confirmNotificationMessage(chrome.i18n.getMessage('options_delete_url'), 'delete', send_url_note_delete);
+function urlDeleteButtonClick(event){//v
+	if (sidepanel_Info.urlShow.isEditing) {
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+		return;
 	}
-	else{
-		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_url_warning'), 'warning');
+	if (!Boolean(sidepanel_Info.urlShow.indexKey)){
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+		return;
 	}
 
+	const QuestData = {
+		event_name: 'delete-url-noteindex',
+		urlKeyIndex: sidepanel_Info.urlShow.indexKey,
+		token: background_Info.identificationToken
+	};
+	
+	chrome.runtime.sendMessage(QuestData, (returnData) => {
+		if (returnData.isFinish){
+			refreshUrlShow(sidepanel_Info.urlShow.indexKey);
+		}
+	});
+				
 	more_options_popup.style.left = '';
 	more_options_popup.style.top = '';
 
 	more_options_popup.classList.remove('popup_show');
 }
-function url_reload_button_click(event){
-	const more_options_popup = event.target.closest('.levitate_options_popup');
-	chrome.runtime.sendMessage({event_name: 'quest-current-tab-sidepanel'}, (t) => {});
+function urlReloadButtonClick(event){//v
+	if (sidepanel_Info.urlShow.isEditing) {
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+		return;
+	}
+	if (!Boolean(sidepanel_Info.urlShow.indexKey)){
+		//needErrorMessage
+		return;
+	}
+	
+	refreshUrlShow(sidepanel_Info.urlShow.indexKey);
 	
 	more_options_popup.style.left = '';
 	more_options_popup.style.top = '';
@@ -1417,86 +694,74 @@ function url_reload_button_click(event){
 }
 function url_summary_button_click(event){
 	const more_options_popup = event.target.closest('.levitate_options_popup');
-	chrome.runtime.sendMessage({event_name: 'quest-summary-url', current_url: current_Url, current_host: currentpage_Host}, (t) => {});
+	chrome.runtime.sendMessage({event_name: 'quest-summary-url', current_url: current_Url, current_host: current_Host}, (t) => {});
 
 	more_options_popup.style.left = '';
 	more_options_popup.style.top = '';
 
 	more_options_popup.classList.remove('popup_show');
-	refreshKeywordAreaAsSummary('處理請求中......');
+	refreshKeywordAreaAsSummary({is_done: true, tidy_response:['處理請求中......']});
 }
 
 // --- suggestion area keyword buttons ---
-function suggestion_button_click(event){
-	const trigger_keyword = event.target.closest('.keyword_suggestion').getAttribute('keyword');
+function suggestionButtonClick(event){//v
+	const TriggerKeywordIndex = event.target.closest('.keyword_suggestion').getAttribute('keywordindex');
 	
-	if (trigger_keyword === 'none'){
+	if (TriggerKeywordIndex === 'none'){
 		return;
 	}
-	if (is_KeywordNewNoteEdit != null){
+	if (sidepanel_Info.keywordShow.isEditing){
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 		return;
 	}
 	
-	if (!(current_Keyword === trigger_keyword)){
-		chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: trigger_keyword, is_first: false}, (t) => {});
-		current_Keyword = trigger_keyword;
+	if (sidepanel_Info.keywordShow.indexKey != TriggerKeywordIndex){
+		refreshKeywordShow(TriggerKeywordIndex);
 	}
 }
-function more_suggestion_button_click(event){
+function moreSuggestionButtonClick(event){//v
 	const all_suggestion_popup = document.getElementById("all_suggestion_popup");
 	const popup_suggestion_container = all_suggestion_popup.querySelector(".popup_suggestion_container");
 	
-	if (all_suggestion_popup.classList.contains('popup_show')){
-		all_suggestion_popup.style.left = '';
-		all_suggestion_popup.style.top = '';
-	
-		all_suggestion_popup.classList.remove('popup_show');
-		
-		if (is_First_SuggestionSearch){
-			popup_suggestion_container.innerHTML = "";
-		}
-		
-		return;
+	if (all_suggestion_popup.classList.contains('popup_show')){//二次點擊關閉彈出搜尋框
+		closeSuggestionPopup();
 	}
 	
-	const more_suggestion_button_position = event.target.closest('button#more_suggestion').getBoundingClientRect() 
+	const moreSuggestionButtonPosition = event.target.closest('button#more_suggestion').getBoundingClientRect() 
 	
-	all_suggestion_popup.style.top = `${more_suggestion_button_position.top + 45}px`;
+	all_suggestion_popup.style.top = `${moreSuggestionButtonPosition.top + 45}px`;
 	
-	if (is_First_SuggestionSearch){
-		let count_id = 0;
-		const suggestion_button = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
-		const keywords = Object.keys(recorded_Keywords);
-		
-		keywords.forEach(function (suggestion) {
-			if(!suggestion_button[count_id]){
-				const button_block = document.createElement('button');
-				button_block.classList.add('keyword_suggestion');
-				button_block.setAttribute('keyword', suggestion);
-										
-				button_block.innerText = `${suggestion}`;
-				button_block.addEventListener('click', suggestion_button_click, false);
-				popup_suggestion_container.appendChild(button_block);
+	if (!searching_DataInfo.isSuggestionOnSearched){
+		const QuestData = {
+			event_name: 'quest-keyword-list',
+			token: background_Info.identificationToken
+		};
+	
+		chrome.runtime.sendMessage(QuestData, function (returnData){
+			if (returnData.keywordKeyIndex !== undefined){
+				searching_DataInfo.allKeywordKeyIndex = returnData.keywordKeyIndex;
+				popup_suggestion_container.innerHTML = "";
+				
+				searching_DataInfo.allKeywordKeyIndex.forEach(function (keywordKeyIndex) {
+					const ButtonBlock = document.createElement('button');
+					ButtonBlock.classList.add('keyword_suggestion');
+					ButtonBlock.setAttribute('keywordindex', keywordKeyIndex);
+											
+					ButtonBlock.innerText = `${keywordKeyIndex}`;
+					ButtonBlock.addEventListener('click', suggestionButtonClick, false);
+					popup_suggestion_container.appendChild(ButtonBlock);
+				});
 			}
 			else{
-				suggestion_button[count_id].innerText = `${suggestion}`;
-				suggestion_button[count_id].setAttribute('keyword', suggestion);
+				closeSuggestionPopup();
+				//needErrorMessage
 			}
-			
-			count_id += 1;
 		});
-		
-		if(count_id < suggestion_button.length){
-			for (var i = count_id; i < suggestion_button.length; i++) {
-				popup_suggestion_container.removeChild(suggestion_button[i]);
-			}
-		}
 	}
 	
 	all_suggestion_popup.classList.add('popup_show');
 }
-function noindexnote_button_click(event){
+function noindexnote_button_click(event){//x
 	if (is_KeywordNewNoteEdit != null){
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 		return;
@@ -1507,336 +772,188 @@ function noindexnote_button_click(event){
 		current_Keyword = 'NoIndexNote';
 	}
 }
-function keywordSearchAlgorithmProcess(event){
-	if (is_SuggestionSearch_Composition){
+function keywordSearchAlgorithmProcess(event){//v
+	if (searching_DataInfo.isComposition){
 		return;
 	}
 	
-	const keywords = Object.keys(recorded_Keywords);
-	const search_string = event.target.value;
+	const search_string = event.target.value;//搜尋框內文字
 	
 	const popup_suggestion_container = event.target.closest(".levitate_suggestion_contaner").querySelector(".popup_suggestion_container");
-	const suggestion_button = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
-	let count_id = 0;
+	const SuggestionButtons = popup_suggestion_container.querySelectorAll(".keyword_suggestion");
+	let TargetButtonIndex = 0;
 	
-	keywords.forEach(function (suggestion) {
-		if (suggestion.includes(search_string)){
-			if(!suggestion_button[count_id]){
-				const button_block = document.createElement('button');
-				button_block.classList.add('keyword_suggestion');
-				button_block.setAttribute('keyword', suggestion);
+	searching_DataInfo.allKeywordKeyIndex.forEach(function (keywordKeyIndex) {
+		if (keywordKeyIndex.includes(search_string)){
+			if(!SuggestionButtons[TargetButtonIndex]){
+				const ButtonBlock = document.createElement('button');
+				ButtonBlock.classList.add('keyword_suggestion');
+				ButtonBlock.setAttribute('keywordindex', keywordKeyIndex);
 										
-				button_block.innerText = `${suggestion}`;
-				button_block.addEventListener('click', suggestion_button_click, false);
-				popup_suggestion_container.appendChild(button_block);
+				ButtonBlock.innerText = `${keywordKeyIndex}`;
+				ButtonBlock.addEventListener('click', suggestionButtonClick, false);
+				popup_suggestion_container.appendChild(ButtonBlock);
 			}
 			else{
-				suggestion_button[count_id].innerText = `${suggestion}`;
-				suggestion_button[count_id].setAttribute('keyword', suggestion);
+				SuggestionButtons[TargetButtonIndex].innerText = `${keywordKeyIndex}`;
+				SuggestionButtons[TargetButtonIndex].setAttribute('keyword', keywordKeyIndex);
 			}
 			
-			count_id += 1;
+			TargetButtonIndex += 1;
 		}
 	});
 	
-	if(count_id < suggestion_button.length){
-		for (var i = count_id; i < suggestion_button.length; i++) {
-			popup_suggestion_container.removeChild(suggestion_button[i]);
+	if(TargetButtonIndex < SuggestionButtons.length){
+		for (var i = TargetButtonIndex; i < SuggestionButtons.length; i++) {
+			popup_suggestion_container.removeChild(SuggestionButtons[i]);
 		}
 	}
 	
 	if (search_string != ""){
-		is_First_SuggestionSearch = false;
+		searching_DataInfo.isSuggestionOnSearched = true;
 	}
 	else{
-		is_First_SuggestionSearch = true;
+		searching_DataInfo.isSuggestionOnSearched = false;
 	}
 }
 
 // --- keyword area title buttons ---
-function keyword_previous_mark_button_click(event){
-	if (current_Keyword === 'NoIndexNote'){
+function keywordPreviousMarkButtonClick(event){//v
+	if (sidepanel_Info.keywordShow.indexKey === 'NoIndexNote'){
 		return;
 	}
 	
-	if (is_CurrentPageSearch){
-		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-previous-mark', target_keyword: current_Keyword}, (t) => {});
-	}
-	else{
+	if (!current_PageInfo.isSearched){
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsearched_warning'), 'warning');
 	}
+	else if (current_PageInfo.keywordFound[sidepanel_Info.keywordShow.indexKey] === undefined){
+		//needErrorMessage
+	}
+	else{	
+		background_Info.connectPort.postMessage({event_name: 'keyword-previous-mark', targetKeyword: sidepanel_Info.keywordShow.indexKey});
+	}
 }
-function keyword_next_mark_button_click(event){
-	if (current_Keyword === 'NoIndexNote'){
+function keywordNextMarkButtonClick(event){//v
+	if (sidepanel_Info.keywordShow.indexKey === 'NoIndexNote'){
 		return;
 	}
 	
-	if (is_CurrentPageSearch){
-		chrome.tabs.sendMessage(currentpage_TabId, {event_name: 'keyword-next-mark', target_keyword: current_Keyword}, (t) => {});
-	}
-	else{
+	if (!current_PageInfo.isSearched){
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsearched_warning'), 'warning');
 	}
+	else if (current_PageInfo.keywordFound[sidepanel_Info.keywordShow.indexKey] === undefined){
+		//needErrorMessage
+	}
+	else{
+		background_Info.connectPort.postMessage({event_name: 'keyword-next-mark', targetKeyword: sidepanel_Info.keywordShow.indexKey});
+	}
 }
-function keyword_new_note_button_click(event){
-	if (is_KeywordNewNoteEdit != null){
+function keywordNewNoteButtonClick(event){//v
+	if (sidepanel_Info.keywordShow.isEditing) {
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 		return;
 	}
-	if (current_Keyword == null){
+	if (!Boolean(sidepanel_Info.keywordShow.indexKey)){
 		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
 		return;
 	}
+	if (editing_DataInfo.isUsing){
+		//needErrorMessage
+		return;
+	}
+	sidepanel_Info.keywordShow.isEditing = true;
 	
 	const keyword_note_container = document.getElementById("keyword_note_container");
-	const keyword_note_block = keyword_note_container.querySelectorAll(".windos_message_block");
-	const count_id = (is_KeywordNoteExist < 2) ? (keyword_note_block.length - 1) : (keyword_note_block.length);
+	const NoteBlocks = keyword_note_container.querySelectorAll(".windos_message_block");
+	const NewNoteId = (sidepanel_Info.keywordShow.dataMode < 2) ? 0 : (NoteBlocks.length);
 	
-	const message_block = document.createElement('div');
-	message_block.classList.add('windos_message_block');
-	
-	message_block.innerHTML = `<div class="interactive_block edit">
-								 <button class="more_options" note_id="${count_id}">
-								   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-									 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-								   </svg>
-								 </button>
-							   </div>
-							   <div class="windos_content_editor"></div>
-							   <div class="windos_timestamp_container">
-								 <div class="windos_message_timestamp">
-								   Powered by
-								   <svg class="ck ck-icon ck-reset_all-excluded" viewBox="0 0 53 10" style="width: 53px; height: 10px;"><path fill="#1C2331" d="M31.724 1.492a15.139 15.139 0 0 0 .045 1.16 2.434 2.434 0 0 0-.687-.34 3.68 3.68 0 0 0-1.103-.166 2.332 2.332 0 0 0-1.14.255 1.549 1.549 0 0 0-.686.87c-.15.41-.225.98-.225 1.712 0 .939.148 1.659.444 2.161.297.503.792.754 1.487.754.452.015.9-.094 1.294-.316.296-.174.557-.4.771-.669l.14.852h1.282V.007h-1.623v1.485ZM31 6.496a1.77 1.77 0 0 1-.494.061.964.964 0 0 1-.521-.127.758.758 0 0 1-.296-.466 3.984 3.984 0 0 1-.093-.992 4.208 4.208 0 0 1 .098-1.052.753.753 0 0 1 .307-.477 1.08 1.08 0 0 1 .55-.122c.233-.004.466.026.69.089l.483.144v2.553c-.11.076-.213.143-.307.2a1.73 1.73 0 0 1-.417.189ZM35.68 0l-.702.004c-.322.002-.482.168-.48.497l.004.581c.002.33.164.493.486.49l.702-.004c.322-.002.481-.167.48-.496L36.165.49c-.002-.33-.164-.493-.486-.491ZM36.145 2.313l-1.612.01.034 5.482 1.613-.01-.035-5.482ZM39.623.79 37.989.8 38 2.306l-.946.056.006 1.009.949-.006.024 2.983c.003.476.143.844.419 1.106.275.26.658.39 1.148.387.132 0 .293-.01.483-.03.19-.02.38-.046.57-.08.163-.028.324-.068.482-.119l-.183-1.095-.702.004a.664.664 0 0 1-.456-.123.553.553 0 0 1-.14-.422l-.016-2.621 1.513-.01-.006-1.064-1.514.01-.01-1.503ZM46.226 2.388c-.41-.184-.956-.274-1.636-.27-.673.004-1.215.101-1.627.29-.402.179-.72.505-.888.91-.18.419-.268.979-.264 1.68.004.688.1 1.24.285 1.655.172.404.495.724.9.894.414.18.957.268 1.63.264.68-.004 1.224-.099 1.632-.284.4-.176.714-.501.878-.905.176-.418.263-.971.258-1.658-.004-.702-.097-1.261-.28-1.677a1.696 1.696 0 0 0-.888-.9Zm-.613 3.607a.77.77 0 0 1-.337.501 1.649 1.649 0 0 1-1.317.009.776.776 0 0 1-.343-.497 4.066 4.066 0 0 1-.105-1.02 4.136 4.136 0 0 1 .092-1.03.786.786 0 0 1 .337-.507 1.59 1.59 0 0 1 1.316-.008.79.79 0 0 1 .344.502c.078.337.113.683.105 1.03.012.343-.019.685-.092 1.02ZM52.114 2.07a2.67 2.67 0 0 0-1.128.278c-.39.191-.752.437-1.072.73l-.157-.846-1.273.008.036 5.572 1.623-.01-.024-3.78c.35-.124.646-.22.887-.286.26-.075.53-.114.8-.118l.45-.003.144-1.546-.286.001ZM22.083 7.426l-1.576-2.532a2.137 2.137 0 0 0-.172-.253 1.95 1.95 0 0 0-.304-.29.138.138 0 0 1 .042-.04 1.7 1.7 0 0 0 .328-.374l1.75-2.71c.01-.015.025-.028.024-.048-.01-.01-.021-.007-.031-.007L20.49 1.17a.078.078 0 0 0-.075.045l-.868 1.384c-.23.366-.46.732-.688 1.099a.108.108 0 0 1-.112.06c-.098-.005-.196-.001-.294-.002-.018 0-.038.006-.055-.007.002-.02.002-.039.005-.058a4.6 4.6 0 0 0 .046-.701V1.203c0-.02-.009-.032-.03-.03h-.033L16.93 1.17c-.084 0-.073-.01-.073.076v6.491c-.001.018.006.028.025.027h1.494c.083 0 .072.007.072-.071v-2.19c0-.055-.003-.11-.004-.166a3.366 3.366 0 0 0-.05-.417h.06c.104 0 .209.002.313-.002a.082.082 0 0 1 .084.05c.535.913 1.07 1.824 1.607 2.736a.104.104 0 0 0 .103.062c.554-.003 1.107-.002 1.66-.002l.069-.003-.019-.032-.188-.304ZM27.112 6.555c-.005-.08-.004-.08-.082-.08h-2.414c-.053 0-.106-.003-.159-.011a.279.279 0 0 1-.246-.209.558.558 0 0 1-.022-.15c0-.382 0-.762-.002-1.143 0-.032.007-.049.042-.044h2.504c.029.003.037-.012.034-.038V3.814c0-.089.013-.078-.076-.078h-2.44c-.07 0-.062.003-.062-.06v-.837c0-.047.004-.093.013-.14a.283.283 0 0 1 .241-.246.717.717 0 0 1 .146-.011h2.484c.024.002.035-.009.036-.033l.003-.038.03-.496c.01-.183.024-.365.034-.548.005-.085.003-.087-.082-.094-.218-.018-.437-.038-.655-.05a17.845 17.845 0 0 0-.657-.026 72.994 72.994 0 0 0-1.756-.016 1.7 1.7 0 0 0-.471.064 1.286 1.286 0 0 0-.817.655c-.099.196-.149.413-.145.633v3.875c0 .072.003.144.011.216a1.27 1.27 0 0 0 .711 1.029c.228.113.48.167.734.158.757-.005 1.515.002 2.272-.042.274-.016.548-.034.82-.053.03-.002.043-.008.04-.041-.008-.104-.012-.208-.019-.312a69.964 69.964 0 0 1-.05-.768ZM16.14 7.415l-.127-1.075c-.004-.03-.014-.04-.044-.037a13.125 13.125 0 0 1-.998.073c-.336.01-.672.02-1.008.016-.116-.001-.233-.014-.347-.039a.746.746 0 0 1-.45-.262c-.075-.1-.132-.211-.167-.33a3.324 3.324 0 0 1-.126-.773 9.113 9.113 0 0 1-.015-.749c0-.285.022-.57.065-.852.023-.158.066-.312.127-.46a.728.728 0 0 1 .518-.443 1.64 1.64 0 0 1 .397-.048c.628-.001 1.255.003 1.882.05.022.001.033-.006.036-.026l.003-.031.06-.55c.019-.177.036-.355.057-.532.004-.034-.005-.046-.04-.056a5.595 5.595 0 0 0-1.213-.21 10.783 10.783 0 0 0-.708-.02c-.24-.003-.48.01-.719.041a3.477 3.477 0 0 0-.625.14 1.912 1.912 0 0 0-.807.497c-.185.2-.33.433-.424.688a4.311 4.311 0 0 0-.24 1.096c-.031.286-.045.572-.042.86-.006.43.024.86.091 1.286.04.25.104.497.193.734.098.279.26.53.473.734.214.205.473.358.756.446.344.11.702.17 1.063.177a8.505 8.505 0 0 0 1.578-.083 6.11 6.11 0 0 0 .766-.18c.03-.008.047-.023.037-.057a.157.157 0 0 1-.003-.025Z"></path><path fill="#AFE229" d="M6.016 6.69a1.592 1.592 0 0 0-.614.21c-.23.132-.422.32-.56.546-.044.072-.287.539-.287.539l-.836 1.528.009.006c.038.025.08.046.123.063.127.046.26.07.395.073.505.023 1.011-.007 1.517-.003.29.009.58.002.869-.022a.886.886 0 0 0 .395-.116.962.962 0 0 0 .312-.286c.056-.083.114-.163.164-.249.24-.408.48-.816.718-1.226.075-.128.148-.257.222-.386l.112-.192a1.07 1.07 0 0 0 .153-.518l-1.304.023s-1.258-.005-1.388.01Z"></path><path fill="#771BFF" d="m2.848 9.044.76-1.39.184-.352c-.124-.067-.245-.14-.367-.21-.346-.204-.706-.384-1.045-.6a.984.984 0 0 1-.244-.207c-.108-.134-.136-.294-.144-.46-.021-.409-.002-.818-.009-1.227-.003-.195 0-.39.003-.585.004-.322.153-.553.427-.713l.833-.488c.22-.13.44-.257.662-.385.05-.029.105-.052.158-.077.272-.128.519-.047.76.085l.044.028c.123.06.242.125.358.196.318.178.635.357.952.537.095.056.187.117.275.184.194.144.254.35.266.578.016.284.007.569.006.853-.001.28.004.558 0 .838.592-.003 1.259 0 1.259 0l.723-.013c-.003-.292-.007-.584-.007-.876 0-.524.015-1.048-.016-1.571-.024-.42-.135-.8-.492-1.067a5.02 5.02 0 0 0-.506-.339A400.52 400.52 0 0 0 5.94.787C5.722.664 5.513.524 5.282.423 5.255.406 5.228.388 5.2.373 4.758.126 4.305-.026 3.807.21c-.097.046-.197.087-.29.14A699.896 699.896 0 0 0 .783 1.948c-.501.294-.773.717-.778 1.31-.004.36-.009.718-.001 1.077.016.754-.017 1.508.024 2.261.016.304.07.6.269.848.127.15.279.28.448.382.622.4 1.283.734 1.92 1.11l.183.109Z"></path></svg>
-								 </div>
-							   </div>`;
-	message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-	
-	keyword_note_container.insertBefore(message_block, keyword_note_container.firstChild);
-	display_KeywordNotes.splice(0, 0, 'e');
-	//keyword_note_container.appendChild(message_block);
-	
-	const BalloonEditor = window.BalloonEditor;
-	
-	BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-			placeholder: 'Enter new note here',
-			language: language_Code,
-			link: {
-				decorators: {
-					addTargetToExternalLinks: {
-						mode: 'automatic',
-						callback: url => true,
-						attributes: {
-							target: '_blank',
-							rel: 'noopener noreferrer'
-						}
-					}
-				}
-			}
-		})
-		.then( editor => {
-			function windos_message_KeyPress(e) {
-				var evtobj = window.event? event : e
-				if (evtobj.keyCode == 83 && evtobj.ctrlKey){
-					event.preventDefault();
-					editor_ctrlS_press(1);//儲存
-				}
-			}
-			
-			message_block.querySelector('div.windos_content_editor').onkeydown = windos_message_KeyPress;
-			current_EditingEditor[1] = editor;
-		} )
-		.catch( error => {
-			console.error( error );
-		} );
-	
-	message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_editoptions_button_click, false);
-				
-	//keyword_note_container.scrollTop = keyword_note_container.scrollHeight;
+	const MessageBlock = createEditBlock(NewNoteId);
+	keyword_note_container.insertBefore(MessageBlock, keyword_note_container.firstChild);
 	keyword_note_container.scrollTop = 0;
-	is_KeywordNewNoteEdit = count_id;
 }
-function keyword_delete_button_click(event){
-	const keyword = current_Keyword;
-	if (keyword === 'NoIndexNote'){
-		triggerAlertWindow(chrome.i18n.getMessage('noindexnote_delete_button_warning'), 'warning');
+function keywordDeleteButtonClick(event){//v
+	if (sidepanel_Info.keywordShow.isEditing) {
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+		return;
+	}
+	if (!Boolean(sidepanel_Info.keywordShow.indexKey)){
+		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
 		return;
 	}
 
-	if (is_KeywordNoteExist > 0){
-		const send_keyword_note_delete = {
-			notification_type: 'message',
-			event_name: 'send-keyword-note-delete',
-			keyword: keyword
-		};
-		confirmNotificationMessage(chrome.i18n.getMessage('options_delete_keyword'), 'delete', send_keyword_note_delete);
-	}
-	else{
-		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
-	}
+	const QuestData = {
+		event_name: 'delete-keyword-noteindex',
+		keywordKeyIndex: sidepanel_Info.keywordShow.indexKey,
+		token: background_Info.identificationToken
+	};
+	
+	chrome.runtime.sendMessage(QuestData, (returnData) => {
+		if (returnData.isFinish){
+			refreshKeywordShow(sidepanel_Info.keywordShow.indexKey);
+			refreshKeywordSuggestionShow();
+		}
+	});
 }
 
 // --- more_options_popup buttons ---
-function options_edit_button_click(event){
+function optionsEditButtonClick(event){//v
 	const more_options_popup = event.target.closest('.levitate_options_popup');
-	const trigger_type = more_options_popup.getAttribute('trigger_type');
-	const note_id = parseInt(more_options_popup.getAttribute('note_id'));
+	const TriggerType = more_options_popup.getAttribute('trigger_type');
+	const TargetNoteId = parseInt(more_options_popup.getAttribute('note_id'));
 	
-	const message_block = document.createElement('div');
-	message_block.classList.add('windos_message_block');
-	
-	if (trigger_type === 'url'){
-		if (is_UrlNewNoteEdit != null){
+	if (TriggerType === 'url'){
+		if (sidepanel_Info.urlShow.isEditing) {
 			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 			return;
 		}
-		
+		if (!Boolean(sidepanel_Info.urlShow.indexKey)){
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+			return;
+		}
+		if (editing_DataInfo.isUsing){
+			//needErrorMessage
+			return;
+		}
+		sidepanel_Info.urlShow.isEditing = true;
+	
 		const url_note_container = document.getElementById("url_note_container");
-		const url_note_block = url_note_container.querySelectorAll(".windos_message_block");
+		const NoteBlocks = url_note_container.querySelectorAll(".windos_message_block");
+		const TargetNoteIndex = sidepanel_Info.urlShow.displayOrder.indexOf(TargetNoteId);
 		
-		const note_index = display_UrlNotes.indexOf(note_id);
+		const NoteContent = NoteBlocks[TargetNoteIndex].querySelector(".windos_message_content").innerHTML;
+		const NoteTimestamp = NoteBlocks[TargetNoteIndex].querySelector(".windos_message_timestamp").innerText;
 		
-		const url_note_content = url_note_block[note_index].querySelector(".windos_message_content").innerHTML;
-		const url_note_timestamp = url_note_block[note_index].querySelector(".windos_message_timestamp").innerText;
-		const url_note_is_pinned = url_note_block[note_index].querySelector("button.pinned_note").classList.contains("is_pinned");
+		const EditBlock = createEditBlock(TargetNoteId, false, NoteContent);
+		editing_DataInfo.beforeEditTimestamp = NoteTimestamp;
 		
-		initial_EditContent[0] = url_note_content;
-		initial_EditTimestamp[0] = url_note_timestamp;
-		initial_EditPriority[0] = url_note_is_pinned;
-		
-		message_block.innerHTML = `<div class="interactive_block edit">
-								 <button class="more_options" note_id="${note_id}" title="更多選項">
-								   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-									 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-								   </svg>
-								 </button>
-							   </div>
-							   <div class="windos_content_editor">
-							     ${url_note_content}
-							   </div>
-							   <div class="windos_timestamp_container">
-								 <div class="windos_message_timestamp">
-								   ${url_note_timestamp}
-								 </div>
-							   </div>`;
-		message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-		
-		url_note_block[note_index].replaceWith(message_block);
-		display_UrlNotes[note_index] = 'e';
-		
-		const BalloonEditor = window.BalloonEditor;
-	
-		BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-				placeholder: 'Enter new note here',
-				language: language_Code,
-				link: {
-					decorators: {
-						addTargetToExternalLinks: {
-							mode: 'automatic',
-							callback: url => true,
-							attributes: {
-								target: '_blank',
-								rel: 'noopener noreferrer'
-							}
-						}
-					}
-				}
-			})
-			.then( editor => {
-				function windos_message_KeyPress(e) {
-					var evtobj = window.event? event : e
-					if (evtobj.keyCode == 83 && evtobj.ctrlKey){
-						event.preventDefault();
-						editor_ctrlS_press(0);//儲存
-					}
-				}
-				
-				message_block.querySelector('div.windos_content_editor').onkeydown = windos_message_KeyPress;
-				current_EditingEditor[0] = editor;
-			} )
-			.catch( error => {
-				console.error( error );
-			} );
-		
-		message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_editoptions_button_click, false);
-	
-		is_UrlNewNoteEdit = note_id;
+		NoteBlocks[TargetNoteIndex].replaceWith(EditBlock);
 	}
-	else if (trigger_type === 'keyword'){
-		if (is_KeywordNewNoteEdit != null){
+	else if (TriggerType === 'keyword'){
+		if (sidepanel_Info.keywordShow.isEditing) {
 			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
 			return;
 		}
-		
-		const keyword_note_container = document.getElementById("keyword_note_container");
-		const keyword_note_block = keyword_note_container.querySelectorAll(".windos_message_block");
-		
-		const note_index = display_KeywordNotes.indexOf(note_id);
-		
-		const keyword_note_content = keyword_note_block[note_index].querySelector(".windos_message_content").innerHTML;
-		const keyword_note_timestamp = keyword_note_block[note_index].querySelector(".windos_message_timestamp").innerText;
-		const keyword_note_is_pinned = keyword_note_block[note_index].querySelector("button.pinned_note").classList.contains("is_pinned");
-		
-		initial_EditContent[1] = keyword_note_content;
-		initial_EditTimestamp[1] = keyword_note_timestamp;
-		initial_EditPriority[1] = keyword_note_is_pinned;
-		
-		message_block.innerHTML = `<div class="interactive_block edit">
-								 <button class="more_options" note_id="${note_id}" title="更多選項">
-								   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-									 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-								   </svg>
-								 </button>
-							   </div>
-							   <div class="windos_content_editor">
-							     ${keyword_note_content}
-							   </div>
-							   <div class="windos_timestamp_container">
-								 <div class="windos_message_timestamp">
-								   ${keyword_note_timestamp}
-								 </div>
-							   </div>`;
-		message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-		
-		keyword_note_block[note_index].replaceWith(message_block);
-		display_KeywordNotes[note_index] = 'e';
-		
-		const BalloonEditor = window.BalloonEditor;
+		if (!Boolean(sidepanel_Info.keywordShow.indexKey)){
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+			return;
+		}
+		if (editing_DataInfo.isUsing){
+			//needErrorMessage
+			return;
+		}
+		sidepanel_Info.keywordShow.isEditing = true;
 	
-		BalloonEditor.create(message_block.querySelector('div.windos_content_editor'), {
-				placeholder: 'Enter new note here',
-				language: language_Code,
-				link: {
-					decorators: {
-						addTargetToExternalLinks: {
-							mode: 'automatic',
-							callback: url => true,
-							attributes: {
-								target: '_blank',
-								rel: 'noopener noreferrer'
-							}
-						}
-					}
-				}
-			})
-			.then( editor => {
-				function windos_message_KeyPress(e) {
-					var evtobj = window.event? event : e
-					if (evtobj.keyCode == 83 && evtobj.ctrlKey){
-						event.preventDefault();
-						editor_ctrlS_press(1);//儲存
-					}
-				}
-				
-				message_block.querySelector('div.windos_content_editor').onkeydown = windos_message_KeyPress;
-				current_EditingEditor[1] = editor;
-			} )
-			.catch( error => {
-				console.error( error );
-			} );
+		const keyword_note_container = document.getElementById("keyword_note_container");
+		const NoteBlocks = keyword_note_container.querySelectorAll(".windos_message_block");
+		const TargetNoteIndex = sidepanel_Info.keywordShow.displayOrder.indexOf(TargetNoteId);
 		
-		message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_editoptions_button_click, false);
+		const NoteContent = NoteBlocks[TargetNoteIndex].querySelector(".windos_message_content").innerHTML;
+		const NoteTimestamp = NoteBlocks[TargetNoteIndex].querySelector(".windos_message_timestamp").innerText;
 		
-		is_KeywordNewNoteEdit = note_id;
+		const EditBlock = createEditBlock(TargetNoteId, false, NoteContent);
+		editing_DataInfo.beforeEditTimestamp = NoteTimestamp;
+		
+		NoteBlocks[TargetNoteIndex].replaceWith(EditBlock);
 	}						   
 	else{
 		return;
@@ -1847,43 +964,124 @@ function options_edit_button_click(event){
 
 	more_options_popup.classList.remove('popup_show');
 }
-function options_copy_button_click(event){
+function optionsCopyButtonClick(event){//v
 	const more_options_popup = event.target.closest('.levitate_options_popup');
+	const TriggerType = more_options_popup.getAttribute('trigger_type');
+	const TargetNoteId = parseInt(more_options_popup.getAttribute('note_id'));
+	
+	if (TriggerType === 'url'){
+		if (sidepanel_Info.urlShow.isEditing) {
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+			return;
+		}
+		if (!Boolean(sidepanel_Info.urlShow.indexKey)){
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+			return;
+		}
+		if (editing_DataInfo.isUsing){
+			//needErrorMessage
+			return;
+		}
+		sidepanel_Info.urlShow.isEditing = true;
+	
+		const url_note_container = document.getElementById("url_note_container");
+		const NoteBlocks = url_note_container.querySelectorAll(".windos_message_block");
+		const TargetNoteIndex = sidepanel_Info.urlShow.displayOrder.indexOf(TargetNoteId);
+		const NewNoteId = (sidepanel_Info.urlShow.dataMode < 2) ? 0 : (NoteBlocks.length);
+		
+		const NoteContent = NoteBlocks[TargetNoteIndex].querySelector(".windos_message_content").innerHTML;
+		
+		const EditBlock = createEditBlock(NewNoteId, true, NoteContent);
+		url_note_container.insertBefore(EditBlock, url_note_container.firstChild);
+		url_note_container.scrollTop = 0;
+	}
+	else if (TriggerType === 'keyword'){
+		if (sidepanel_Info.keywordShow.isEditing) {
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+			return;
+		}
+		if (!Boolean(sidepanel_Info.keywordShow.indexKey)){
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+			return;
+		}
+		if (editing_DataInfo.isUsing){
+			//needErrorMessage
+			return;
+		}
+		sidepanel_Info.keywordShow.isEditing = true;
+	
+		const keyword_note_container = document.getElementById("keyword_note_container");
+		const NoteBlocks = keyword_note_container.querySelectorAll(".windos_message_block");
+		const TargetNoteIndex = sidepanel_Info.keywordShow.displayOrder.indexOf(TargetNoteId);
+		const NewNoteId = (sidepanel_Info.keywordShow.dataMode < 2) ? 0 : (NoteBlocks.length);
+		
+		const NoteContent = NoteBlocks[TargetNoteIndex].querySelector(".windos_message_content").innerHTML;
+		
+		const EditBlock = createEditBlock(NewNoteId, true, NoteContent);
+		keyword_note_container.insertBefore(EditBlock, keyword_note_container.firstChild);
+		keyword_note_container.scrollTop = 0;
+	}						   
+	else{
+		return;
+	}
 	
 	more_options_popup.style.left = '';
 	more_options_popup.style.top = '';
 
 	more_options_popup.classList.remove('popup_show');
-	triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unfinished_function_warning'), 'warning');
 }
-function options_delete_button_click(event){
+function optionsDeleteButtonClick(event){//v
 	const more_options_popup = event.target.closest('.levitate_options_popup');
-	const trigger_type = more_options_popup.getAttribute('trigger_type');
-	const note_id = parseInt(more_options_popup.getAttribute('note_id'));
+	const TriggerType = more_options_popup.getAttribute('trigger_type');
+	const TargetNoteId = parseInt(more_options_popup.getAttribute('note_id'));
 	
-	if (trigger_type === 'url'){
-		const host = current_Host;
-		
-		
-		const send_url_notedata_delete = {
-			notification_type: 'message',
-			event_name: 'send-url-notedata-delete',
-			host: host,
-			note_id: note_id
-		};
-		
-		confirmNotificationMessage(chrome.i18n.getMessage('options_delete_url_note'), 'delete', send_url_notedata_delete);
+	if (TriggerType === 'url'){
+		if (sidepanel_Info.urlShow.isEditing) {
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+			return;
+		}
+		else if (!Boolean(sidepanel_Info.urlShow.indexKey)){
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+			return;
+		}
+		else{
+			const QuestData = {
+				event_name: 'delete-url-note',
+				urlKeyIndex: sidepanel_Info.urlShow.indexKey,
+				noteIndex: TargetNoteId,
+				token: background_Info.identificationToken
+			};
+			
+			chrome.runtime.sendMessage(QuestData, (returnData) => {
+				if (returnData.isFinish){
+					refreshUrlShow(sidepanel_Info.urlShow.indexKey);
+				}
+			});
+		}
 	}
-	else if (trigger_type === 'keyword'){
-		const keyword = current_Keyword;
-
-		const send_keyword_notedata_delete = {
-			notification_type: 'message',
-			event_name: 'send-keyword-notedata-delete',
-			keyword: keyword,
-			note_id: note_id
-		};
-		confirmNotificationMessage(chrome.i18n.getMessage('options_delete_keyword_note'), 'delete', send_keyword_notedata_delete);
+	else if (TriggerType === 'keyword'){
+		if (sidepanel_Info.keywordShow.isEditing) {
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unsaved_warning'), 'warning');
+			return;
+		}
+		else if (!Boolean(sidepanel_Info.keywordShow.indexKey)){
+			triggerAlertWindow(chrome.i18n.getMessage('sidepanel_unrecord_keyword_warning'), 'warning');
+			return;
+		}
+		else{
+			const QuestData = {
+				event_name: 'delete-keyword-note',
+				keywordKeyIndex: sidepanel_Info.keywordShow.indexKey,
+				noteIndex: TargetNoteId,
+				token: background_Info.identificationToken
+			};
+			
+			chrome.runtime.sendMessage(QuestData, (returnData) => {
+				if (returnData.isFinish){
+					refreshKeywordShow(sidepanel_Info.keywordShow.indexKey);
+				}
+			});
+		}
 	}
 	
 	more_options_popup.style.left = '';
@@ -1893,66 +1091,79 @@ function options_delete_button_click(event){
 }
 
 // --- edit_options_popup buttons ---
-function editor_save_button_click(event){
+function editorSaveButtonClick(event){//v
 	const edit_options_popup = event.target.closest('.levitate_options_popup');
-	const trigger_type = edit_options_popup.getAttribute('trigger_type');
-	const note_id = parseInt(edit_options_popup.getAttribute('note_id'));
+	const TriggerType = edit_options_popup.getAttribute('trigger_type');
+	const NoteId = parseInt(edit_options_popup.getAttribute('note_id'));
 	
-	if (trigger_type === 'url'){
-		const notecontent = current_EditingEditor[0].getData();
-		const host = current_Host;
+	if (TriggerType === 'url'){
+		const NoteContent = editing_DataInfo.editEngine.getData();
+		const UrlIndexKey = sidepanel_Info.keywordShow.indexKey;
 		
-		if (Boolean(is_UrlNoteExist)){
-			const send_url_notedata_save = {
-				host: host,
-				notecontent: notecontent,
-				note_id: note_id
+		if (editing_DataInfo.isNew){
+			const QuestData = {
+				event_name: 'new-url-notedata',
+				urlKeyIndex: UrlIndexKey,
+				noteContent: NoteContent,
+				token: background_Info.identificationToken
 			};
-			if (initial_EditContent[0]){
-				send_url_notedata_save.event_name = 'send-url-notedata-save';
-			}
-			else{
-				send_url_notedata_save.event_name = 'send-url-notedata-add';
-			}
-			
-			chrome.runtime.sendMessage(send_url_notedata_save, (response) => {});
+			chrome.runtime.sendMessage(QuestData, (returnData) => {
+				if (returnData.isFinish){
+					clearEditEngine();
+					refreshUrlShow(UrlIndexKey, true);
+				}
+			});
 		}
 		else{
-			const send_url_note_add = {
-				event_name: 'send-url-note-add',
-				host: host,
-				notecontent: notecontent,
-				is_special_url: is_SpecialUrls
+			const QuestData = {
+				event_name: 'update-url-notedata',
+				urlKeyIndex: UrlIndexKey,
+				noteContent: NoteContent,
+				noteId: NoteId,
+				token: background_Info.identificationToken
 			};
-			chrome.runtime.sendMessage(send_url_note_add, (t) => {});
+			
+			chrome.runtime.sendMessage(QuestData, (returnData) => {
+				if (returnData.isFinish){
+					clearEditEngine();
+					refreshUrlShow(UrlIndexKey, true);
+				}
+			});
 		}
 	}
-	else if (trigger_type === 'keyword'){
-		const notecontent = current_EditingEditor[1].getData();
-		const keyword = current_Keyword;
+	else if (TriggerType === 'keyword'){
+		const NoteContent = editing_DataInfo.editEngine.getData();
+		const KeywordKeyIndex = sidepanel_Info.keywordShow.indexKey;
 		
-		if (Boolean(is_KeywordNoteExist)){
-			const send_keyword_notedata_save = {
-				keyword: keyword,
-				notecontent: notecontent,
-				note_id: note_id
+		if (editing_DataInfo.isNew){
+			const QuestData = {
+				event_name: 'new-keyword-notedata',
+				keywordKeyIndex: KeywordKeyIndex,
+				noteContent: NoteContent,
+				token: background_Info.identificationToken
 			};
-			if (initial_EditContent[1]){
-				send_keyword_notedata_save.event_name = 'send-keyword-notedata-save';
-			}
-			else{
-				send_keyword_notedata_save.event_name = 'send-keyword-notedata-add';
-			}
-			
-			chrome.runtime.sendMessage(send_keyword_notedata_save, (response) => {});
+			chrome.runtime.sendMessage(QuestData, (returnData) => {
+				if (returnData.isFinish){
+					clearEditEngine();
+					refreshKeywordShow(KeywordKeyIndex, true);
+				}
+			});
 		}
 		else{
-			const send_keyword_note_add = {
-				event_name: 'send-keyword-note-add',
-				keyword: keyword,
-				notecontent: notecontent
+			const QuestData = {
+				event_name: 'update-keyword-notedata',
+				keywordKeyIndex: KeywordKeyIndex,
+				noteContent: NoteContent,
+				noteId: NoteId,
+				token: background_Info.identificationToken
 			};
-			chrome.runtime.sendMessage(send_keyword_note_add, (t) => {});
+			
+			chrome.runtime.sendMessage(QuestData, (returnData) => {
+				if (returnData.isFinish){
+					clearEditEngine();
+					refreshKeywordShow(KeywordKeyIndex, true);
+				}
+			});
 		}
 	}
 	
@@ -1961,123 +1172,16 @@ function editor_save_button_click(event){
 
 	edit_options_popup.classList.remove('popup_show');
 }
-function editor_exit_button_click(event){
+function editorExitButtonClick(event){//v
 	const edit_options_popup = event.target.closest('.levitate_options_popup');
-	const trigger_type = edit_options_popup.getAttribute('trigger_type');
-	const note_id = parseInt(edit_options_popup.getAttribute('note_id'));
+	const NoteId = parseInt(edit_options_popup.getAttribute('note_id'));
 	
-	if (trigger_type === 'url'){
-		const url_note_container = document.getElementById("url_note_container");
-		const url_note_block = url_note_container.querySelectorAll(".windos_message_block");
-		
-		const editor_index = display_UrlNotes.indexOf('e');
-		
-		if (initial_EditContent[0]){
-			const message_block = document.createElement('div');
-			message_block.classList.add('windos_message_block');
-			
-			let class_tag = "pinned_note";
-			if (initial_EditPriority[0]){
-				class_tag = "pinned_note is_pinned";
-			}
-			
-			message_block.innerHTML = `<div class="interactive_block">
-										 <button class="${class_tag}" note_id="${note_id}">
-										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-											 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-										   </svg>
-										 </button>
-										 <button class="more_options" note_id="${note_id}">
-										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-											 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-										   </svg>
-										 </button>
-									   </div>
-									   <div class="windos_message_content ck-content">
-										 ${initial_EditContent[0]}
-									   </div>
-									   <div class="windos_timestamp_container">
-										 <div class="windos_message_timestamp">
-										   ${initial_EditTimestamp[0]}
-										 </div>
-									   </div>`;
-			message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-			message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-			
-			message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-			message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-			
-			url_note_block[editor_index].replaceWith(message_block);
-			display_UrlNotes[editor_index] = parseInt(note_id);
-		}
-		else{
-			url_note_container.removeChild(url_note_block[editor_index]);
-			
-			display_UrlNotes.splice(editor_index, 1);
-		}
-			
-		current_EditingEditor[0] = null;
-		initial_EditContent[0] = null;
-		initial_EditTimestamp[0] = null;
-		initial_EditPriority[0] = null;
-		is_UrlNewNoteEdit = null;
+	if (!editing_DataInfo.isNew){
+		const MessageBlock = createNoteBlock(editing_DataInfo.beforeEditData, editing_DataInfo.beforeEditTimestamp, NoteId);
+		editing_DataInfo.editBlock.replaceWith(MessageBlock);
 	}
-	else if (trigger_type === 'keyword'){
-		const keyword_note_container = document.getElementById("keyword_note_container");
-		const keyword_note_block = keyword_note_container.querySelectorAll(".windos_message_block");
-		
-		const editor_index = display_KeywordNotes.indexOf('e');
-		
-		if (initial_EditContent[1]){
-			const message_block = document.createElement('div');
-			message_block.classList.add('windos_message_block');
-			
-			let class_tag = "pinned_note";
-			if (initial_EditPriority[1]){
-				class_tag = "pinned_note is_pinned";
-			}
-			
-			message_block.innerHTML = `<div class="interactive_block">
-										 <button class="${class_tag}" note_id="${note_id}">
-										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-											 <path fill="currentColor" d="M13.325 2.617a2 2 0 0 0-3.203.52l-1.73 3.459a1.5 1.5 0 0 1-.784.721l-3.59 1.436a1 1 0 0 0-.335 1.636L6.293 13L3 16.292V17h.707L7 13.706l2.61 2.61a1 1 0 0 0 1.636-.335l1.436-3.59a1.5 1.5 0 0 1 .722-.784l3.458-1.73a2 2 0 0 0 .52-3.203z" />
-										   </svg>
-										 </button>
-										 <button class="more_options" note_id="${note_id}">
-										   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20">
-											 <path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm0-2.6A2.2 2.2 0 1 0 9.999.8a2.2 2.2 0 0 0 .002 4.4m0 9.6a2.2 2.2 0 1 0 0 4.402a2.2 2.2 0 0 0 0-4.402" />
-										   </svg>
-										 </button>
-									   </div>
-									   <div class="windos_message_content ck-content">
-										   ${initial_EditContent[1]}
-									   </div>
-									   <div class="windos_timestamp_container">
-										 <div class="windos_message_timestamp">
-										   ${initial_EditTimestamp[1]}
-										 </div>
-									   </div>`;
-			message_block.querySelector(".interactive_block button.pinned_note").title = chrome.i18n.getMessage('interactive_block_pinned_note__title');
-			message_block.querySelector(".interactive_block button.more_options").title = chrome.i18n.getMessage('interactive_block_more_options__title');
-			
-			message_block.querySelector(".interactive_block button.pinned_note").addEventListener('click', pinned_note_button_click, false);
-			message_block.querySelector(".interactive_block button.more_options").addEventListener('click', more_options_button_click, false);
-			
-			keyword_note_block[editor_index].replaceWith(message_block);
-			display_KeywordNotes[editor_index] = parseInt(note_id);
-		}
-		else{
-			keyword_note_container.removeChild(keyword_note_block[editor_index]);
-			
-			display_KeywordNotes.splice(editor_index, 1);
-		}
-		
-		current_EditingEditor[1] = null;
-		initial_EditContent[1] = null;
-		initial_EditTimestamp[1] = null;
-		initial_EditPriority[1] = null;
-		is_KeywordNewNoteEdit = null;
-	}
+	
+	clearEditEngine(editing_DataInfo.isNew);
 	
 	edit_options_popup.style.left = '';
 	edit_options_popup.style.top = '';
@@ -2085,309 +1189,45 @@ function editor_exit_button_click(event){
 	edit_options_popup.classList.remove('popup_show');
 }
 
-function editor_ctrlS_press(index){
-	const note_id = parseInt(current_EditingEditor[index].closest('.windos_message_block').querySelector(".interactive_block button.more_options").getAttribute('note_id'));
-	const trigger_type = current_EditingEditor[index].closest('.windos_message_container').id;
-	
-	const notecontent = current_EditingEditor[index].getData();
-	
-	if (trigger_type === 'url_note_container'){
-		const notecontent = current_EditingEditor[0].getData();
-		const host = current_Host;
-		
-		if (Boolean(is_UrlNoteExist)){
-			const send_url_notedata_save = {
-				host: host,
-				notecontent: notecontent,
-				note_id: note_id
-			};
-			if (initial_EditContent[0]){
-				send_url_notedata_save.event_name = 'send-url-notedata-save';
-			}
-			else{
-				send_url_notedata_save.event_name = 'send-url-notedata-add';
-			}
-			
-			chrome.runtime.sendMessage(send_url_notedata_save, (response) => {});
-		}
-		else{
-			const send_url_note_add = {
-				event_name: 'send-url-note-add',
-				host: host,
-				notecontent: notecontent,
-				is_special_url: is_SpecialUrls
-			};
-			chrome.runtime.sendMessage(send_url_note_add, (t) => {});
-		}
-	}
-	else if (trigger_type === 'keyword_note_container'){
-		const notecontent = current_EditingEditor[1].getData();
-		const keyword = current_Keyword;
-		
-		if (Boolean(is_KeywordNoteExist)){
-			const send_keyword_notedata_save = {
-				keyword: keyword,
-				notecontent: notecontent,
-				note_id: note_id
-			};
-			if (initial_EditContent[1]){
-				send_keyword_notedata_save.event_name = 'send-keyword-notedata-save';
-			}
-			else{
-				send_keyword_notedata_save.event_name = 'send-keyword-notedata-add';
-			}
-			
-			chrome.runtime.sendMessage(send_keyword_notedata_save, (response) => {});
-		}
-		else{
-			const send_keyword_note_add = {
-				event_name: 'send-keyword-note-add',
-				keyword: keyword,
-				notecontent: notecontent
-			};
-			chrome.runtime.sendMessage(send_keyword_note_add, (t) => {});
-		}
-	}
-}
-
-// ====== 資料接收 ====== 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-	switch (request.event_name) {
-		//當前網頁資料	
-		case 'response-keyword-mark-search':
-			currentPagePageStatusUpdate(true, true, request.page_status);
-			break;
-			
-		case 'response-current-tab-sidepanel':
-			sendResponse({});
-			
-			const current_tab_info = request.current_tab_info;
-			
-			currentPagePageStatusUpdate(current_tab_info.is_support, current_tab_info.is_script_run, current_tab_info.page_status);
-			break;
-		//關鍵字與網頁筆記
-		case 'response-url-notedata':
-			sendResponse({});
-			
-			refreshTitleArea(request.host, request.host_notedata, request.keywords_priority);
-			break;	
-		case 'response-special-url-notedata':
-			sendResponse({});
-			
-			refreshSpecialTitleArea(request.title, request.key_index, request.host_notedata, request.keywords_priority);
-			break;
-			
-		case 'response-keyword-notedata-sidepanel':
-			sendResponse({});
-			
-			refreshKeywordArea(request.keyword, request.keyword_notedata, request.keywords_priority);
-			break;
-		case 'response-noindex-notedata-sidepanel':
-			sendResponse({});
-			
-			refreshKeywordArea(chrome.i18n.getMessage('noindexnote_titlename'), request.keyword_notedata, request.keywords_priority);
-			current_Keyword = 'NoIndexNote';
-			break;
-		case 'reload-recorded-Keywords':
-			sendResponse({});
-			
-			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recordedKeywordsUpdate(response.recorded_keywords);
-				refreshSuggestionArea(false, null);
-			});
-			break;
-			
-		case 'response-display-Keywords':
-			sendResponse({});
-			
-			refreshSuggestionArea(true, request.display_keywords);
-			break;
-		//儲存資料回傳	
-		case 'response-url-note-add':
-			sendResponse({});
-			
-			afterEditRefreshProcess('url', request.process_state, 0, request.save_datetime);
-			break;
-		case 'response-keyword-note-add':
-			sendResponse({});
-			
-			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recordedKeywordsUpdate(response.recorded_keywords);
-				afterEditRefreshProcess('keyword', request.process_state, 0, request.save_datetime);
-			});
-			break;	
-			
-		case 'response-url-note-delete':
-			sendResponse({});
-			
-			if (is_SpecialUrls){
-				refreshSpecialTitleArea(null, current_Host, null, null)
-			}
-			else{
-				refreshTitleArea(current_Host, null, null);
-			}
-			break;
-		case 'response-keyword-note-delete':
-			sendResponse({});
-			
-			chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-				recordedKeywordsUpdate(response.recorded_keywords);
-				refreshKeywordArea(current_Keyword, null, []);
-				refreshSuggestionArea(false, null);
-			});
-			break;
-		//-----
-		case 'response-url-notedata-save':
-			sendResponse({});
-			
-			afterEditRefreshProcess('url', request.process_state, request.note_id, request.save_datetime);
-			break;
-		case 'response-keyword-notedata-save':
-			sendResponse({});
-			
-			afterEditRefreshProcess('keyword', request.process_state, request.note_id, request.save_datetime);
-			break;
-			
-		case 'response-url-notedata-delete':
-			sendResponse({});
-			
-			afterDeleteRefreshProcess('url', request.process_state, request.note_id);
-			break;
-		case 'response-keyword-notedata-delete':
-			sendResponse({});
-			
-			afterDeleteRefreshProcess('keyword', request.process_state, request.note_id);
-			break;
-		//-----
-		case 'response-url-note-pin':
-			sendResponse({});
-			
-			afterPinRefreshProcess('url', request.process_state, request.note_id);
-			break;
-		case 'response-keyword-note-pin':
-			sendResponse({});
-			
-			afterPinRefreshProcess('keyword', request.process_state, request.note_id);
-			break;
-			
-		case 'response-url-note-unpin':
-			sendResponse({});
-			
-			afterPinRefreshProcess('url', request.process_state, request.note_id);
-			break;
-		case 'response-keyword-note-unpin':
-			sendResponse({});
-			
-			afterPinRefreshProcess('keyword', request.process_state, request.note_id);
-			break;
-			
-		//--- notebooklmCaller.js ---
-		case 'response-summary-url':
-			sendResponse({});
-			
-			refreshKeywordAreaAsSummary(request.summary_response.tidy_response[0]);
-			break;
-	}
+// ====== 分頁通訊 ====== 
+/*
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){ //短期連接通訊
 	console.log(request.event_name);
+	return true;
 });
+*/
 
-chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx) {
-    if (Boolean(confirmnotifications_Data[notificationId])) {
-		switch (confirmnotifications_Data[notificationId].notification_type){
-			case 'message':
-				if (btnIdx === 0){
-					chrome.runtime.sendMessage(confirmnotifications_Data[notificationId], (response) => {});
-					delete confirmnotifications_Data[notificationId];
-				}
-				break;
-			case 'reconnect':
-				if (btnIdx === 0){
-					location.reload();
-				}
-				else if (btnIdx === 1){
-					window.close();
-				}
-				break;
-		}
-    }
-	else{
-		triggerAlertWindow(chrome.i18n.getMessage('sidepanel_timeout_warning'), 'warning');
-	}
-});
-
-var portWithBackground = chrome.runtime.connect({name: 'Sidepanel'});
-const delay = (delayInms) => {
-  return new Promise(resolve => setTimeout(resolve, delayInms));
-};
-const delayconnect = async () => {
-  while (is_Connect){
-		portWithBackground.postMessage({'ping': 0});
-		let delayres = await delay(5000);
-	}
-};
-portWithBackground.onMessage.addListener((current_data) => {
-	currentpage_TabId = current_data.currentpage_tabid;
-	is_Connect = true;
+async function createPortToBackground(ms, isStart = false){//建立與背景的長期連接通訊
+	background_Info.connectPort = chrome.runtime.connect({name: 'Sidepanel'});
 	
-	chrome.runtime.sendMessage({event_name: 'quest-current-tab-sidepanel'}, (t) => {});
-});
-portWithBackground.onDisconnect.addListener(async () => {
-	portWithBackground = null;
-	is_Connect = false;
-	console.log('Sidepanel Disconnect');
-	
-	setTimeout(() => {
-		portWithBackground = chrome.runtime.connect({name: 'Sidepanel'});
+	background_Info.connectPort.onMessage.addListener(onMessageFromBackground);
+	background_Info.connectPort.onDisconnect.addListener(async () => {
+		background_Info.connectPort = null;
+		background_Info.isConnect = false;
 		
-		setTimeout(() => {
-			if (!is_Connect){
-				const reconnect_data = {
-					notification_type: 'reconnect'
-				};
-				confirmNotificationMessage(chrome.i18n.getMessage('port_with_background_reconnect'), 'reconnect', reconnect_data);
-			}
-		}, 10000);
-		setTimeout(() => {
-			delayconnect();
-		}, 9000);
-	}, 6000);
-});
+		await timeout(ms);
+		createPortToBackground(ms);
+	});
+	
+	if (isStart){
+		background_Info.connectPort.postMessage({event_name: 'refresh-tab-status'});
+		runInitial();
+	}
+}
+function onMessageFromBackground(msg){//長期連接通訊
+	background_Info.isConnect = true;
+	
+	switch (msg.event_name) {
+		case 'update-sidepanel-status':
+			refreshSidepanelStatus(msg);
+			
+			break;
+	}
+	
+	console.log(msg.event_name);
+}
 
 // ====== 初始化 ====== 
-function importCKeditorLanguageFile(){
-	const can_inportLanguage = ['en', 'ja']
-	
-	if (can_inportLanguage.includes(language_Code)){
-		import(`../ckeditor5-41.2.0/build/translations/${language_Code}.js`)
-		.then((module) => {
-			console.log(`*-> ckeditor5 language: [${language_Code}] import sucess`);
-		})
-		.catch(error => {
-			console.log(`*-> ckeditor5 language: [${language_Code}] import fail`);
-		});
-	}
-	else if (can_inportLanguage.includes(language_Code.split('-')[0])){
-		import(`../ckeditor5-41.2.0/build/translations/${language_Code.split('-')[0]}.js`)
-		.then((module) => {
-			console.log(`*-> ckeditor5 language: [${language_Code.split('-')[0]}] import sucess`);
-		})
-		.catch(error => {
-			console.log(`*-> ckeditor5 language: [${language_Code.split('-')[0]}] import fail`);
-		});
-	}
-}
-
-function runSetting(){
-	const body = document.body;
-	
-	if (is_DarkMode){
-		body.classList.add('dark');
-	}
-	else{
-		body.classList.remove('dark');
-	}
-}
-
 function runInitial(){
 	document.querySelectorAll('[data-i18n]').forEach((i18n_element) => {
 		const i18n_content = chrome.i18n.getMessage(i18n_element.dataset.i18n);
@@ -2402,14 +1242,14 @@ function runInitial(){
 	});
 	
 	const title_area = document.getElementById("title_area");
-	title_area.querySelector('.title_boder').addEventListener("dblclick", switch_host_urlindex);
-	title_area.querySelector('.control_url_area button.new_note').addEventListener('click', url_new_note_button_click, false);
-	//title_area.querySelector('.control_url_area button.delete_url').addEventListener('click', url_delete_button_click, false);
-	title_area.querySelector('.control_url_area button.more_options').addEventListener('click', title_more_options_button_click);
+	//title_area.querySelector('.title_boder').addEventListener("dblclick", switch_host_urlindex);
+	title_area.querySelector('.control_url_area button.new_note').addEventListener('click', urlNewNoteButtonClick, false);
+	//title_area.querySelector('.control_url_area button.delete_url').addEventListener('click', urlDeleteButtonClick, false);
+	title_area.querySelector('.control_url_area button.more_options').addEventListener('click', titleMoreOptionsButtonClick);
 	
 	const suggestion_area = document.getElementById("suggestion_area");
-	suggestion_area.querySelector("button#more_suggestion").addEventListener("click", more_suggestion_button_click);
-	suggestion_area.querySelector("button#pure_notes").addEventListener("click", noindexnote_button_click);
+	suggestion_area.querySelector("button#more_suggestion").addEventListener("click", moreSuggestionButtonClick);
+	//suggestion_area.querySelector("button#pure_notes").addEventListener("click", noindexnote_button_click);
 	const suggestion_container = suggestion_area.querySelector(".suggestion_container");
 	suggestion_container.onwheel = function (event){ 
 		event.preventDefault();  
@@ -2423,10 +1263,10 @@ function runInitial(){
 	};
 	
 	const keyword_area = document.getElementById("keyword_area");
-	keyword_area.querySelector('.control_keyword_area button.previous_mark').addEventListener('click', keyword_previous_mark_button_click, false);
-	keyword_area.querySelector('.control_keyword_area button.next_mark').addEventListener('click', keyword_next_mark_button_click, false);
-	keyword_area.querySelector('.control_keyword_area button.new_note').addEventListener('click', keyword_new_note_button_click, false);
-	keyword_area.querySelector('.control_keyword_area button.delete_keyword').addEventListener('click', keyword_delete_button_click, false);
+	keyword_area.querySelector('.control_keyword_area button.previous_mark').addEventListener('click', keywordPreviousMarkButtonClick, false);
+	keyword_area.querySelector('.control_keyword_area button.next_mark').addEventListener('click', keywordNextMarkButtonClick, false);
+	keyword_area.querySelector('.control_keyword_area button.new_note').addEventListener('click', keywordNewNoteButtonClick, false);
+	keyword_area.querySelector('.control_keyword_area button.delete_keyword').addEventListener('click', keywordDeleteButtonClick, false);
 	
 	const more_options_popup = document.getElementById("more_options_popup");
 	const edit_options_popup = document.getElementById("edit_options_popup");
@@ -2434,22 +1274,22 @@ function runInitial(){
 	const title_control_popup = document.getElementById("title_control_popup");
 	
 	more_options_popup.addEventListener("mouseleave", levitate_popup_mouseleave_event);
-	more_options_popup.querySelector("button.edit_note").addEventListener("click", options_edit_button_click);
-	more_options_popup.querySelector("button.copy_note").addEventListener("click", options_copy_button_click);
-	more_options_popup.querySelector("button.delete_note").addEventListener("click", options_delete_button_click);
+	more_options_popup.querySelector("button.edit_note").addEventListener("click", optionsEditButtonClick);
+	more_options_popup.querySelector("button.copy_note").addEventListener("click", optionsCopyButtonClick);
+	more_options_popup.querySelector("button.delete_note").addEventListener("click", optionsDeleteButtonClick);
 
 	edit_options_popup.addEventListener("mouseleave", levitate_popup_mouseleave_event);
-	edit_options_popup.querySelector("button.save_note").addEventListener("click", editor_save_button_click);
-	edit_options_popup.querySelector("button.exit_note").addEventListener("click", editor_exit_button_click);
+	edit_options_popup.querySelector("button.save_note").addEventListener("click", editorSaveButtonClick);
+	edit_options_popup.querySelector("button.exit_note").addEventListener("click", editorExitButtonClick);
 	
 	all_suggestion_popup.addEventListener("mouseleave", composition_levitate_popup_mouseleave_event);
-	all_suggestion_popup.querySelector("input").addEventListener("compositionstart", () => {is_SuggestionSearch_Composition = true;});
-	all_suggestion_popup.querySelector("input").addEventListener("compositionend", (event) => {is_SuggestionSearch_Composition = false;keywordSearchAlgorithmProcess(event);});
+	all_suggestion_popup.querySelector("input").addEventListener("compositionstart", () => {searching_DataInfo.isComposition = true;});
+	all_suggestion_popup.querySelector("input").addEventListener("compositionend", (event) => {searching_DataInfo.isComposition = false;keywordSearchAlgorithmProcess(event);});
 	all_suggestion_popup.querySelector("input").addEventListener("input", keywordSearchAlgorithmProcess);
 	
 	title_control_popup.addEventListener("mouseleave", levitate_popup_mouseleave_event);
-	title_control_popup.querySelector("button.delete_url").addEventListener("click", url_delete_button_click);
-	title_control_popup.querySelector("button.reload_url").addEventListener("click", url_reload_button_click);
+	title_control_popup.querySelector("button.delete_url").addEventListener("click", urlDeleteButtonClick);
+	title_control_popup.querySelector("button.reload_url").addEventListener("click", urlReloadButtonClick);
 	title_control_popup.querySelector("button.summary_url").addEventListener("click", url_summary_button_click);
 	
 	function levitate_popup_mouseleave_event(event){
@@ -2459,7 +1299,7 @@ function runInitial(){
 		this.classList.remove('popup_show');
 	}
 	function composition_levitate_popup_mouseleave_event(event){
-		if (!is_SuggestionSearch_Composition){
+		if (!searching_DataInfo.isComposition){
 			this.style.left = '';
 			this.style.top = '';
 		
@@ -2475,71 +1315,84 @@ function runInitial(){
 	document.body.addEventListener('mouseup', drag_mouseup);
 	
 	function drag_mousedown(e){
-		is_Dragging = true;
-		dragging_OffsetY = e.clientY;
+		sidepanel_Info.isDraggingEdge = true;
+		sidepanel_Info.draggingOffsetY = e.clientY;
 		
 		const title_area = document.getElementById("title_area");
 		const keyword_area = document.getElementById("keyword_area");
 
-		title_OffsetHeight = title_area.offsetHeight;
-		keyword_OffsetHeight =  keyword_area.offsetHeight;
+		sidepanel_Info.titleOffsetHeight = title_area.offsetHeight;
+		sidepanel_Info.keywordOffsetHeight =  keyword_area.offsetHeight;
 		document.body.style.userSelect = "none";
 	}
 	function drag_mousemove(e){
-		if (is_Dragging) {
-			const offset = e.clientY - dragging_OffsetY;
+		if (sidepanel_Info.isDraggingEdge) {
+			const offset = e.clientY - sidepanel_Info.draggingOffsetY;
 			
 			const title_area = document.getElementById("title_area");
 			const keyword_area = document.getElementById("keyword_area");
 			
 			const maxheight = (document.body.offsetHeight - 231);
 			
-			title_area.style.height = Math.max(150, Math.min(title_OffsetHeight + offset, maxheight)) + 'px';
-			keyword_area.style.height = Math.max(150, Math.min(keyword_OffsetHeight - offset, maxheight)) + 'px';
+			title_area.style.height = Math.max(150, Math.min(sidepanel_Info.titleOffsetHeight + offset, maxheight)) + 'px';
+			keyword_area.style.height = Math.max(150, Math.min(sidepanel_Info.keywordOffsetHeight - offset, maxheight)) + 'px';
 		}
+		else if (sidepanel_Info.isDraggingBlock && sidepanel_Info.blockDragging) {
+			const container = sidepanel_Info.blockDragging.closest("div.windos_message_container");
+			
+			sidepanel_Info.blockDragging.classList.remove("insert-animation");
+			let newTop = sidepanel_Info.blockOffsetHeight - (sidepanel_Info.blockInitY - e.clientY);
+			if (newTop < 0) {
+				newTop = 10;
+				
+				container.scrollTop -= 10; 
+			} else if (newTop > container.offsetHeight - 30) {
+				newTop = container.offsetHeight - 40;
+				
+				container.scrollTop += 10;
+			}
+			sidepanel_Info.blockDragging.style.top = newTop + "px";
+
+			let itemSibilings = [
+				...container.querySelectorAll("div.windos_message_block:not(.dragging)"),
+			];
+			let nextItem = itemSibilings.find((sibiling) => {
+				return (
+				  e.clientY - container.getBoundingClientRect().top + sidepanel_Info.blockOffsetHeight / 2 <=
+				  sibiling.offsetTop + sibiling.offsetHeight / 2
+				);
+			});
+
+			itemSibilings.forEach((sibiling) => {
+				sibiling.style.marginTop = "";
+			});
+
+			if (nextItem) {
+				nextItem.style.marginTop = sidepanel_Info.blockDragging.offsetHeight + "px";
+			}
+			container.insertBefore(sidepanel_Info.blockDragging, nextItem);
+        }
 	}
 	function drag_mouseup(e){
-		if (is_Dragging) {
-			is_Dragging = false;
+		if (sidepanel_Info.isDraggingEdge) {
+			sidepanel_Info.isDraggingEdge = false;
 			const bodyHeight = document.body.offsetHeight;
-			const offset = e.clientY - dragging_OffsetY;
+			const offset = e.clientY - sidepanel_Info.draggingOffsetY;
 			
 			const title_area = document.getElementById("title_area");
 			const keyword_area = document.getElementById("keyword_area");
 			
 			const maxheight = (document.body.offsetHeight - 231);
 
-			const title_area_precent = (Math.max(150, Math.min(title_OffsetHeight + offset, maxheight)) / bodyHeight * 100);
+			const title_area_precent = (Math.max(150, Math.min(sidepanel_Info.titleOffsetHeight + offset, maxheight)) / bodyHeight * 100);
 			title_area.style.height = (title_area_precent) + '%';
 			keyword_area.style.height = 'calc(' + (100 - title_area_precent) + '% - 59px)';
 			document.body.style.userSelect = "auto";
 		}
-	}
-	// ====== 請求設定資料 ====== 
-	chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
-		is_DarkMode = response.is_darkmode;
-		is_SwitchWithTab = response.is_switchwithtab;
-		current_Keyword = response.current_Keyword;
-		
-		console.log(`${is_SwitchWithTab} ${current_Keyword}`);
-		chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-			recordedKeywordsUpdate(response.recorded_keywords);
-			if (current_Keyword == 'NoIndexNote'){
-				chrome.runtime.sendMessage({event_name: 'quest-noindex-notedata-sidepanel'}, (t) => {});
-			}
-			else if (Boolean(current_Keyword)){
-				chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: current_Keyword, is_first: true}, (t) => {});
-			}
-		});
-		
-		runSetting();
-	});
-}
-	
-importCKeditorLanguageFile();
-runInitial();
 
-setTimeout(() => {
-	delayconnect();
-}, 9000);
-//網址 關鍵字清單 釘選
+	}
+	
+	// ====== 請求設定資料 ====== 
+}
+
+createPortToBackground(5000, true);

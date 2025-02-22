@@ -1,79 +1,138 @@
-//資料控制項
-var is_AreadySearch = false;
-var is_MarkHide = true;
-var is_PopupHide = true;
-var popup_is_needrefresh = true;
-var is_onlyShowOne = null;
-var is_PopupContentExpand = false;
+const EXCLUDE_SEARCH_NODE = ['KEYWORDNOTE', 'TEXTAREA'];
 
-var timeout_PopupMouseOn;
-var timeout_PopupMouseOut;
+var keyword_KeyIndex = [];
+var self_PageInfo = {
+	isSearched: false,
+	keywordNodeFound: [],// [[node, is_showed, keywords_in_node], ...]
+	keywordFound: {},// {keyword: count_in_page, ...}
+	isMarkhide: false,
+	isOnlyShowOne: null,
+	focusON: -1
+}
+var self_PagePopupInfo = {
+	status: 'close',
+	targetNode: null,
+	currentKeywords: [],
+	currentShowIndex: 0,
+	isMutipleMark: false,
+	isContentExpand: false
+};
 
-var scroll_IntoIndex = 0;
-
-var current_PopupMark = [];
-var current_PopupIndex = 0;
-var is_MutipleMark = false;
-//通用設定資料
-var is_DarkMode = true;
-
-var is_FirstTrack = true;
-const track_Host = ['www.youtube.com', 'www.twitch.tv'];
-const excludeSearchNode = ['KEYWORDNOTE', 'TEXTAREA']
-
-//儲存資料
-var searched_KeywordNodes = [];// [node, is_showed, keywords_in_node]
-var searched_Keywords = {};//{keyword: count_in_page}
-
-// ====== 請求設定資料 ====== 
-chrome.runtime.sendMessage({event_name: 'quest-extension-setting'}, (response) => {
-	is_DarkMode = response.is_darkmode;
-});
-
-// ====== 資料回傳 ====== 
-function responsePageStatus(callback){
-	//console.log({is_areadysearch: is_AreadySearch, is_markhide: is_MarkHide});
-	
-	callback({is_areadysearch: is_AreadySearch,
-			is_markhide: is_MarkHide,
-			host: location.host,
-			url: location.href,
-			title: document.title
-			});
-			
-	if (track_Host.includes(location.host) && is_FirstTrack){
-		trackHostEventBuild(location.host);
-	}
+var settings = {
+	isDarkMode: true
 }
 
-function responseSearchedKeywords(){
-	//console.log({searched_keywords: searched_Keywords});
-	
-	return {searched_keywords: searched_Keywords};
-}
-
-function trackHostEventBuild(host){
-	switch(host){
-		case 'www.youtube.com':
-			document.addEventListener('yt-page-data-updated', trackHostListener);
-			is_FirstTrack = False;
-			break;
-		case 'www.twitch.tv':
-			let target = document.querySelector('head > title');
-			let observer = new window.WebKitMutationObserver(trackHostListener);
-			observer.observe(target, {childList: true});
-			break;
-	}
-}
-
-function trackHostListener(){
-	chrome.runtime.sendMessage({event_name: 'webapp-url-page-updated'}, (t) => {});
-}
 // ====== 資料處理 ====== 
-function insertPopupHtml(){
-	var keyword_container = document.createElement('keywordnote');
+async function responseSelfPageStatus(){
+	return {
+		isSearched: self_PageInfo.isSearched,
+		keywordFound: self_PageInfo.keywordFound,
+		isMarkhide: self_PageInfo.isMarkhide,
+		keywordFound: self_PageInfo.keywordFound
+	}
+}
+
+async function triggerAlertWindow(message, type){
+	const Notification = {
+		event_name: 'send-notification-message',
+		message: message,
+		notification_type: type
+	};
 	
-	keyword_container.innerHTML = `<div class="keywordnote_popup">
+	await chrome.runtime.sendMessage(Notification);
+}
+
+async function refreshPopupKeyword(trgetKeyword){
+	const keywordnote_popup = document.querySelector('keywordnote div.keywordnote_popup');
+	
+	const PopupTitle = keywordnote_popup.querySelector('span#keyword_title');
+	const PopupContent = keywordnote_popup.querySelector('div.note_content');
+	const PopupTimeStamp = keywordnote_popup.querySelector('div.windos_message_timestamp');
+	
+	PopupTitle.innerText = trgetKeyword;
+	PopupContent.innerText = 'Waiting for database response...';
+	
+	const QuestData = {
+		event_name: 'quest-keyword-notedata-preview',
+		keywordKeyIndex: trgetKeyword,
+	};
+	
+	await chrome.runtime.sendMessage(QuestData, function (returnData){
+		if (returnData.isFinish){
+			if (returnData.isExist){
+				if (!returnData.noteForPreview.isEmpty){
+					PopupContent.innerText = returnData.noteForPreview.note[0];
+					PopupTimeStamp.innerText = returnData.noteForPreview.note[1];
+				}
+				else{
+					PopupContent.innerText = "該關鍵字未被記錄筆記，無法顯示預覽筆記";//needI18N
+				PopupTimeStamp.innerText = "null";//needI18N
+				}
+			}
+			else{
+				PopupContent.innerText = "該關鍵字未被記錄，無法顯示預覽筆記";//needI18N
+				PopupTimeStamp.innerText = "null";//needI18N
+			}
+		}
+		else{
+			PopupContent.innerText = "讀取筆記出現錯誤，無法顯示預覽筆記"//needI18N
+			PopupTimeStamp.innerText = "null";//needI18N
+		}
+	});
+}
+
+function getPreviouskeywordNode(startIndex, targetKeyword = undefined){
+	const KeywordNodeLength = self_PageInfo.keywordNodeFound.length;
+	let TargetMarkIndex = self_PageInfo.focusON < startIndex ? startIndex : (TargetMarkIndex - 1 + KeywordNodeLength) % KeywordNodeLength;
+	let isFound = false;
+	
+	for (;TargetMarkIndex == startIndex; (TargetMarkIndex - 1 + KeywordNodeLength) % KeywordNodeLength){
+		const [node, is_showed, keywords_in_node] = self_PageInfo.keywordNodeFound[TargetMarkIndex];
+		
+		if (!is_showed){
+			continue;
+		}
+		else if (!keywords_in_node.includes(targetKeyword)){
+			continue;
+		}
+		else{
+			return [true, self_PageInfo.keywordNodeFound[TargetMarkIndex]];
+		}
+	}
+	
+	return [false, null];
+}
+function getNextkeywordNode(startIndex, targetKeyword = undefined){
+	const KeywordNodeLength = self_PageInfo.keywordNodeFound.length;
+	let TargetMarkIndex = self_PageInfo.focusON < startIndex ? startIndex : (TargetMarkIndex + 1 + KeywordNodeLength) % KeywordNodeLength;
+	let isFound = false;
+	
+	for (;TargetMarkIndex == startIndex; (TargetMarkIndex + 1 + KeywordNodeLength) % KeywordNodeLength){
+		const [node, is_showed, keywords_in_node] = self_PageInfo.keywordNodeFound[TargetMarkIndex];
+		
+		if (!is_showed){
+			continue;
+		}
+		else if (!keywords_in_node.includes(targetKeyword)){
+			continue;
+		}
+		else{
+			return [true, self_PageInfo.keywordNodeFound[TargetMarkIndex]];
+		}
+	}
+	
+	return [false, null];
+}
+
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ====== 頁面搜尋 ======
+function insertPopupHtml(){
+	var KeywordContainer = document.createElement('keywordnote');
+	
+	KeywordContainer.innerHTML = `<div class="keywordnote_popup">
 									<div class="popup_header">
 									  <div class="title_boder">
 											<span id="keyword_title">某個關鍵字</span>
@@ -111,603 +170,612 @@ function insertPopupHtml(){
 									  </div>
 									</div>
 								</div>`;
-	keyword_container.querySelector("button#keyword_note_sidepanel_show").title = chrome.i18n.getMessage('keyword_note_sidepanel_show__title');
-	keyword_container.querySelector("button#keyword_note_highlight").title = chrome.i18n.getMessage('keyword_note_highlight__title');
+	KeywordContainer.querySelector("button#keyword_note_sidepanel_show").title = chrome.i18n.getMessage('keyword_note_sidepanel_show__title');
+	KeywordContainer.querySelector("button#keyword_note_highlight").title = chrome.i18n.getMessage('keyword_note_highlight__title');
 	
-	if (is_DarkMode){
-		keyword_container.classList.add('dark');
+	if (settings.isDarkMode){
+		KeywordContainer.classList.add('dark');
 	}
-	document.body.appendChild(keyword_container);
+	document.body.appendChild(KeywordContainer);
 	
-	const popup = keyword_container.querySelector('div.keywordnote_popup');
+	const keywordnote_popup = KeywordContainer.querySelector('div.keywordnote_popup');
 	
-	popup.addEventListener("mouseover", popupMouseoverEvent);
-	popup.addEventListener("mouseout", popupMouseoutEvent);
-	popup.onwheel = function (event){ 
+	keywordnote_popup.addEventListener("mouseover", popupMouseoverEvent);
+	keywordnote_popup.addEventListener("mouseout", popupMouseoutEvent);
+	keywordnote_popup.onwheel = function (event){ 
 		event.preventDefault();  
 	};
 	
-	keyword_container.querySelector('button#keyword_note_sidepanel_show').addEventListener("click", popupSidepanelShow);
-	//keyword_container.querySelector('button#keyword_note_invisible').addEventListener("click", popupKeywordInvisible);
-	keyword_container.querySelector('button#keyword_note_highlight').addEventListener("click", popupKeywordHighlight);
+	KeywordContainer.querySelector('button#keyword_note_sidepanel_show').addEventListener("click", popupSidepanelShow);
+	KeywordContainer.querySelector('button#keyword_note_highlight').addEventListener("click", popupKeywordHighlight);
 	
-	keyword_container.querySelector('div.note_content').onwheel = function (event){ 
+	KeywordContainer.querySelector('div.note_content').onwheel = function (event){ 
 		event.preventDefault();  
 
-		const step = 15;  
-		const last_scrollTop = this.scrollTop;
+		const Step = 15;  
+		const LastScrollTop = this.scrollTop;
 		if(event.deltaY < 0){  
-			this.scrollTop -= step;  
+			this.scrollTop -= Step;  
 		} else {  
-			this.scrollTop += step;  
+			this.scrollTop += Step;  
 		}
 
-		if (last_scrollTop == this.scrollTop && last_scrollTop > 0){
+		if (LastScrollTop == this.scrollTop && LastScrollTop > 0){
 			this.parentElement.querySelector('div.bottom_fade').classList.add('hide');
 		}
 		else{
 			this.parentElement.querySelector('div.bottom_fade').classList.remove('hide');
 		}
 	};
-	keyword_container.querySelector('div.pin_note_container').addEventListener("click", clickNoteContent);
+	KeywordContainer.querySelector('div.pin_note_container').addEventListener("click", clickNoteContent);
 	
-	const keyword_title = keyword_container.querySelector("span#keyword_title");
+	const keyword_title = KeywordContainer.querySelector("span#keyword_title");
 	keyword_title.onwheel = function (event){ 
 		if(is_MutipleMark){ 
 			event.preventDefault();  
 			
 			if(event.deltaY < 0){  
-				popup_previouskeyword();  
+				popupSwitchPreviouskeyword();  
 			} else {  
-				popup_nextkeyword();  
+				popupSwitchNextkeyword();  
 			}  
 		}
 	};
 }
-function triggerAlertWindow(message, type){
-	notification = {
-		event_name: 'send-notification-message',
-		message: message,
-		notification_type: type
+
+function makeKeywordSingleNode(innerText, keywordsInNode){
+	const NewKeywordNode = document.createElement('kw');
+	NewKeywordNode.innerText = innerText;
+	NewKeywordNode.classList.add("highlight-keyword");
+	NewKeywordNode.setAttribute('keywords', keywordsInNode);
+
+	return NewKeywordNode;
+}
+function makeKeywordMutipleNode(innerText, keywordsInNode){
+	const NewKeywordNode = document.createElement('kw');
+	NewKeywordNode.innerText = innerText;
+	NewKeywordNode.classList.add("highlight-keyword");
+	NewKeywordNode.classList.add("highlight-keyword-mutiple");
+	NewKeywordNode.setAttribute('keywords', keywordsInNode);
+
+	return NewKeywordNode;
+}
+	
+async function searchKeywords(){
+	let returnData = {
+		"isFinish": false,
+		"found": 0
 	};
 	
-	chrome.runtime.sendMessage(notification, (t) => {});
-}
-
-function makeKeywordSingleNode(innertext, keywords_in_node){
-	const new_keywordnode = document.createElement('kw');
-	new_keywordnode.innerText = innertext;
-	new_keywordnode.classList.add("highlight-keyword");
-	new_keywordnode.setAttribute('keywords', keywords_in_node);
-
-	return new_keywordnode;
-}
-function makeKeywordMutipleNode(innertext, keywords_in_node){
-	const new_keywordnode = document.createElement('kw');
-	new_keywordnode.innerText = innertext;
-	new_keywordnode.classList.add("highlight-keyword");
-	new_keywordnode.classList.add("highlight-keyword-mutiple");
-	new_keywordnode.setAttribute('keywords', keywords_in_node);
-
-	return new_keywordnode;
-}
+	let keywords_searched_count = {};
 	
-function searchKeywords(callback){
-	chrome.runtime.sendMessage({event_name: 'quest-recorded-keywords'}, (response) => {
-		/*const recorded_keywords = Object.keys(response.recorded_keywords);
+	const WindowHeight = document.height || document.body.offsetHeight;
+	const WindowWidth = document.width || document.body.offsetWidth;
 	
-		const keywords_searched_count = response.recorded_keywords;*/
-		
-		const recorded_keywords = response.recorded_keywords;
-		let keywords_searched_count = {};
-		
-		const windowHeight = (document.height !== undefined) ? document.height : document.body.offsetHeight;
-		const windowWidth = (document.width !== undefined) ? document.width : document.body.offsetWidth;
-		
-		const windowScrollX = window.scrollX;
-		const windowScrollY = window.scrollY;
-		
-		recorded_keywords.forEach(function (Keyword) {
-			keywords_searched_count[Keyword] = 0;
-		});
-		
-		function isKeywordSpan(node){
-			try{
-				return node.classList.contains('highlight-keyword');
-			}catch{
-				return false
+	const WindowScrollX = window.scrollX;
+	const WindowScrollY = window.scrollY;
+	
+	keyword_KeyIndex.forEach(function (Keyword) {
+		keywords_searched_count[Keyword] = 0;
+	});
+	
+	function isKeywordSpan(node){
+		try{
+			return node.classList.contains('highlight-keyword');
+		}catch{
+			return false
+		}
+	}		
+	function isHidden(el) {
+		try{
+			if (el.offsetHeight == 0 || el.offsetWidth == 0){
+				return true
 			}
-		}		
-		function isHidden(el) {
-			try{
-				if (el.offsetHeight == 0 || el.offsetWidth == 0){
-					return true
-				}
-				return !el.checkVisibility()
-			}catch{
-				return (el.offsetParent === null)
+			return !el.checkVisibility()
+		}catch{
+			return (el.offsetParent === null)
+		}
+	}
+	function isHiddenHardCheck(el) {
+		rect = el.getBoundingClientRect();
+		
+		if (rect.bottom + WindowScrollY < 0 || rect.right + WindowScrollX < 0){
+			return true
+		}
+		else if (rect.top > WindowHeight || rect.left > WindowWidth){
+			return true
+		}
+		else{
+			//topElt = document.elementFromPoint(x,y);
+			
+			//return el.isSameNode(topElt)
+			return false
+		}
+	}
+	
+	function mergeOverlappingRanges(keywordsInNode){
+		keywordsInNode.sort((a, b) => a.start - b.start);
+		
+		const Merged = [];
+		let currentRange = keywordsInNode[0];
+		for (let index = 1; index < keywordsInNode.length; index++) {
+			const NextRange = keywordsInNode[index];
+			if (NextRange.start <= currentRange.end) {
+				currentRange.end = Math.max(currentRange.end, NextRange.end);
+				currentRange.keywords.push(NextRange.keywords[0]);
+			}
+			else {
+				Merged.push(currentRange);
+				currentRange = NextRange;
 			}
 		}
-		function isHidden_hardCheck(el) {
-			rect = el.getBoundingClientRect();
-			
-			if (rect.bottom + windowScrollY < 0 || rect.right + windowScrollX < 0){
-				return true
+		
+		Merged.push(currentRange);
+		return Merged;
+	}
+	function stringSegmentationProcessing(nodeText, mergedRanges){
+		let startingPointer = 0;
+		let nodeList = [];
+		let keywordNodeList = [];
+		
+		for (const KeywordRange of mergedRanges) {
+			if (KeywordRange.start > startingPointer){
+				const NewTextnodeText = nodeText.substr(startingPointer, (KeywordRange.start - startingPointer));
+				const NewTextnode = document.createTextNode(NewTextnodeText);
+				
+				nodeList.push(NewTextnode);
 			}
-			else if (rect.top > windowHeight || rect.left > windowWidth){
-				return true
+			
+			const NewKeywordNodeText = nodeText.substr(KeywordRange.start, (KeywordRange.end - KeywordRange.start));
+			
+			if(KeywordRange.keywords.length > 1){
+				const NewKeywordNode = makeKeywordMutipleNode(NewKeywordNodeText, KeywordRange.keywords);
+				
+				nodeList.push(NewKeywordNode);
+				keywordNodeList.push([NewKeywordNode, true, KeywordRange.keywords]);
 			}
 			else{
-				//topElt = document.elementFromPoint(x,y);
+				const NewKeywordNode = makeKeywordSingleNode(NewKeywordNodeText, KeywordRange.keywords);
 				
-				//return el.isSameNode(topElt)
-				return false
+				nodeList.push(NewKeywordNode);
+				keywordNodeList.push([NewKeywordNode, true, KeywordRange.keywords]);
 			}
+			
+			startingPointer = KeywordRange.end;
 		}
 		
-		function mergeOverlappingRanges(keywords_in_node){
-			keywords_in_node.sort((a, b) => a.start - b.start);
+		if (nodeText.length !== startingPointer){
+			const NewTextnodeText = nodeText.substr(startingPointer, (nodeText.length - startingPointer));
+			const NewTextnode = document.createTextNode(NewTextnodeText);
 			
-			const merged = [];
-			let currentRange = keywords_in_node[0];
-			for (let index = 1; index < keywords_in_node.length; index++) {
-				const nextRange = keywords_in_node[index];
-				if (nextRange.start <= currentRange.end) {
-					currentRange.end = Math.max(currentRange.end, nextRange.end);
-					currentRange.keywords.push(nextRange.keywords[0]);
-				}
-				else {
-					merged.push(currentRange);
-					currentRange = nextRange;
-				}
-			}
-			
-			merged.push(currentRange);
-			return merged;
-		}
-		function stringSegmentationProcessing(node_text, merged_ranges){
-			let starting_pointer = 0;
-			let node_list = [];
-			let keywordnode_list = [];
-			
-			for (const keyword_range of merged_ranges) {
-				if (keyword_range.start > starting_pointer){
-					const new_textnode_text = node_text.substr(starting_pointer, (keyword_range.start - starting_pointer));
-					const new_textnode = document.createTextNode(new_textnode_text);
-					
-					node_list.push(new_textnode);
-				}
-				
-				const new_keywordnode_text = node_text.substr(keyword_range.start, (keyword_range.end - keyword_range.start));
-				
-				if(keyword_range.keywords.length  > 1){
-					const new_keywordnode = makeKeywordMutipleNode(new_keywordnode_text, keyword_range.keywords);
-					
-					node_list.push(new_keywordnode);
-					keywordnode_list.push([new_keywordnode, true, keyword_range.keywords]);
-				}
-				else{
-					const new_keywordnode = makeKeywordSingleNode(new_keywordnode_text, keyword_range.keywords);
-					
-					node_list.push(new_keywordnode);
-					keywordnode_list.push([new_keywordnode, true, keyword_range.keywords]);
-				}
-				
-				starting_pointer = keyword_range.end;
-			}
-			
-			if (node_text.length !== starting_pointer){
-				let new_textnode_text = node_text.substr(starting_pointer, (node_text.length - starting_pointer));
-				let new_textnode = document.createTextNode(new_textnode_text);
-				
-				node_list.push(new_textnode);
-			}
-			
-			return [node_list, keywordnode_list];
+			nodeList.push(NewTextnode);
 		}
 		
-		function searchRecursion(node){
-			if (node.nodeType === Node.TEXT_NODE){
-				const node_text = node.textContent;
-				let keywords_in_node = []
+		return [nodeList, keywordNodeList];
+	}
+	
+	function searchRecursion(node){
+		if (node.nodeType === Node.TEXT_NODE){
+			const NodeText = node.textContent;
+			let keywordsInNode = []
+			
+			if (isHiddenHardCheck(node.parentNode)){
+				return;
+			}
+			
+			for (const Keyword of keyword_KeyIndex) {
+				let startIndex = 0, keywordIndex;
 				
-				if (isHidden_hardCheck(node.parentNode)){
-					return;
+				while ((keywordIndex = NodeText.indexOf(Keyword, startIndex)) > -1){
+					keywordsInNode.push({start: keywordIndex, end: (keywordIndex + Keyword.length), keywords: [Keyword]});
+					startIndex = (keywordIndex + Keyword.length);
 				}
 				
-				for (const keyword of recorded_keywords) {
-					let start_index = 0, keyword_index;
-					
-					while ((keyword_index = node_text.indexOf(keyword, start_index)) > -1){
-						keywords_in_node.push({start: keyword_index, end: (keyword_index + keyword.length), keywords: [keyword]});
-						start_index = (keyword_index + keyword.length);
-					}
-					
-					if (start_index !== 0) {
-						keywords_searched_count[keyword] += 1;
-					}
+				if (startIndex !== 0) {
+					keywords_searched_count[Keyword] += 1;
 				}
+			}
 
-				if (keywords_in_node.length <= 0){
-					return;
-				}
+			if (keywordsInNode.length <= 0){
+				return;
+			}
 
-				const merged_ranges = mergeOverlappingRanges(keywords_in_node);
-				
-				const [node_list, new_keywordnode_list] = stringSegmentationProcessing(node_text, merged_ranges);
-				
-				for (const replace_node of node_list) {
-					node.parentNode.insertBefore(replace_node, node);
-				}
-				
-				for (const keyword_node of new_keywordnode_list) {
-					settingKeywordnodesEventListener(keyword_node[0]);
-				}
-				
-				node.remove();
-				//delete node;
-				searched_KeywordNodes = searched_KeywordNodes.concat(new_keywordnode_list);
+			const MergedRanges = mergeOverlappingRanges(keywordsInNode);
+			
+			const [NodeList, NewKeywordNodeList] = stringSegmentationProcessing(NodeText, MergedRanges);
+			
+			for (const ReplaceNode of NodeList) {
+				node.parentNode.insertBefore(ReplaceNode, node);
 			}
-			else if(excludeSearchNode.includes(node.nodeName)){
-				return
+			
+			for (const KeywordNodeInfo of NewKeywordNodeList) {
+				settingKeywordnodesEventListener(KeywordNodeInfo[0]);
 			}
-			else if (isKeywordSpan(node)){
-				return
-			}
-			else if(isHidden(node)){
-				return
-			}
-			else if (node.nodeType === Node.ELEMENT_NODE) {
-				for (var i = 0; i < node.childNodes.length; i++) {
-					searchRecursion(node.childNodes[i]);
-				}
+			
+			node.remove();
+			self_PageInfo.keywordNodeFound = self_PageInfo.keywordNodeFound.concat(NewKeywordNodeList);
+		}
+		else if(EXCLUDE_SEARCH_NODE.includes(node.nodeName)){
+			return
+		}
+		else if (isKeywordSpan(node)){
+			return
+		}
+		else if(isHidden(node)){
+			return
+		}
+		else if (node.nodeType === Node.ELEMENT_NODE) {
+			for (var i = 0; i < node.childNodes.length; i++) {
+				searchRecursion(node.childNodes[i]);
 			}
 		}
-		
-		// main code
-		searched_KeywordNodes = [];
-		searched_Keywords = {};
-		let keycount = 0;
+	}
+	
+	// main code
+	try {
+		self_PageInfo.keywordNodeFound = [];
+		self_PageInfo.keywordFound = {};
 		const body = document.body;
 
 		for (let i = 0; i < body.childNodes.length; i++) {
 			searchRecursion(body.childNodes[i]);
 		}
 		
-		if (searched_KeywordNodes.length > 0){
-			triggerAlertWindow(chrome.i18n.getMessage('content_script_found').replace('@', `${searched_KeywordNodes.length}`), 'ok');
+		if (self_PageInfo.keywordNodeFound.length > 0){
+			triggerAlertWindow(chrome.i18n.getMessage('content_script_found').replace('@', `${self_PageInfo.keywordNodeFound.length}`), 'ok');
 			
-			if (!is_AreadySearch){
+			if (!self_PageInfo.isSearched){
 				insertPopupHtml();
 			}
 			
-			is_AreadySearch = true;
-			is_MarkHide = false;
+			self_PageInfo.isSearched = true;
+			self_PageInfo.isMarkhide = false;
 			
-			for (const keyword of recorded_keywords) {
-				if (keywords_searched_count[keyword] === 0){
-					delete keywords_searched_count[keyword];
+			for (const Keyword of keyword_KeyIndex) {
+				if (keywords_searched_count[Keyword] === 0){
+					delete keywords_searched_count[Keyword];
 				}
 				else{
-					keycount += 1;
+					returnData.found += 1;
 				}
 			}
-			searched_Keywords = keywords_searched_count;
+			self_PageInfo.keywordFound = keywords_searched_count;
+			self_PageInfo.focusON = -1;
 		}
 		else{
 			triggerAlertWindow(chrome.i18n.getMessage('content_script_notfound'), 'nofound');
 			
-			is_AreadySearch = false;
-			is_MarkHide = false;
+			self_PageInfo.isSearched = false;
+			self_PageInfo.isMarkhide = false;
 		}
 		
-		callback(keycount);
-	});
+		returnData.isFinish = true;
+		return returnData;
+	} catch (e){
+		
+		returnData.isFinish = false;
+		return returnData;
+	}
 }
 function settingKeywordnodesEventListener(node) {
 	node.addEventListener("mouseover", keywordMouseoverEvent);
 	node.addEventListener("mouseout", keywordMouseoutEvent);
 }
 
-function showAllKeywordMark(callback){
-	is_MarkHide = false;
-	//callback(true);
+async function showAllKeywordMark(){
+	let returnData = {
+		"isFinish": false
+	};
 	
-	for (let searched_index = 0; searched_index < searched_KeywordNodes.length; searched_index++) {
-		const [node, is_showed, keywords_in_node] = searched_KeywordNodes[searched_index];
+	self_PageInfo.isMarkhide = false;
+	
+	for (let searchedIndex = 0; searchedIndex < self_PageInfo.keywordNodeFound.length; searchedIndex++) {
+		const [Node, IsShowed, KeywordsInNode] = self_PageInfo.keywordNodeFound[searchedIndex];
 		
-		if(!is_showed){
-			const keywordnode_text = node.textContent;
+		if(!IsShowed){
+			const KeywordNodeText = Node.textContent;
 			
-			if(keywords_in_node.length > 1){
-				const new_keywordnode = makeKeywordMutipleNode(keywordnode_text, keywords_in_node);
+			if(KeywordsInNode.length > 1){
+				const NewKeywordNode = makeKeywordMutipleNode(KeywordNodeText, KeywordsInNode);
 				
-				searched_KeywordNodes[searched_index][0].replaceWith(new_keywordnode);
-				//delete searched_KeywordNodes[searched_index][0];
-				searched_KeywordNodes[searched_index][0] = new_keywordnode;
-				searched_KeywordNodes[searched_index][1] = true;
+				self_PageInfo.keywordNodeFound[searchedIndex][0].replaceWith(NewKeywordNode);
+
+				self_PageInfo.keywordNodeFound[searchedIndex][0] = NewKeywordNode;
+				self_PageInfo.keywordNodeFound[searchedIndex][1] = true;
 				
-				settingKeywordnodesEventListener(new_keywordnode);
+				settingKeywordnodesEventListener(NewKeywordNode);
 			}
 			else{
-				const new_keywordnode = makeKeywordSingleNode(keywordnode_text, keywords_in_node);
+				const NewKeywordNode = makeKeywordSingleNode(KeywordNodeText, KeywordsInNode);
 				
-				searched_KeywordNodes[searched_index][0].replaceWith(new_keywordnode);
-				//delete searched_KeywordNodes[searched_index][0];
-				searched_KeywordNodes[searched_index][0] = new_keywordnode;
-				searched_KeywordNodes[searched_index][1] = true;
+				self_PageInfo.keywordNodeFound[searchedIndex][0].replaceWith(NewKeywordNode);
+
+				self_PageInfo.keywordNodeFound[searchedIndex][0] = NewKeywordNode;
+				self_PageInfo.keywordNodeFound[searchedIndex][1] = true;
 				
-				settingKeywordnodesEventListener(new_keywordnode);
+				settingKeywordnodesEventListener(NewKeywordNode);
 			}
 		}
 	}
 	
-	is_onlyShowOne = null;
-	callback(true);
-}
-function hideAllKeywordMark(callback){
-	is_MarkHide = true;
-	//callback(true);
+	self_PageInfo.isOnlyShowOne = null;
+	returnData.isFinish = true;
 	
-	for (let searched_index = 0; searched_index < searched_KeywordNodes.length; searched_index++) {
-		const [node, is_showed, keywords_in_node] = searched_KeywordNodes[searched_index];
+	return returnData;
+}
+async function hideAllKeywordMark(){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	self_PageInfo.isMarkhide = true;
+	
+	for (let searchedIndex = 0; searchedIndex < self_PageInfo.keywordNodeFound.length; searchedIndex++) {
+		const [Node, IsShowed, KeywordsInNode] = self_PageInfo.keywordNodeFound[searchedIndex];
 		
-		if(is_showed){
-			const keywordnode_text = node.innerText;
+		if(IsShowed){
+			const KeywordNodeText = Node.innerText;
 				
-			const new_textnode = document.createTextNode(keywordnode_text);
+			const new_textnode = document.createTextNode(KeywordNodeText);
 			
-			searched_KeywordNodes[searched_index][0].replaceWith(new_textnode);
-			//delete searched_KeywordNodes[searched_index][0];
-			searched_KeywordNodes[searched_index][0] = new_textnode;
-			searched_KeywordNodes[searched_index][1] = false;
+			self_PageInfo.keywordNodeFound[searchedIndex][0].replaceWith(new_textnode);
+			self_PageInfo.keywordNodeFound[searchedIndex][0] = new_textnode;
+			self_PageInfo.keywordNodeFound[searchedIndex][1] = false;
 		}
 	}
 	
-	is_onlyShowOne = null;
-	callback(true);
+	self_PageInfo.isOnlyShowOne = null;
+	returnData.isFinish = true;
+	
+	return returnData;
 }
-function onlyShowOneKeywordMark(keyword){
-	function mutipleKeywordNodeProcess(keyword_node){
-		const node_content = keyword_node.innerText
-		const keyword_index = keyword_node.innerText.indexOf(keyword);
+
+function popupSwitchPreviouskeyword(){
+	const PreviousIndex = (self_PagePopupInfo.currentShowIndex - 1 + self_PagePopupInfo.currentKeywords.length) % self_PagePopupInfo.currentKeywords.length;
+	const PreviousKeyword = self_PagePopupInfo.currentKeywords[PreviousIndex];
+	
+	refreshPopupKeyword(PreviousKeyword);
+}
+function popupSwitchNextkeyword(){
+	const NextIndex = (self_PagePopupInfo.currentShowIndex + 1 + self_PagePopupInfo.currentKeywords.length) % self_PagePopupInfo.currentKeywords.length;
+	const NextKeyword = self_PagePopupInfo.currentKeywords[NextIndex];
+	
+	refreshPopupKeyword(NextKeyword);
+}
+
+function onlyShowOneKeywordMark(targetKeyword){
+	function mutipleKeywordNodeProcess(keywordNode){
+		const keywordNodeContent = keywordNode.innerText
+		const targetKeywordIndex = keywordNode.innerText.indexOf(targetKeyword);
 		
-		keyword_node.removeChild(keyword_node.lastChild)
+		keywordNode.removeChild(keywordNode.lastChild)
 		
-		keyword_node.appendChild(document.createTextNode(node_content.substr(0, keyword_index)));
-		keyword_node.appendChild(makeKeywordSingleNode(node_content.substr(keyword_index, keyword.length), [keyword]));
-		keyword_node.appendChild(document.createTextNode(node_content.substr((keyword_index + keyword.length), keyword_node.innerText.length)));
+		keywordNode.appendChild(document.createTextNode(keywordNodeContent.substr(0, targetKeywordIndex)));
+		keywordNode.appendChild(makeKeywordSingleNode(keywordNodeContent.substr(targetKeywordIndex, targetKeyword.length), [targetKeyword]));
+		keywordNode.appendChild(document.createTextNode(keywordNodeContent.substr((targetKeywordIndex + targetKeyword.length), keywordNodeContent.length)));
 		
-		return keyword_node;
+		return keywordNode;
 	}
 		
-	// main code
-	if (!is_onlyShowOne){
-		for (let searched_index = 0; searched_index < searched_KeywordNodes.length; searched_index++) {
-			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[searched_index];
+	if (!Boolean(self_PageInfo.isOnlyShowOne)){
+		for (let searchedIndex = 0; searchedIndex < self_PageInfo.keywordNodeFound.length; searchedIndex++) {
+			const [Node, IsShowed, KeywordsInNode] = self_PageInfo.keywordNodeFound[searchedIndex];
 			
-			if(keywords_in_node.indexOf(keyword) > -1){
-				if (keywords_in_node.length > 1){
-					if(!is_showed){
-						const new_keywordnode_unprocessed = makeKeywordMutiplenode(node.innerText, keywords_in_node);
+			if(KeywordsInNode.indexOf(targetKeyword) > -1){
+				if (KeywordsInNode.length > 1){
+					if(!IsShowed){
+						const NewKeywordNodeUnprocessed = makeKeywordMutiplenode(Node.innerText, keywords_in_node);
 						
-						const new_keywordnode = mutipleKeywordNodeProcess(new_keywordnode_unprocessed);
-						searched_KeywordNodes[searched_index][0].replaceWith(new_keywordnode);
-						//delete searched_KeywordNodes[searched_index][0];
-						searched_KeywordNodes[searched_index][0] = new_keywordnode;
-						searched_KeywordNodes[searched_index][1] = true;
+						const NewKeywordnode = mutipleKeywordNodeProcess(NewKeywordNodeUnprocessed);
+						self_PageInfo.keywordNodeFound[searchedIndex][0].replaceWith(new_keywordnode);
+						
+						self_PageInfo.keywordNodeFound[searchedIndex][0] = new_keywordnode;
+						self_PageInfo.keywordNodeFound[searchedIndex][1] = true;
 						
 						settingKeywordnodesEventListener(new_keywordnode);
 					}
 					else{
-						const new_keywordnode = mutipleKeywordNodeProcess(node);
+						const new_keywordnode = mutipleKeywordNodeProcess(Node);
 					}
 				}
 				else{
-					if(is_showed){
+					if(IsShowed){
 						continue;
 					}
 					
-					const new_keywordnode = makeKeywordSingleNode(node.innerText, keywords_in_node);
-					searched_KeywordNodes[searched_index][0].replaceWith(new_keywordnode);
-					//delete searched_KeywordNodes[searched_index][0];
-					searched_KeywordNodes[searched_index][0] = new_keywordnode;
-					searched_KeywordNodes[searched_index][1] = true;
+					const new_keywordnode = makeKeywordSingleNode(Node.innerText, keywords_in_node);
+					self_PageInfo.keywordNodeFound[searchedIndex][0].replaceWith(new_keywordnode);
+
+					self_PageInfo.keywordNodeFound[searchedIndex][0] = new_keywordnode;
+					self_PageInfo.keywordNodeFound[searchedIndex][1] = true;
 					
 					settingKeywordnodesEventListener(new_keywordnode);
 				}
 			}
 			else{
-				if(is_showed){
-					const keywordnode_text = node.textContent;
+				if(IsShowed){
+					const keywordnode_text = Node.textContent;
 					
 					const new_textnode = document.createTextNode(keywordnode_text);
 					
-					searched_KeywordNodes[searched_index][0].replaceWith(new_textnode);
-					//delete searched_KeywordNodes[searched_index][0];
-					searched_KeywordNodes[searched_index][0] = new_textnode;
-					searched_KeywordNodes[searched_index][1] = false;
+					self_PageInfo.keywordNodeFound[searchedIndex][0].replaceWith(new_textnode);
+
+					self_PageInfo.keywordNodeFound[searchedIndex][0] = new_textnode;
+					self_PageInfo.keywordNodeFound[searchedIndex][1] = false;
 				}
 			}
 		}
 		
-		is_onlyShowOne = keyword;
+		self_PageInfo.isOnlyShowOne = targetKeyword;
 	}
 }
 
-function notedataFirstUpdate(keyword, keyword_notedata, X, Y){
-	clearTimeout(timeout_PopupMouseOut);
-	
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	const keyword_note_content = popup_window.querySelector('div.note_content');
-	const keyword_timestamp_container = popup_window.querySelector('div.windos_timestamp_container');
-	const keyword_title = popup_window.querySelector("span#keyword_title");
-	
-	if (keyword_notedata == null){
-		keyword_note_content.innerText = chrome.i18n.getMessage('windos_message_content_keyword_0noindex');
-		keyword_timestamp_container.innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0noindex');
-	}
-	else if(keyword_notedata.length == 0){
-		keyword_note_content.innerText = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
-		keyword_timestamp_container.innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
-	}
-	else{
-		const [note_content, note_timestamp, is_pinned] = keyword_notedata;
-		
-		keyword_note_content.innerHTML = note_content;
-		keyword_timestamp_container.innerText = note_timestamp;
-	}
-	
-	if (is_MutipleMark){
-		keyword_title.title = chrome.i18n.getMessage('popup_window_mutiplemark_keyword_title').replace('@', `${current_PopupMark.length - 1}`);
-	}
-	else{
-		keyword_title.title = chrome.i18n.getMessage('popup_window_singlemark_keyword_title');
-	}
-	
-	timeout_PopupMouseOn = setTimeout(function () {
-		const windowX = window.innerWidth;
-		const windowY = window.innerHeight;
-		
-		let mouseX = ((windowX - X) < 360) ? X - 350 : X + 10;
-		const mouseY = ((windowY - Y) < 220) ? Y - 230 + window.scrollY : Y + 10 + window.scrollY;
-		
-		if (windowX < 300 || mouseX < 0){
-			mouseX = 10;
-		}
-		if ((mouseY - window.scrollY) < 0){
-			mouseY = 10;
-		}
-		
-		popup_window.style.left = mouseX + "px";
-		popup_window.style.top = mouseY + "px";
-		
-		setTimeout(function () {
-			popup_window.classList.add('show');
-			is_PopupHide = false;
-		}, 490);
-	}, 1000);
-}
-function notedataUpdate(keyword, keyword_notedata, index){
-	clearTimeout(timeout_PopupMouseOut);
-	
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	const keyword_title = popup_window.querySelector('span#keyword_title');
-	const keyword_note_content = popup_window.querySelector('div.note_content');
-	const keyword_timestamp_container = popup_window.querySelector('div.windos_timestamp_container');
-	
-	keyword_title.innerText = keyword;
-	if (keyword_notedata == null){
-		keyword_note_content.innerText = chrome.i18n.getMessage('windos_message_content_keyword_0noindex');
-		keyword_timestamp_container.innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0noindex');
-	}
-	else if(keyword_notedata.length == 0){
-		keyword_note_content.innerText = chrome.i18n.getMessage('windos_message_content_keyword_0emptyindex');
-		keyword_timestamp_container.innerText = chrome.i18n.getMessage('windos_message_timestamp_keyword_0emptyindex');
-	}
-	else{
-		const [note_content, note_timestamp, is_pinned] = keyword_notedata;
-		
-		keyword_note_content.innerHTML = note_content;
-		keyword_timestamp_container.innerText = note_timestamp;
-	}
-
-	current_PopupIndex = index;
-}
-
-function scrollIntoPreviousMark(target_keyword){
-	const mark_length = searched_KeywordNodes.length
-	const current_KeywordNode = searched_KeywordNodes[scroll_IntoIndex][0]
-	
-	if (!is_AreadySearch){
+async function scrollToPreviousMark(targetKeyword = undefined){
+	if (!self_PageInfo.isSearched){
 		triggerAlertWindow(chrome.i18n.getMessage('content_script_needsearch_warning'), 'warning');
 	}
-	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
-		triggerAlertWindow(chrome.i18n.getMessage('content_script_notonlyshow_warning'), 'error');
-	}
-	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
-		triggerAlertWindow(chrome.i18n.getMessage('content_script_notonlyshow_warning'), 'error');
-	}
-	else{
-		for (let index = ((scroll_IntoIndex + mark_length - 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length - 1) % mark_length)) {
-			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[index];
-			
-			if (keywords_in_node.indexOf(target_keyword) > -1){
-				node.scrollIntoView({ block: "center" });
-				current_KeywordNode.classList.remove('highlight-viewed');
-				node.classList.add('highlight-viewed');
-				
-				scroll_IntoIndex = index;
-				break;
-			}
-		}
-	}
-}
-function scrollIntoNaxtMark(target_keyword){
-	const mark_length = searched_KeywordNodes.length
-	const current_KeywordNode = searched_KeywordNodes[scroll_IntoIndex][0]
-	
-	if (!is_AreadySearch){
-		triggerAlertWindow(chrome.i18n.getMessage('content_script_needsearch_warning'), 'warning');
-	}
-	else if (Boolean(is_onlyShowOne) && (is_onlyShowOne != target_keyword)){
-		triggerAlertWindow(chrome.i18n.getMessage('content_script_notonlyshow_warning'), 'error');
-	}
-	else if (!Object.keys(searched_Keywords).includes(target_keyword)){
-		triggerAlertWindow(chrome.i18n.getMessage('content_script_notonlyshow_warning'), 'error');
-	}
-	else{
-		for (let index = ((scroll_IntoIndex + mark_length + 1) % mark_length); scroll_IntoIndex != index; index = ((index + mark_length + 1) % mark_length)) {
-			const [node, is_showed, keywords_in_node] = searched_KeywordNodes[index];
-			
-			if (keywords_in_node.indexOf(target_keyword) > -1){
-				node.scrollIntoView({ block: "center" });
-				current_KeywordNode.classList.remove('highlight-viewed');
-				node.classList.add('highlight-viewed');
-				
-				scroll_IntoIndex = index;
-				break;
-			}
-		}
-	}
-}
-
-// ====== 元素事件 ====== 
-function keywordMouseoverEvent(event){
-	if(is_MarkHide){
+	else if (self_PageInfo.isMarkhide){
 		return;
 	}
 	
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	if (popup_window.classList.contains('show')){
-		popup_window.classList.add('quickclose');
+	const KeywordNodeLength = self_PageInfo.keywordNodeFound.length;
+	const startIndex = self_PageInfo.focusON < 0 ? 0 : (self_PageInfo.focusON - 1 + KeywordNodeLength) % KeywordNodeLength;
+	let NodeFound = null;
+	let IndexFound = startIndex;
+	
+	for (let i = 0; i < KeywordNodeLength; i++){
+		const TargetMarkIndex = (startIndex + i + KeywordNodeLength) % KeywordNodeLength;
+		const [node, is_showed, keywords_in_node] = self_PageInfo.keywordNodeFound[TargetMarkIndex];
+		
+		if (!is_showed){
+			continue;
+		}
+		else if (!(!keywords_in_node.includes(targetKeyword) && Boolean(targetKeyword))){
+			NodeFound = node;
+			IndexFound = TargetMarkIndex;
+			break;
+		}
+		else{
+			continue;
+		}
 	}
 	
-	const kw_node = event.target;
-	const keywords = kw_node.getAttribute('keywords').split(',');
+	if (NodeFound != null && IndexFound != self_PageInfo.focusON){
+		NodeFound.scrollIntoView({ block: "center" });
+		
+		if (self_PageInfo.focusON >= 0){
+			const [node, is_showed, keywords_in_node] = self_PageInfo.keywordNodeFound[self_PageInfo.focusON];
+			node.classList.remove('highlight-viewed');
+		}
+		
+		NodeFound.classList.add('highlight-viewed');
+		
+		self_PageInfo.focusON = IndexFound;
+	}
+}
+async function scrollToNextMark(targetKeyword = undefined){
+	if (!self_PageInfo.isSearched){
+		triggerAlertWindow(chrome.i18n.getMessage('content_script_needsearch_warning'), 'warning');
+	}
+	else if (self_PageInfo.isMarkhide){
+		return;
+	}
 	
-	const keyword_title = popup_window.querySelector('span#keyword_title');
-	const keyword_note_content = popup_window.querySelector('div.note_content');
+	const KeywordNodeLength = self_PageInfo.keywordNodeFound.length;
+	const startIndex = self_PageInfo.focusON < 0 ? 0 : (self_PageInfo.focusON + 1 + KeywordNodeLength) % KeywordNodeLength;
+	let NodeFound = null;
+	let IndexFound = startIndex;
 	
-	keyword_title.innerText = keywords[0];
-	keyword_note_content.innerText = 'Waiting for database response...';
+	for (let i = 0; i < KeywordNodeLength; i++){
+		const TargetMarkIndex = (startIndex - i + KeywordNodeLength) % KeywordNodeLength;
+		const [node, is_showed, keywords_in_node] = self_PageInfo.keywordNodeFound[TargetMarkIndex];
+		
+		if (!is_showed){
+			continue;
+		}
+		else if (!(!keywords_in_node.includes(targetKeyword) && Boolean(targetKeyword))){
+			NodeFound = node;
+			IndexFound = TargetMarkIndex;
+			break;
+		}
+		else{
+			continue;
+		}
+	}
 	
-	current_PopupMark = keywords;
-	current_PopupIndex = 0;
-	is_MutipleMark = (keywords.length > 1);
+	if (NodeFound != null && IndexFound != self_PageInfo.focusON){
+		NodeFound.scrollIntoView({ block: "center" });
+		
+		if (self_PageInfo.focusON >= 0){
+			const [node, is_showed, keywords_in_node] = self_PageInfo.keywordNodeFound[self_PageInfo.focusON];
+			node.classList.remove('highlight-viewed');
+		}
+		
+		NodeFound.classList.add('highlight-viewed');
+		
+		self_PageInfo.focusON = IndexFound;
+	}
+}
+// ====== 元素操作 ====== 
+function popupWindowShow(ms, mouseX, mouseY){
+	if (self_PagePopupInfo.status != 'showing'){
+		self_PagePopupInfo.status = 'ready-showing'
+		
+		setTimeout(() => {
+			if (self_PagePopupInfo.status == 'ready-showing'){
+				const keywordnote_popup = document.querySelector('keywordnote div.keywordnote_popup');
+				
+				keywordnote_popup.classList.add('show');
+				keywordnote_popup.style.left = mouseX + "px";
+				keywordnote_popup.style.top = mouseY + "px";
+				
+				self_PagePopupInfo.status == 'showing'
+			}
+		}, ms);
+	}
+}
+function popupWindowClose(ms){
+	if (self_PagePopupInfo.status != 'close'){
+		self_PagePopupInfo.status = 'ready-close'
+		
+		setTimeout(() => {
+			if (self_PagePopupInfo.status == 'ready-close'){
+				const keywordnote_popup = document.querySelector('keywordnote div.keywordnote_popup');
+				
+				keywordnote_popup.classList.remove('show');
+				keywordnote_popup.style.left = "";
+				keywordnote_popup.style.top = "";
+				
+				const note_content = keywordnote_popup.querySelector('div.note_content');
+				const bottom_fade = keywordnote_popup.querySelector('div.bottom_fade');
+				
+				note_content.style.maxHeight = "";
+				bottom_fade.style.top = "";
+						
+				self_PagePopupInfo.status == 'close'
+			}
+		}, ms);
+	}
+}
+function popupWindowQuickClose(){
+	const keywordnote_popup = document.querySelector('keywordnote div.keywordnote_popup');
+	keywordnote_popup.classList.add('quickclose');
 	
-	popup_window.classList.remove('quickclose');
-	popup_window.classList.remove('show')
+	popupWindowClose(0);
+	keywordnote_popup.classList.remove('quickclose');
+}
+
+// ====== 事件處理 ====== 
+async function keywordMouseoverEvent(event){
+	if(keyword_KeyIndex.isMarkhide){
+		return;
+	}
 	
-	const quest_data = {
-		event_name: 'quest-keyword-notedata-content',
-		keyword: keywords[0],
-		is_first: true,
-		mouseX: event.clientX,
-		mouseY: event.clientY
-	};
-	chrome.runtime.sendMessage(quest_data, (t) => {});
-	/*if (kw_node.classList.contains('highlight-keyword-mutiple')){
+	const KeywordNode = event.target.closest('kw');
+	const KeywordListOnNode = KeywordNode.getAttribute('keywords').split(',');
+	
+	if (self_PagePopupInfo.targetNode != KeywordNode){
+		popupWindowQuickClose();
+	}
+		
+	const MouseX = event.clientX;
+	const MouseY = event.clientY;
+	popupWindowShow(1000, MouseX, MouseY);
+	
+	await timeout(500);
+	if (self_PagePopupInfo.status == 'ready-showing'){
+		if (self_PagePopupInfo.currentKeywords != KeywordListOnNode){
+			self_PagePopupInfo.targetNode = KeywordNode;
+			self_PagePopupInfo.currentKeywords = KeywordListOnNode;
+			self_PagePopupInfo.currentShowIndex = 0;
+			self_PagePopupInfo.isMutipleMark = (KeywordListOnNode.length > 1);
+			
+			refreshPopupKeyword(KeywordListOnNode[0]);
+		}
+		
+	}
+	
+	/*if (KeywordListOnNode.classList.contains('highlight-keyword-mutiple')){
 		
 		
 	}
@@ -716,91 +784,25 @@ function keywordMouseoverEvent(event){
 	}*/
 }
 function keywordMouseoutEvent(event){
-	clearTimeout(timeout_PopupMouseOn);
-	
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	timeout_PopupMouseOut = setTimeout(function () {
-		popup_window.classList.remove('show');
-		popup_window.style.left = "";
-		popup_window.style.top = "";
-		is_PopupHide = true;
-	}, 500);
+	popupWindowClose(500);
 }
 
 function popupMouseoverEvent(event){
-	clearTimeout(timeout_PopupMouseOut);
+	if (self_PagePopupInfo.status == 'ready-close'){
+		self_PagePopupInfo.status = 'showing'
+	}
 }
 function popupMouseoutEvent(event){
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	timeout_PopupMouseOut = setTimeout(function () {
-		popup_window.classList.remove('show');
-		popup_window.style.left = "";
-		popup_window.style.top = "";
-		is_PopupHide = true;
-		
-		const note_content = popup_window.querySelector('div.note_content');
-		const bottom_fade = popup_window.querySelector('div.bottom_fade');
-		
-		note_content.style.maxHeight = "";
-		bottom_fade.style.top = "";
-		
-		is_PopupContentExpand = false;
-	}, 500);
+	popupWindowClose(500);
 }
 
-function popupSidepanelShow(event){
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	const keyword_title = popup_window.querySelector('span#keyword_title');
-	
-	const select_keyword = keyword_title.innerText;
-	
-	chrome.runtime.sendMessage({event_name: 'quest-sidePanel-on'}, (response) => {
-		if (!response.is_sidepanelon){
-			chrome.runtime.sendMessage({event_name: 'quest-open-sidePanel', select_keyword: select_keyword}, (response) => {
-				if (response.is_allow){
-					chrome.sidePanel.open({tabId: currentpage_TabId});
-				}
-			});
-		}
-		else{
-			chrome.runtime.sendMessage({event_name: 'quest-keyword-notedata-sidepanel', keyword: select_keyword}, (t) => {});
-		}
-	});
-	//chrome.sidePanel.open({tabId: currentpage_TabId});
+async function popupSidepanelShow(event){
+	const TargetKeyword = self_PagePopupInfo.currentKeywords[self_PagePopupInfo.currentShowIndex];
+	await chrome.runtime.sendMessage({event_name: 'quest-open-sidepanel', isSpecifiedKeywords: true, keyword: TargetKeyword});
 }
 function popupKeywordHighlight(event){
-	const popup_window = document.querySelector('keywordnote div.keywordnote_popup');
-	const keyword_title = popup_window.querySelector('span#keyword_title');
-	
-	const select_keyword = keyword_title.innerText;
-	onlyShowOneKeywordMark(select_keyword);
-}
-
-function popup_previouskeyword(){
-	const previous_index = (current_PopupIndex - 1 + current_PopupMark.length) % current_PopupMark.length;
-	const previous_keyword = current_PopupMark[previous_index];
-	
-	const quest_data = {
-		event_name: 'quest-keyword-notedata-content',
-		keyword: previous_keyword,
-		index: previous_index,
-		is_first: false
-	};
-	
-	chrome.runtime.sendMessage(quest_data, (t) => {});
-}
-function popup_nextkeyword(){
-	const next_index = (current_PopupIndex + 1 + current_PopupMark.length) % current_PopupMark.length;
-	const next_keyword = current_PopupMark[next_index];
-	
-	const quest_data = {
-		event_name: 'quest-keyword-notedata-content',
-		keyword: next_keyword,
-		index: next_index,
-		is_first: false
-	};
-	
-	chrome.runtime.sendMessage(quest_data, (t) => {});
+	const TargetKeyword = self_PagePopupInfo.currentKeywords[self_PagePopupInfo.currentShowIndex];
+	onlyShowOneKeywordMark(TargetKeyword);
 }
 
 function clickNoteContent(event){
@@ -808,131 +810,73 @@ function clickNoteContent(event){
 	const note_content = note_block.querySelector('div.note_content');
 	const bottom_fade = note_block.querySelector('div.bottom_fade');
 	
-	if (is_PopupContentExpand || is_PopupHide){
+	if (self_PagePopupInfo.isContentExpand && self_PagePopupInfo.status == 'showing'){
 		note_content.style.maxHeight = "";
 		bottom_fade.style.top = "";
 		
-		is_PopupContentExpand = false;
+		self_PagePopupInfo.isContentExpand = false;
 	}
 	else{
-		const content_rect = note_content.getBoundingClientRect();
-		const windowY = window.innerHeight;
+		const ContentRect = note_content.getBoundingClientRect();
+		const WindowY = window.innerHeight;
 
-		note_content.style.maxHeight = `${windowY - content_rect.top - 70}px`;
-		bottom_fade.style.top = `calc(${windowY - content_rect.top - 70}px - 1em)`;
+		note_content.style.maxHeight = `${WindowY - ContentRect.top - 70}px`;
+		bottom_fade.style.top = `calc(${WindowY - ContentRect.top - 70}px - 1em)`;
 		
-		is_PopupContentExpand = true;
+		self_PagePopupInfo.isContentExpand = true;
 	}
 }
-// ====== 資料接收 ====== 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-	var response = null;
-	var process_status = false;
-	
+
+// ====== 分頁通訊 ====== 
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){ //短期連接通訊
 	switch (request.event_name) {
-		//網頁腳本狀態
+		//資料同步
 		case 'quest-tab-status':
-			responsePageStatus((response) => {
-				sendResponse(response);
+			responseSelfPageStatus()
+			.then((InfoForResponse) => {
+				sendResponse(InfoForResponse);
 			});
+			
 			break;
-		//標記命令執行	
+			
+		//搜尋功能
 		case 'keyword-mark-search':
-			sendResponse({});
-			
-			searchKeywords((process_keycount) => {
-				responsePageStatus((page_status) => {
-					response = {
-						event_name: 'response-keyword-mark-search',
-						process_keycount: process_keycount,
-						page_status: page_status,
-						request_from: request.from
-					};
-					
-					chrome.runtime.sendMessage(response, (t) => {});
-				});
+			keyword_KeyIndex = request.keyword_keyindex;
+
+			searchKeywords()
+			.then((ReturnData) => {
+				sendResponse(ReturnData);
 			});
-			break;	
-		case 'keyword-mark-research':
-			sendResponse({});
 			
-			hideAllKeywordMark((process_status) => {
-				searchKeywords((process_keycount) => {
-					responsePageStatus((page_status) => {
-						response = {
-							event_name: 'response-keyword-mark-search',
-							process_keycount: process_keycount,
-							page_status: page_status
-						};
-						
-						chrome.runtime.sendMessage(response, (t) => {});
-					});
-				});
-			});
 			break;
 		case 'keyword-mark-show':
-			sendResponse({});
-			
-			showAllKeywordMark((process_status) => {
-				responsePageStatus((page_status) => {
-					if (request.from != 'hotkey'){
-						response = {
-							event_name: 'response-keyword-mark-show',
-							process_status: process_status,
-							page_status: page_status
-						};
-						
-						chrome.runtime.sendMessage(response, (t) => {});
-					}
-				});
+			showAllKeywordMark()
+			.then((ReturnData) => {
+				sendResponse(ReturnData);
 			});
+			
 			break;
 		case 'keyword-mark-hide':
-			sendResponse({});
-			
-			hideAllKeywordMark((process_status) => {
-				responsePageStatus((page_status) => {
-					if (request.from != 'hotkey'){
-						response = {
-							event_name: 'response-keyword-mark-hide',
-							process_status: process_status,
-							page_status: page_status
-						};
-						
-						chrome.runtime.sendMessage(response, (t) => {});
-					}
-				});
+			hideAllKeywordMark()
+			.then((ReturnData) => {
+				sendResponse(ReturnData);
 			});
+			
 			break;
+			
+		//頁面操作
 		case 'keyword-previous-mark':
 			sendResponse({});
-			
-			scrollIntoPreviousMark(request.target_keyword);
+			scrollToPreviousMark(request.targetKeyword);
 			break;
 		case 'keyword-next-mark':
 			sendResponse({});
-			
-			scrollIntoNaxtMark(request.target_keyword);
-			break;
-			
-		//回傳搜尋結果	
-		case 'quest-searched-keywords':
-			response = responseSearchedKeywords()
-			sendResponse(response);
-			break;
-		//關鍵字筆記
-		case 'response-keyword-notedata-content':
-			sendResponse({});
-			
-			if (request.is_first){
-				notedataFirstUpdate(request.keyword, request.keyword_notedata, request.mouseX, request.mouseY);
-			}
-			else{
-				notedataUpdate(request.keyword, request.keyword_notedata, request.index);
-			}
+			scrollToNextMark(request.targetKeyword);
 			break;
 	}
+	
+	console.log(request.event_name);
+	return true;
 });
 
-// ====== 初始化 ====== 
 console.log('網頁腳本初始化完成');

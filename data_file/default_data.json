@@ -1,0 +1,86 @@
+{
+	"KeywordKeyIndex": ["標籤", "無標籤"],
+	"KeywordNoteData": {
+		"標籤": {
+			"title": "標籤",
+			"displayOrder": [1, 0, 2, 3],
+			"note": [
+				[
+					"<p>这是一个圆角矩形。&nbsp;<br>它的高度会随着文本内容而变化，但上下边距保持8px。</p>",
+					"2024/03/12 16:50:03",
+					false
+				],
+				[
+					"我好想睡覺，我的夢想是攀登枕頭山山峰",
+					"2023/09/09 10:20:36",
+					false
+				],
+				[
+					"早安",
+					"2023/09/01 14:03:23",
+					false
+				],
+				[
+					"<p><i>新資料 </i><strong>輸入測試</strong></p><p>&nbsp;</p><ol><li><strong>項目一ejenfnefnef</strong></li><li><strong>項目二</strong></li><li><strong>項目三</strong></li></ol>",
+					"2024/01/13 20:54:16",
+					false
+				]
+			],
+			"module": {}
+		},
+		"無標籤": {
+			"title": "無標籤",
+			"displayOrder": [],
+			"note": [],
+			"module": {}
+		}
+	},
+	"UrlKeyIndex": [],
+	"UrlNoteData": {},
+	"KeywordDisplayOrder": {
+		"maxKeywordDisplay": 10,
+		"displayCRF": [["標籤", 1.0], ["無標籤", 1.0]]
+	},
+	"KeywordsSetting": {
+		"isDarkMode": true,
+		"isSwitchWithTab": true,
+		"noteVersion": 4,
+		"extensionVersion": "v1.0.0-beta.0",
+		"github_": {
+			"version": "v1.0.0-beta.0",
+			"notifyTime": -1
+		},
+		"module": {}
+	},
+	"ModuleData": {
+		"SubpageIndex": {
+			"initindexsEnable": {
+				"www.google.com": true,
+				"www.bing.com": true,
+				"www.youtube.com": true,
+				"www.twitch.tv": true,
+				"forum.gamer.com.tw": true,
+				"home.gamer.com.tw": true
+			},
+			"customSubpageIndexs": {
+				"www.pttweb.cc": []
+			},
+			"customSubpageRules": {
+				"www.pttweb.cc": [{
+					"mode": "pathname",
+					"enable": true,
+					"id": 11111,
+					"regexRule": "bbs/(?<specify_index>\\w+)([/]{0,1})",
+					"date": "11/4 05:14"
+				}]
+			}
+		},
+		"NotebooklmSummary": {
+			"authuser": {
+				"accountId": "",
+				"index": -1
+			},
+			"notebooks": {}
+		}
+	}
+}

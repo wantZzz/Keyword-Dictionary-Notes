@@ -1,228 +1,48 @@
-import {initSubPageIndexs, subpageIndex_module} from "./module/SubpageIndex.js";
-import {summaryWithNotebooklm_module} from "./module/notebooklmCaller.js";
+// ====== 背景處理資訊 ====== 
+const KEYWORD_RESERVED_WORDS = ['KeywordKeyIndex', 'KeywordNoteData', 'UrlKeyIndex', 'UrlNoteData', 'KeywordDisplayOrder', 'KeywordsSetting', 'ModuleData'];
+var confirm_NotificationsData = {};
+var basic_StartupDataConfirmation = 'unload';
 
-//外部腳本資料
-var currentpage_TabId = null;
-var is_CurrentPageSearch = false;
-var is_SidepanelON = false;
-var waiting_RefreshPage = null;
+var keyword_KeyIndex = [];
+var url_KeyIndex = [];
 
-var portWithSidepanel = null;
-//通用設定資料
-var setting = {
-	is_DarkMode: true,
-	is_SwitchWithTab: true,
-	is_GoogleConnect: [false, ""],
-	is_NotebooklmConnect: [false, ""]
+var background_Info = {
+	currentKeyword: ""
 }
 
-var confirmnotifications_Data = {};//{confirm_notification_ids: {json_data}}
-//儲存資料
-const keyword_reserved_words = ['KeywordsNotePriority', 'RecordedKeywords', 'KeywordsSetting', 'AutoTriggerUrl', 'KeywordsDisplayCRF', 'RecordedUrls', 'NoIndexNote', 'ModuleData'];
-var recorded_Keywords = [];
-var current_Keyword = '';
-
-const subpageIndex = new subpageIndex_module(responseUrlNoteData, getNotePriority, responseSidepanelUrlNoteData, moduleDataRead, moduleDataWrite);
-const summaryNotebooklm = new summaryWithNotebooklm_module(moduleDataRead, moduleDataWrite, setting.is_NotebooklmConnect);
-
-// ====== 資料回傳 ====== 
-function responseCurrentPageStatus(callback){
-	if (currentpage_TabId == null){
-		chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-		  currentpage_TabId = tabs[0].id;
-		  responseCurrentPageStatus(callback);
-		});
-		return;
-	}
-	chrome.tabs.get(currentpage_TabId).then((currentpage_info) => {
-		if (!currentpage_info.url){
-			const current_tab_info = {
-				page_status: null,
-				is_support: false,
-				is_script_run: false
-			};
-			
-			is_CurrentPageSearch = false;
-			callback(current_tab_info);
-			chrome.action.setBadgeText({tabId: currentpage_TabId, text: '✕'}, (t) => {});
-			chrome.action.setBadgeBackgroundColor({tabId: currentpage_TabId, color: '#F9F900'}, (t) => {});
-		}
-		else if (currentpage_info.url.startsWith('https://') || currentpage_info.url.startsWith('https://')){
-			const quest_tab_message = {
-				event_name: 'quest-tab-status',
-				tab_id: currentpage_TabId
-			};
-			
-			chrome.tabs.sendMessage(currentpage_TabId, quest_tab_message, (response) => {
-				if(chrome.runtime.lastError){
-					const current_tab_info = {
-						page_status: null,
-						is_support: true,
-						is_script_run: false
-					};
-					
-					is_CurrentPageSearch = false;
-					callback(current_tab_info);
-					
-					chrome.action.setBadgeText({tabId: currentpage_TabId, text: '！'}, (t) => {});
-					chrome.action.setBadgeBackgroundColor({tabId: currentpage_TabId, color: '#EA0000'}, (t) => {});
-				
-					waiting_RefreshPage = currentpage_TabId;
-				}
-				else{
-					response.is_special_urls = subpageIndex.isSubPageIndex(response.host);
-					const current_tab_info = {
-						page_status: response,
-						is_support: true,
-						is_script_run: true
-					};
-					
-					is_CurrentPageSearch = response.is_areadysearch;
-					callback(current_tab_info);
-					
-					if (!is_CurrentPageSearch){
-						chrome.action.setBadgeText({tabId: currentpage_TabId, text: ''}, (t) => {});
-					}
-				}
-			});
-		}
-		else{
-			const current_tab_info = {
-				page_status: null,
-				is_support: false,
-				is_script_run: false
-			};
-			
-			is_CurrentPageSearch = false;
-			callback(current_tab_info);
-			chrome.action.setBadgeText({tabId: currentpage_TabId, text: '✕'}, (t) => {});
-			chrome.action.setBadgeBackgroundColor({tabId: currentpage_TabId, color: '#F9F900'}, (t) => {});
-		}
-	});
+// ====== 其他頁面資訊 ====== 
+var current_PageInfo = {
+	url: "",
+	indexKey: "",
+	title: "",
+	tabId: null,
+	isComplete: false,
+	isSupport: false,
+	isScriptRun: false,
+	isSearched: false,
+	keywordFound: {},
+	isMarkhide: false,
+	module: {}
 }
-
-function responseSetting(callback){
-	callback({is_darkmode: setting['is_DarkMode'],
-			  is_switchwithtab: setting['is_SwitchWithTab'],
-			  //is_googleconnect: setting['is_GoogleConnect'],
-			  is_notebooklmconnect: setting['is_NotebooklmConnect'],
-			  current_Keyword: current_Keyword
-			  });
-}
-
-function responseSidepanelOn(callback){
-	callback({is_sidepanelon: is_SidepanelON});
-}
-
-function responseRecordedKeywords(callback){
-	/*let recorded_Keywords_response = {};
-	
-	recorded_Keywords.forEach(function (Keyword) {
-		recorded_Keywords_response[Keyword] = 0;
-	});
-	
-	callback({recorded_keywords: recorded_Keywords_response});*/
-	callback({recorded_keywords: recorded_Keywords});
-}
-
-function responseKeywordsNoteData(keyword, callback){
-	getKeywordData(keyword, (result, is_exist) => {
-		if (is_exist){
-			callback(result);
-			//updateDisplayCRF(keyword);
-		}
-		else{
-			callback(null);
-		}
-	});
-}
-
-function responseUrlNoteData(host, callback){
-	getKeywordData(host, (result, is_exist) => {
-		if (is_exist){
-			callback(result);
-		}
-		else{
-			callback(null);
-		}
-	});
-}
-
-function responseContentKeywordsNoteData(keyword, callback){
-	responseKeywordsNoteData(keyword, (keyword_notedata) => {
-		getNotePriority(keyword, (keywords_priority) => {
-			const response_keyword_notedata = {
-				event_name: 'response-keyword-notedata-content',
-				keyword: keyword
-			};
-			
-			if (keyword_notedata == null){
-				response_keyword_notedata.keyword_notedata = null;
-			}
-			else if (keyword_notedata.length <= 0){
-				response_keyword_notedata.keyword_notedata = null;
-			}
-			else if (keywords_priority == -1){
-				response_keyword_notedata.keyword_notedata = keyword_notedata[keyword_notedata.length - 1];
-			}
-			else{
-				response_keyword_notedata.keyword_notedata = keyword_notedata[keywords_priority[0]] ? keyword_notedata[keywords_priority[0]] : keyword_notedata[keyword_notedata.length - 1];
-			}
-			
-			callback(response_keyword_notedata);
-		});
-	});
-}
-
-function responseSidepanelKeywordsNoteData(keyword, is_first, callback){
-	responseKeywordsNoteData(keyword, (keyword_notedata) => {
-		if (keyword_notedata == null){
-			callback(null, null);
-		}
-		else{
-			getNotePriority(keyword, (keywords_priority) => {
-				if (keywords_priority == -1){
-					callback(keyword_notedata, []);
-				}
-				else{
-					callback(keyword_notedata, keywords_priority);
-				}
-			});
-			
-			if (!is_first){
-				updateDisplayCRF(keyword);
-			}
-		}
-	});
-}
-
-function responseSidepanelUrlNoteData(host, callback){
-	responseUrlNoteData(host, (keyword_notedata) => {
-		if (keyword_notedata == null){
-			callback(null, null);
-		}
-		else{
-			getNotePriority(host, (keywords_priority) => {
-				if (keywords_priority == -1){
-					callback(keyword_notedata, []);
-				}
-				else{
-					callback(keyword_notedata, keywords_priority);
-				}
-			});
-		}
-	});
-}
-
-function responseSidepanelSpecialUrlNoteData(title, host, url, callback){
-	if (subpageIndex.isSubPageIndex(host)){
-		subpageIndex.responseSidepanelSubPageIndexUrlNoteData(title, host, url, callback)
+var current_SidepageInfo = {
+	isVisible: false,
+	connectPort: null,
+	identificationToken: "",
+	keywordShow: {
+		title: "",
+		indexKey: "",
+		module: {}
+	},
+	urlShow: {
+		title: "",
+		indexKey: "",
+		module: {}
 	}
 }
 
-// ====== 訊息傳遞 ====== 
-function triggerNotificationMessage(message, type){
-	const options = {
+// ====== 通知訊息處理 ====== 
+function createNotificationMessage(message, type){
+	const Options = {
 	  type: "basic",
 	  iconUrl: "./images/icon.png",
 	  title: "",
@@ -231,38 +51,34 @@ function triggerNotificationMessage(message, type){
 	
 	switch (type) {
 		case 'error':
-			//alertContainer.style.backgroundColor = '#EA0000';
-			options.title = chrome.i18n.getMessage('trigger_notification_message_error');
+			Options.title = chrome.i18n.getMessage('notification_message_error_title');
 			break;
 
 		case 'nofound':
-			//alertContainer.style.backgroundColor = '#FFD306';
-			options.title = chrome.i18n.getMessage('trigger_notification_message_nofound');
+			Options.title = chrome.i18n.getMessage('notification_message_nofound_title');
 			break;
 			
 		case 'warning':
-			//alertContainer.style.backgroundColor = '#FFD306';
-			options.title = chrome.i18n.getMessage('trigger_notification_message_warning');
+			Options.title = chrome.i18n.getMessage('notification_message_warning_title');
 			break;
 
 		case 'ok':
-			//alertContainer.style.backgroundColor = '#00A600';
-			options.title = chrome.i18n.getMessage('trigger_notification_message_ok');
+			Options.title = chrome.i18n.getMessage('notification_message_ok_title');
 			break;
 
 		default:
-			options.title = chrome.i18n.getMessage('trigger_notification_message_default');
+			Options.title = chrome.i18n.getMessage('notification_message_default_title');
 	}
 	
-	chrome.notifications.create(options, (notificationId) => {
+	chrome.notifications.create(Options, (notificationId) => {
 		setTimeout(() => {
 			chrome.notifications.clear(notificationId, (wasCleared) => {});
 		}, 5000);
 	});
 }
 
-function confirmNotificationMessage(message, type, senddata){
-	const options = {
+function createConfirmNotificationMessage(message, type, sendData){
+	const Options = {
 	  type: "basic",
 	  iconUrl: "../images/icon.png",
 	  title: "",
@@ -270,29 +86,37 @@ function confirmNotificationMessage(message, type, senddata){
 	};
 	
 	switch (type) {
-		case 'new_version':
-			options.title = chrome.i18n.getMessage('confirm_notification_message_newVersion');
-			options.buttons = [{
-				title: chrome.i18n.getMessage('confirm_notification_message_newVersion_0confirm')
+		case 'delete':
+			Options.title = chrome.i18n.getMessage('confirm_notification_message_delete');
+			Options.buttons = [{
+				title: chrome.i18n.getMessage('confirm_notification_message_delete_0confirm')
 			}, {
-				title: chrome.i18n.getMessage('confirm_notification_message_newVersion_0cancel')
+				title: chrome.i18n.getMessage('confirm_notification_message_delete_0cancel')
+			}];
+			break;
+		case 'new_version':
+			Options.title = chrome.i18n.getMessage('confirm_notification_message_newVersion_title');
+			Options.buttons = [{
+				title: chrome.i18n.getMessage('confirm_notification_message_newVersion_confirm')
+			}, {
+				title: chrome.i18n.getMessage('confirm_notification_message_newVersion_cancel')
 			}];
 			break;
 		default:
-			options.title = chrome.i18n.getMessage('confirm_notification_message_default');
-			options.buttons = [{
-				title: chrome.i18n.getMessage('confirm_notification_message_default_0confirm')
+			Options.title = chrome.i18n.getMessage('confirm_notification_message_default_title');
+			Options.buttons = [{
+				title: chrome.i18n.getMessage('confirm_notification_message_default_confirm')
 			}, {
-				title: chrome.i18n.getMessage('confirm_notification_message_default_0cancel')
+				title: chrome.i18n.getMessage('confirm_notification_message_default_cancel')
 			}];
 	}
 	
-	chrome.notifications.create(options, function(notificationId) {
-		confirmnotifications_Data[notificationId] = senddata;
+	chrome.notifications.create(Options, function(notificationId) {
+		confirm_NotificationsData[notificationId] = sendData;
 		
 		setTimeout(() => {
-			if (Boolean(confirmnotifications_Data[notificationId])) {
-				delete confirmnotifications_Data[notificationId];
+			if (Boolean(confirm_NotificationsData[notificationId])) {
+				delete confirm_NotificationsData[notificationId];
 				
 				chrome.notifications.clear(notificationId, (wasCleared) => {});
 			}
@@ -316,27 +140,27 @@ function datetimeOutputFormat(){
 function checkForNewRelease(){
 	questInitialSetting('github_', (github_data) => {
 		if ((Date.now() - github_data['notify_time']) > 1209600000){
-			const apiURL = 'https://api.github.com/repos/wantZzz/Keyword-Dictionary-Notes/releases/latest';
+			const ApiURL = 'https://api.github.com/repos/wantZzz/Keyword-Dictionary-Notes/releases/latest';
 				
-			fetch(apiURL)
+			fetch(ApiURL)
 			.then(response => response.json())
 			.then(data => {
-				const latest_version = data.tag_name;
+				const LatestVersion = data.tag_name;
 				
-				console.log(latest_version);
+				console.log(LatestVersion);
 				console.log(github_data['version']);
 				
-				if (github_data['version'] != latest_version){
-					const consequences = compareVersion(latest_version, github_data['version']);
+				if (github_data['version'] != LatestVersion){
+					const Consequences = compareVersion(LatestVersion, github_data['version']);
 					
 					//console.log(consequences);
-					if (consequences > 0){
-						const send_url_note_delete = {
+					if (Consequences > 0){
+						const SendUrlNoteDelete = {
 							notification_type: 'new_version',
-							latest_version: latest_version
+							latest_version: LatestVersion
 						};
 
-						confirmNotificationMessage(`新版本 ${latest_version} 已經釋出\n你可以選擇是否前往更新`, 'new_version', send_url_note_delete);
+						confirmNotificationMessage(`新版本 ${LatestVersion} 已經釋出\n你可以選擇是否前往更新`, 'new_version', SendUrlNoteDelete);
 						
 						github_data['notify_time'] = Date.now();
 						settingInitialSetting('github_', github_data, () => {});
@@ -356,1915 +180,1406 @@ function checkForNewRelease(){
 }
 
 function compareVersion(v1, v2){
-	const parseVersion = (version) => {
+	const ParseVersion = (version) => {
 		if (version.startsWith('v')){
 			version = version.slice(1);
 		}
 		
-		const [version_Suffix, version_BetaOrAlpha] = version.split('-');
+		const [VersionSuffix, Version_BetaOrAlpha] = version.split('-');
 		
-		const [major, minor, patch] = version_Suffix.split('.').map(Number);
-		return { major, minor, patch };
+		const [Major, Minor, Patch] = VersionSuffix.split('.').map(Number);
+		return { Major, Minor, Patch };
 	};
 	
-	const v1_parses = parseVersion(v1);
-	const v2_parses = parseVersion(v2);
+	const V1Parses = ParseVersion(v1);
+	const V2Parses = ParseVersion(v2);
 	
-	if (v1_parses.major !== v2_parses.major) {
-		return v1_parses.major > v2_parses.major ? 1 : -1;
+	if (V1Parses.major !== V2Parses.major) {
+		return V1Parses.major > V2Parses.major ? 1 : -1;
 	}
-	if (v1_parses.minor !== v2_parses.minor) {
-		return v1_parses.minor > v2_parses.minor ? 1 : -1;
+	if (V1Parses.minor !== V2Parses.minor) {
+		return V1Parses.minor > V2Parses.minor ? 1 : -1;
 	}
-	if (v1_parses.patch !== v2_parses.patch) {
-		return v1_parses.patch > v2_parses.patch ? 1 : -1;
-	}
-	
-	const isBetaOrAlpha = (version) => version.includes('-');
-	if (isBetaOrAlpha(v1) && isBetaOrAlpha(v2)) {
-		const [v1Suffix, v1BetaOrAlpha] = v1.split('-');
-		const [v2Suffix, v2BetaOrAlpha] = v2.split('-');
-
-		if (v1Suffix === v2Suffix) {
-			const v1Num = parseInt(v1BetaOrAlpha.split('.')[1]);
-			const v2Num = parseInt(v2BetaOrAlpha.split('.')[1]);
-			return v1Num - v2Num;
-		}
-	}
-	else if(isBetaOrAlpha(v1) || isBetaOrAlpha(v2)){
-		return isBetaOrAlpha(v2) ? 1 : -1;
-	}
-}
-
-function reloadKeywordlist(callback){
-	chrome.storage.local.get(['RecordedKeywords']).then((result) => {
-		if (result.RecordedKeywords == undefined){
-			callback([]);
-		}
-		else{
-			callback(result.RecordedKeywords);
-		}
-	});
-}
-	
-function getKeywordData(keyword, callback){
-	chrome.storage.local.get([keyword]).then((result) => {
-		if(result.hasOwnProperty(keyword)){
-			callback(result[keyword], true);
-		}
-		else{
-			callback(null, false);
-		}
-	});
-}
-
-function getNotePriority(keyword, callback){
-	chrome.storage.local.get(["KeywordsNotePriority"]).then((result) => {
-		if(result.KeywordsNotePriority.hasOwnProperty(keyword)){
-			callback(result.KeywordsNotePriority[keyword]);
-		}
-		else{
-			callback(-1);
-		}
-	});
-}
-
-function addNotePriority(keyword, note_id, callback){
-	chrome.storage.local.get(["KeywordsNotePriority"]).then((result) => {
-		if(result.KeywordsNotePriority.hasOwnProperty(keyword)){
-			let keywordsNote_priority = result.KeywordsNotePriority;
-			keywordsNote_priority[keyword].splice(0, 0, note_id);
-			chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {
-				callback(true);
-			});
-		}
-		else{
-			let keywordsNote_priority = result.KeywordsNotePriority;
-			keywordsNote_priority[keyword] = [note_id];
-			chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {
-				callback(true);
-			});
-		}
-	});
-}
-
-function removeNotePriority(keyword, note_id, callback){
-	chrome.storage.local.get(["KeywordsNotePriority"]).then((result) => {
-		if(result.KeywordsNotePriority.hasOwnProperty(keyword)){
-			let keywordsNote_priority = result.KeywordsNotePriority;
-			
-			const remove_index = keywordsNote_priority[keyword].indexOf(note_id);
-			if (remove_index >= 0){
-				keywordsNote_priority[keyword].splice(remove_index, 1);
-				chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {
-					callback(true);
-				});
-			}
-			else{
-				callback(false);
-			}
-		}
-		else{
-			callback(false);
-		}
-	});
-}
-
-function deleteNotePriority(keyword, note_id, callback){
-	chrome.storage.local.get(["KeywordsNotePriority"]).then((result) => {
-		if(result.KeywordsNotePriority.hasOwnProperty(keyword)){
-			let keywordsNote_priority = result.KeywordsNotePriority;
-			
-			const remove_index = keywordsNote_priority[keyword].indexOf(note_id);
-			if (remove_index >= 0){
-				for (let i = 0; i < keywordsNote_priority[keyword].length; i++){
-					if (keywordsNote_priority[keyword][i] > note_id){
-						keywordsNote_priority[keyword][i] -= 1;
-					}
-				}
-				keywordsNote_priority[keyword].splice(remove_index, 0);
-				chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {
-					callback(true);
-				});
-			}
-			else{
-				callback(false);
-			}
-		}
-		else{
-			callback(false);
-		}
-	});
-}
-
-function checkIsINAutoStartup(domain_name, callback){
-	chrome.storage.local.get(["AutoTriggerUrl"]).then((result) => {
-		if(result.AutoTriggerUrl.hasOwnProperty(domain_name)){
-			callback(true);
-		}
-		else{
-			callback(false);
-		}
-	});
-}
-
-function addinAutostartupList(domain_name, callback){
-	chrome.storage.local.get(["AutoTriggerUrl"]).then((result) => {
-		if(!result.AutoTriggerUrl.includes(domain_name)){
-			let new_autotriggerurl = result.AutoTriggerUrl;
-			new_autotriggerurl.push(domain)
-			
-			chrome.storage.local.set(new_autotriggerurl).then(() => {
-				callback(true);
-			});
-		}
-		else{
-			callback(true);
-		}
-	});
-}
-
-function removeoutAutostartupList(domain_name, callback){
-	chrome.storage.local.get(["AutoTriggerUrl"]).then((result) => {
-		if(result.AutoTriggerUrl.includes(domain_name)){
-			let new_autotriggerurl = result.AutoTriggerUrl;
-			const new_domainindex = result.AutoTriggerUrl.indexOf(domain);
-			
-			if (new_domainindex > -1) {
-			  new_autotriggerurl.splice(index, 1);
-			}
-			chrome.storage.local.set(new_autotriggerurl).then(() => {
-				callback(true);
-			});
-		}
-		else{
-			callback(true);
-		}
-	});
-}
-
-function questInitialSetting(setting_name, callback, try_time = 0){
-	chrome.storage.local.get(["KeywordsSetting"]).then((result) => {
-		if (result.KeywordsSetting == undefined){
-			if (try_time < 3){
-				setTimeout(() => {
-					questInitialSetting(setting_name, callback, try_time + 1);
-				}, 1000);
-			}
-			else{
-				callback(null);
-			}
-		}
-		if(result.KeywordsSetting.hasOwnProperty(setting_name)){
-			callback(result.KeywordsSetting[setting_name]);
-		}
-		else{
-			callback(null);
-		}
-	});
-}
-
-function settingInitialSetting(setting_name, value, callback){
-	chrome.storage.local.get(["KeywordsSetting"]).then((result) => {
-		let new_keywordssetting = result.KeywordsSetting;
-		new_keywordssetting[setting_name] = value;
-		
-		if (Object.keys(setting).includes(setting_name)){
-			setting[setting_name] = value;
-		}
-			
-		chrome.storage.local.set({KeywordsSetting: new_keywordssetting}).then(() => {
-			callback(true);
-		});
-	});
-}
-
-function addNewKeyword(new_keyword, note, callback){
-	if(keyword_reserved_words.includes(new_keyword)){
-		//triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
-		triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_reserved_error'), 'error');
-		callback(false, null);
-		return;
-	}
-	if(recorded_Keywords.includes(new_keyword)){
-		//triggerNotificationMessage("該關鍵字已存在", 'error');
-		triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_exist_error'), 'error');
-		callback(false, null);
-		return;
-	}
-
-	chrome.storage.local.get([new_keyword]).then((result) => {
-		if (result.hasOwnProperty(new_keyword)){
-			//triggerNotificationMessage("該關鍵字已被占用或關鍵字為一段已記錄網址", 'error');
-			triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_exist_storage_error'), 'error');
-			callback(false, null);
-			return;
-		}
-		
-		let recorded_Keywords_copy = recorded_Keywords;
-		recorded_Keywords_copy.push(new_keyword);
-		let data = [];
-		let new_datetime = null;
-		
-		if(note !== ""){
-			const new_datetime = datetimeOutputFormat();
-			data = [[note, new_datetime, false]];
-		}else{
-			const new_datetime = null;
-			data = [];
-		}
-		
-		chrome.storage.local.set({[new_keyword]: data}).then((result) => {
-			chrome.storage.local.set({RecordedKeywords: recorded_Keywords_copy}).then(() => {
-				callback(true, new_datetime);
-				recorded_Keywords = recorded_Keywords_copy;
-				
-				//triggerNotificationMessage("關鍵字索引已新增", 'ok');
-				triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_finish'), 'ok');
-			});
-		});
-	});
-}
-
-function deleteKeyword(keyword, callback){
-	if(keyword_reserved_words.includes(keyword)){
-		//triggerNotificationMessage("這個關鍵字為系統保留字，無法移除", 'error');
-		triggerNotificationMessage(chrome.i18n.getMessage('delete_new_keyword_reserved_error'), 'error');
-		callback(false);
-		return;
-	}
-	if(!recorded_Keywords.includes(keyword)){
-		//triggerNotificationMessage("該關鍵字不存在", 'error');
-		triggerNotificationMessage(chrome.i18n.getMessage('delete_keyword_notexist_error'), 'error');
-		callback(false);
-		return;
-	}
-
-	let recorded_Keywords_copy = recorded_Keywords;
-	const Keywords_index = recorded_Keywords_copy.indexOf(keyword);
-	
-	if (Keywords_index > -1) {
-	  recorded_Keywords_copy.splice(Keywords_index, 1);
+	if (V1Parses.patch !== V2Parses.patch) {
+		return V1Parses.patch > V2Parses.patch ? 1 : -1;
 	}
 	
-	
-	chrome.storage.local.remove([keyword]).then(() => {
-		chrome.storage.local.set({RecordedKeywords: recorded_Keywords_copy}).then(() => {
-			callback(true);
-			recorded_Keywords = recorded_Keywords_copy;
-			
-			//triggerNotificationMessage("關鍵字索引已刪除", 'ok');
-			triggerNotificationMessage(chrome.i18n.getMessage('delete_new_keyword_finish'), 'ok');
-		});
-	});
-	
-	chrome.storage.local.get(["KeywordsNotePriority"]).then((result) => {
-		if(result.KeywordsNotePriority.hasOwnProperty(keyword)){
-			let keywordsNote_priority = result.KeywordsNotePriority;
-			delete keywordsNote_priority[keyword];
-			
-			chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {});
-		}
-	});
-	
-	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
-		let DisplayCRF = result.KeywordsDisplayCRF;
-		
-		for (let i = 0; i < DisplayCRF.length - 1; i++){
-			if (DisplayCRF[i][0] == keyword){
-				DisplayCRF.splice(i, 1);
-				break;
-			}
-		}
-		
-		chrome.storage.local.set({KeywordsDisplayCRF: DisplayCRF}).then(() => {});
-		if (current_Keyword == keyword){
-			current_Keyword = DisplayCRF[0][0];
-		}
-	});
-}
+	const IsBetaOrAlpha = (version) => version.includes('-');
+	if (IsBetaOrAlpha(v1) && IsBetaOrAlpha(v2)) {
+		const [V1Suffix, V1BetaOrAlpha] = v1.split('-');
+		const [V2Suffix, V2BetaOrAlpha] = v2.split('-');
 
-function addNewUrl(new_host, note, is_special_url, callback){
-	let data = [];
-	let new_datetime = null;
-	
-	if(recorded_Keywords.includes(new_host)){
-		//triggerNotificationMessage("該網址已被某個關鍵字占用", 'error');
-		triggerNotificationMessage(chrome.i18n.getMessage('add_new_url_exist_error'), 'error');
-		callback(false, null);
-		return;
+		if (V1Suffix === V2Suffix) {
+			const V1Num = parseInt(V1BetaOrAlpha.split('.')[1]);
+			const V2Num = parseInt(V2BetaOrAlpha.split('.')[1]);
+			return V1Num - V2Num;
+		}
 	}
-	
-	if(note !== ""){
-		new_datetime = datetimeOutputFormat();
-		data = [[note, new_datetime, false]];
-	}else{
-		new_datetime = null;
-		data = [];
-	}
-	
-	chrome.storage.local.set({[new_host]: data}).then((result) => {
-		callback(true, new_datetime);
-		
-		//triggerNotificationMessage("網址索引已新增", 'ok');
-		triggerNotificationMessage(chrome.i18n.getMessage('add_new_url_finish'), 'ok');
-	});
-	
-	addUrlIndex(new_host, is_special_url);
-}
-
-function deleteUrl(host, is_special_url, callback){
-	chrome.storage.local.remove([host]).then(() => {
-		callback(true);
-		
-		//triggerNotificationMessage("網址索引已刪除", 'ok');
-		triggerNotificationMessage(chrome.i18n.getMessage('delete_new_url_finish'), 'ok');
-	});
-	
-	chrome.storage.local.get(["KeywordsNotePriority"]).then((result) => {
-		if(result.KeywordsNotePriority.hasOwnProperty(host)){
-			let keywordsNote_priority = result.KeywordsNotePriority;
-			delete keywordsNote_priority[host];
-			
-			chrome.storage.local.set({KeywordsNotePriority: keywordsNote_priority}).then(() => {});
-		}
-	});
-
-	removeUrlIndex(host, is_special_url);
-}
-
-function editKeyword(new_keyword, old_keyword, callback){
-	if(keyword_reserved_words.includes(new_keyword)){
-		//triggerNotificationMessage("這個關鍵字為系統保留字，無法該進行操作", 'error');
-		triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_reserved_error'), 'error');
-		callback(false);
-		return;
-	}
-	if(recorded_Keywords.includes(new_keyword)){
-		//triggerNotificationMessage("該關鍵字已存在", 'error');
-		triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_exist_error'), 'error');
-		callback(false);
-		return;
-	}
-	
-	let recorded_Keywords_copy = recorded_Keywords;
-	const old_keyword_index = recorded_Keywords_copy.indexOf(old_keyword);
-	recorded_Keywords_copy.push(new_keyword);
-	if (old_keyword_index > -1) {
-	  recorded_Keywords_copy.splice(old_keyword_index, 1);
-	}
-	
-	chrome.storage.local.get([old_keyword]).then((result) => {
-		chrome.storage.local.set({[new_keyword]: result.old_keyword}).then(() => {
-			chrome.storage.local.remove([old_keyword]).then(() => {
-				chrome.storage.local.set({RecordedKeywords: recorded_Keywords_copy}).then(() => {
-					callback(true);
-					recorded_Keywords = recorded_Keywords_copy;
-					
-					//triggerNotificationMessage("關鍵字修改成功", 'ok');
-					triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_finish'), 'ok');
-				});
-			});
-		});
-	});
-}
-
-function addKeywordNote(keyword, note, callback){
-	chrome.storage.local.get([keyword]).then((result) => {
-		if(!result.hasOwnProperty(keyword)){
-			//triggerNotificationMessage("無法儲存該筆記 錯誤: keyword does not exist", 'error');
-			triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_noexist_error'), 'error');
-			callback(false, null);
-			return;
-		}
-		else{
-			try{
-				const new_datetime = datetimeOutputFormat();
-				let new_keyword_data = result[keyword];
-
-				new_keyword_data.push([note, new_datetime, false]);
-				
-				chrome.storage.local.set({[keyword]: new_keyword_data}).then(() => {
-					//triggerNotificationMessage("筆記內容已儲存", 'ok');
-					triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_finish'), 'ok');
-
-					callback(true, new_datetime);
-				});
-			}catch(e){
-				//triggerNotificationMessage("無法儲存該筆記 錯誤:" + e.name, 'error');
-				triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_execute_error') + e.name, 'error');
-				console.log(e)
-
-				callback(false, null);
-				return;
-			}
-		}
-	})
-	.catch((error) => {
-		//triggerNotificationMessage("無法儲存該筆記 錯誤:" + error.name, 'error');
-		triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_execute_error') + e.name, 'error');
-		console.log(error)
-
-		callback(false, null);
-		return;
-	});
-}
-
-function deleteKeywordNote(keyword, keyword_data_id, callback){
-	chrome.storage.local.get([keyword]).then((result) => {
-		if(!result.hasOwnProperty(keyword)){
-			//triggerNotificationMessage("無法刪除該筆記 錯誤: keyword does not exist", 'error');
-			triggerNotificationMessage(chrome.i18n.getMessage('add_keyword_note_execute_error'), 'error');
-			callback(false);
-			return;
-		}
-		else{
-			try{
-				let new_keyword_data = result[keyword];
-				
-				new_keyword_data.splice(keyword_data_id, 1);
-				chrome.storage.local.set({[keyword]: new_keyword_data}).then(() => {
-					//triggerNotificationMessage("筆記已刪除", 'ok');
-					triggerNotificationMessage(chrome.i18n.getMessage('delete_keyword_note_finish'), 'ok');
-
-					callback(true);
-				});
-			}catch(e){
-				//triggerNotificationMessage("無法刪除該筆記 錯誤:" + e.name, 'error');
-				triggerNotificationMessage(chrome.i18n.getMessage('delete_keyword_note_execute_error') + e.name, 'error');
-				console.log(e)
-
-				callback(false);
-				return;
-			}
-		}
-	});
-}
-
-function editKeywordNote(keyword, note, keyword_data_id, callback){
-	chrome.storage.local.get([keyword]).then((result) => {
-		if(!result.hasOwnProperty(keyword)){
-			//triggerNotificationMessage("無法編輯該筆記 錯誤: keyword does not exist", 'error');
-			triggerNotificationMessage(chrome.i18n.getMessage('delete_keyword_note_execute_error'), 'error');
-			callback(false);
-			return;
-		}
-		else{
-			try{
-				const new_datetime = datetimeOutputFormat();
-				let new_keyword_data = result[keyword];
-
-				new_keyword_data[keyword_data_id][0] = note;
-				new_keyword_data[keyword_data_id][1] = new_datetime;
-				
-				chrome.storage.local.set({[keyword]: new_keyword_data}).then(() => {
-					//triggerNotificationMessage("編輯內容已儲存", 'ok');
-					triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_note_finish'), 'ok');
-
-					callback(true);
-				});
-			}catch(e){
-				//triggerNotificationMessage("無法編輯該筆記 錯誤:" + e.name, 'error');
-				triggerNotificationMessage(chrome.i18n.getMessage('edit_keyword_note_execute_error') + e.name, 'error');
-				console.log(e)
-
-				callback(false);
-				return;
-			}
-		}
-	});
-}
-
-function getDisplayKeyword(callback, try_time = 0){
-	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
-		let DisplayCRF = result.KeywordsDisplayCRF;
-		let display_list = [];
-		
-		try{
-			const display_list_length = Math.min((DisplayCRF.length - 1), Math.abs(DisplayCRF[DisplayCRF.length - 1][1]));
-			for (let i = 0; i < display_list_length; i++){
-				display_list.push(DisplayCRF[i][0]);
-			}
-			
-			callback(display_list);
-		}
-		catch{
-			if (try_time < 3){
-				setTimeout(() => {
-					getDisplayKeyword(callback, try_time + 1);
-				}, 1000);
-			}
-			else{
-				callback([]);
-			}
-		}
-	});
-}
-
-function updateDisplayCRF(quest_keyword){
-	if (!recorded_Keywords.includes(quest_keyword)){
-		return;
-	}
-	
-	chrome.storage.local.get(["KeywordsDisplayCRF"]).then((result) => {
-		let DisplayCRF = result.KeywordsDisplayCRF;
-		let is_includes = false;
-		let less_index = -1;
-		let less_CRF = -1;
-		
-		for (let i = 0; i < DisplayCRF.length - 1; i++){
-			if (DisplayCRF[i][0] == quest_keyword){
-				DisplayCRF[i][1] += 1;
-				is_includes = true;
-			}
-			else{
-				DisplayCRF[i][1] *= 0.9;
-				if (less_CRF > DisplayCRF[i][1]){
-					less_CRF = DisplayCRF[i][1];
-					less_index = i;
-				}
-			}
-		}
-		
-		if(!is_includes && (less_CRF < 1)){
-			if ((DisplayCRF.length + DisplayCRF[DisplayCRF.length - 1] - 2) >= 0){
-				DisplayCRF[less_index] = [quest_keyword, 1.0];
-			}
-			else{
-				DisplayCRF.push([quest_keyword, 1.0]);
-			}
-		}
-		
-		DisplayCRF.sort((a, b) => {
-		  return b[1] - a[1]
-		});
-		
-		chrome.storage.local.set({KeywordsDisplayCRF: DisplayCRF}).then(() => {});
-	});
-}
-
-function checkUrlIndex(host, callback){
-	chrome.storage.local.get(['RecordedUrls']).then((result) => {
-		callback(result.RecordedUrls.keys().includes(host));
-	});
-}
-
-function addUrlIndex(host, is_special_url){
-	if (is_special_url){
-		const delimiter = host.includes('@') ? '@' : ':';
-		
-		let main = host.slice(0, host.indexOf(delimiter));
-		let sub = host.slice(host.indexOf(delimiter) + 1);
-		
-		chrome.storage.local.get(['RecordedUrls']).then((result) => {
-			let new_recordedurls = result.RecordedUrls;
-			
-			if (!new_recordedurls[main]){
-				new_recordedurls[main] = {main: false, sub: [sub]};
-			}
-			else{
-				new_recordedurls[main].sub.push(sub);
-			}
-			
-			chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
-		});
-	}
-	else{
-		chrome.storage.local.get(['RecordedUrls']).then((result) => {
-			let new_recordedurls = result.RecordedUrls;
-			
-			if (!new_recordedurls[main]){
-				new_recordedurls[main] = {main: true, sub: []};
-			}
-			else{
-				new_recordedurls[main].main = true;
-			}
-			
-			chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
-		});
+	else if(IsBetaOrAlpha(v1) || IsBetaOrAlpha(v2)){
+		return IsBetaOrAlpha(v2) ? 1 : -1;
 	}
 }
 
-function removeUrlIndex(host, is_special_url){
-	if (is_special_url){
-		const delimiter = host.includes('@') ? '@' : ':';
-		
-		let main = host.slice(0, host.indexOf(delimiter));
-		let sub = host.slice(host.indexOf(delimiter) + 1);
-		
-		chrome.storage.local.get(['RecordedUrls']).then((result) => {
-			let new_recordedurls = result.RecordedUrls;
-			
-			if (new_recordedurls[main]){
-				let remove_index = new_recordedurls[main].sub.indexOf(sub);
-				
-				if (remove_index >= 0){
-					new_recordedurls[main].sub.splice(remove_index, 1);
-					
-					if (!new_recordedurls[main].main && (new_recordedurls[main].sub.length == 0)){
-						delete new_recordedurls[main];
-					}
-					chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
-				}
-			}
-		});
-	}
-	else{
-		chrome.storage.local.get(['RecordedUrls']).then((result) => {
-			let new_recordedurls = result.RecordedUrls;
-			
-			if (new_recordedurls[main]){
-				new_recordedurls[main].main = false;
-				
-				if (new_recordedurls[main].sub.length == 0){
-					delete new_recordedurls[main];
-				}
-				chrome.storage.local.set({'RecordedUrls': new_recordedurls}).then((result) => {});
-			}
-		});
-	}
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function moduleDataRead(modulename, keys, callback){
-	chrome.storage.local.get(["ModuleData"]).then((result) => {
-		const module_datas = result.ModuleData;
-		
-		let reply_data = new Object();
-		
-		if (module_datas[modulename] == undefined){
-			callback(undefined);
-		}
-		else{
-			while(keys.length){
-				const key = keys.pop();
-				const data = module_datas[modulename][key];
-				
-				if (data){
-					reply_data[key] = data;
-				}
-			}
-			
-			callback(reply_data);
-		}
-	});
-}
-
-function moduleDataWrite(modulename, key, value, callback){
-	chrome.storage.local.get(["ModuleData"]).then((result) => {
-		let module_datas = result.ModuleData;
-		
-		module_datas[modulename][key] = value;
-		chrome.storage.local.set({ModuleData: module_datas}).then(() => {
+async function updateCurrentPageInfo(forceUpdate = false){
+	const QuestTabMessage = {
+		event_name: 'quest-tab-status'
+	};
+	
+	if (current_PageInfo.isComplete && current_PageInfo.isSupport){	
+		getCurrentPageUrlKeyIndex(current_PageInfo.url);
+		chrome.tabs.sendMessage(current_PageInfo.tabId, QuestTabMessage, async function (responseInfo){
 			if (chrome.runtime.lastError){
-				callback(false);
+				current_PageInfo.isScriptRun = false;
+				current_PageInfo.isSearched = false;
+				current_PageInfo.isMarkhide = false;
+				current_PageInfo.keywordFound = {};
 			}
 			else{
-				callback(true);
+				current_PageInfo.isScriptRun = true;
+				current_PageInfo.isSearched = Boolean(responseInfo.isSearched);
+				current_PageInfo.isMarkhide = Boolean(responseInfo.isMarkhide);
+				current_PageInfo.keywordFound = responseInfo.keywordFound || {};
+			}
+			
+			if (current_SidepageInfo.isVisible && current_SidepageInfo.connectPort !== null){
+				current_SidepageInfo.connectPort.postMessage({
+					event_name: 'update-sidepanel-status',
+					url: current_PageInfo.url,
+					indexKey: current_PageInfo.indexKey,
+					title: current_PageInfo.title,
+					isSupport: current_PageInfo.isSupport,
+					isSearched: current_PageInfo.isSearched,
+					keywordFound: current_PageInfo.keywordFound,
+					module: current_PageInfo.module,
+					identificationToken: current_SidepageInfo.identificationToken
+				});
+			}
+			
+			if (!current_PageInfo.isScriptRun){
+				chrome.action.setBadgeText({tabId: current_PageInfo.tabId, text: '！'});
+				chrome.action.setBadgeBackgroundColor({tabId: current_PageInfo.tabId, color: '#EA0000'});
+			}
+			else if (!current_PageInfo.isSearched){
+				chrome.action.setBadgeText({tabId: current_PageInfo.tabId, text: ''});
 			}
 		});
-	});
+	}
+	else {
+		current_PageInfo.isScriptRun = false;
+		current_PageInfo.isSearched = false;
+		current_PageInfo.isMarkhide = false;
+		current_PageInfo.keywordFound = {};
+		
+		if (current_SidepageInfo.isVisible && current_SidepageInfo.connectPort !== null){
+			current_SidepageInfo.connectPort.postMessage({
+				event_name: 'update-sidepanel-status',
+				url: current_PageInfo.url,
+				indexKey: current_PageInfo.indexKey,
+				title: current_PageInfo.title,
+				isSupport: current_PageInfo.isSupport,
+				isSearched: current_PageInfo.isSearched,
+				keywordFound: current_PageInfo.keywordFound,
+				module: current_PageInfo.module,
+				identificationToken: current_SidepageInfo.identificationToken
+			});
+		}
+		
+		if (!current_PageInfo.isSupport){
+			chrome.action.setBadgeText({tabId: current_PageInfo.tabId, text: '✕'});
+			chrome.action.setBadgeBackgroundColor({tabId: current_PageInfo.tabId, color: '#F9F900'});
+		}
+		else{
+			chrome.action.setBadgeText({tabId: current_PageInfo.tabId, text: ''});
+		}
+	}
+	
+	return;
 }
-//function getNodeBackgroundColor(input_node)
+
+async function getCurrentPageUrlKeyIndex(url){
+	const UrlInfo = new URL(url);
+	current_PageInfo.indexKey = UrlInfo.host;
+}
+
+async function getNoteDataForPreview(keywordKeyIndex){
+	let returnData = {
+		"isFinish": false,
+		"isExist": false,
+		"noteForPreview": {
+			"isEmpty": false,
+			"note": null
+		}
+	};
+	
+	const ReturnData = await getKeywordData(keywordKeyIndex);
+
+	if (ReturnData.isExist){
+		returnData.isExist = true;
+		
+		try {
+			const noteIdForPreview = ReturnData.data.displayOrder[0];
+			const noteForPreview = ReturnData.data.note[noteIdForPreview] ;
+			
+			if (noteForPreview !== undefined){
+				returnData.noteForPreview.isEmpty = false;
+				returnData.noteForPreview.note = noteForPreview;
+				returnData.isFinish = true;
+			}
+			else{
+				returnData.noteForPreview.isEmpty = true;
+				returnData.noteForPreview.note = null;
+				returnData.isFinish = true;
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+			console.error("Error in getNoteDataForPreview:", e);
+			return returnData;
+		}
+	}
+	else{
+		returnData.isFinish = true;
+		
+		return returnData;
+	}
+}
+
+async function openSidepanel(specifiedKeyword = null){
+	if (!current_SidepageInfo.isVisible){
+		chrome.sidePanel.open({tabId: current_PageInfo.tabId});
+		
+		if (specifiedKeyword != null){
+			background_Info.currentKeyword = specifiedKeyword;
+		}
+	}
+}
+
+async function checkIdentificationToken(token){
+	return (token == current_SidepageInfo.identificationToken);
+}
+
+function convertToNoteFormat(noteContent, noteTimestamp){
+	return [noteContent, noteTimestamp, false];
+}
+
+// ====== 儲存資料操作 ====== 
+async function getKeywordData(keywordKeyIndex){
+	let returnData = {
+		"isExist": false,
+		"data": null
+	};
+	
+	if (keyword_KeyIndex.includes(keywordKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['KeywordNoteData']);
+			if (Result.KeywordNoteData[keywordKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				returnData.data = Result.KeywordNoteData[keywordKeyIndex];
+				
+				return returnData;
+			}
+			
+			return returnData;
+		} catch (e) {
+            console.error("Error in getKeywordData:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function refreshKeywordKeyIndex(){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(['KeywordKeyIndex']);
+		if (Result.KeywordKeyIndex !== undefined){
+			keyword_KeyIndex = Result.KeywordKeyIndex;
+			returnData.isFinish = true;
+		}
+		
+		return returnData;
+	} catch (e) {
+		console.error("Error in updateKeywordKeyIndex:", e);
+		return returnData;
+	}
+}
+
+async function updateKeywordKeyIndex(){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	try {
+		await chrome.storage.local.set({KeywordKeyIndex: keyword_KeyIndex});
+		
+		returnData.isFinish = true;
+		return returnData;
+	} catch (e) {
+		console.error("Error in updateKeywordKeyIndex:", e);
+		return returnData;
+	}
+}
+
+async function addKeywordNote(keywordKeyIndex, note, module = {}){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false,
+		"afterData": null
+	};
+	
+	if (keyword_KeyIndex.includes(keywordKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['KeywordNoteData']);
+			if(Result.KeywordNoteData === undefined){
+                Result.KeywordNoteData = {};
+            }
+			
+			if (Result.KeywordNoteData[keywordKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				let keywordData = Result.KeywordNoteData[keywordKeyIndex];
+				returnData.afterData = JSON.parse(JSON.stringify(keywordData));
+				
+				const NewNoteIndex = keywordData.note.length;
+				keywordData.note.unshift(note);
+				keywordData.displayOrder.unshift(NewNoteIndex);
+				keywordData.module = module;
+				
+				Result.KeywordNoteData[keywordKeyIndex] = keywordData;
+				await chrome.storage.local.set(Result);
+				
+				returnData.isFinish = true;
+				returnData.afterData = keywordData;
+			}
+			else{
+				let newKeyword = {
+					"title": keywordKeyIndex,
+					"displayOrder": [],
+					"note": [],
+					"module": module
+				};
+				
+				if (note){
+					newKeyword.note.push(note);
+					newKeyword.displayOrder.push(0);
+				}
+				
+				Result.KeywordNoteData[keywordKeyIndex] = newKeyword;
+				await chrome.storage.local.set(Result);
+
+				returnData.isExist = true;
+				returnData.isFinish = true;
+				returnData.afterData = newKeyword;
+				
+				keyword_KeyIndex = Object.keys(Result.KeywordNoteData);
+				updateKeywordKeyIndex();
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in addKeywordNote:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function updateKeywordNoteDisplayOrder(keywordKeyIndex, displayOrder){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false,
+		"displayOrder": null
+	};
+	
+	if (keyword_KeyIndex.includes(keywordKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['KeywordNoteData']);
+			if(Result.KeywordNoteData === undefined){
+                Result.KeywordNoteData = {};
+            }
+			
+			if (Result.KeywordNoteData[keywordKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				let KeywordData = Result.KeywordNoteData[keywordKeyIndex];
+				
+				returnData.displayOrder = KeywordData.displayOrder;
+				const NoteLength = KeywordData.note.length;
+				
+				if (displayOrder.length == NoteLength){
+					KeywordData.displayOrder = displayOrder;
+					
+					Result.KeywordNoteData[keywordKeyIndex] = KeywordData;
+					
+					await chrome.storage.local.set(Result)
+					
+					returnData.isFinish = true;
+					returnData.displayOrder = displayOrder;
+				}
+				else{
+					return returnData;
+				}
+			}
+			
+			return returnData;
+		} catch (e) {
+            console.error("Error in updateKeywordDisplayOrder:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function deleteKeywordNote(keywordKeyIndex, noteIndex){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false,
+		"afterData": null
+	};
+	
+	if (keyword_KeyIndex.includes(keywordKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['KeywordNoteData']);
+			if (Result.KeywordNoteData[keywordKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				let keywordData = Result.KeywordNoteData[keywordKeyIndex];
+				returnData.afterData = JSON.parse(JSON.stringify(keywordData));
+				
+				if (keywordData.note.length >= noteIndex){
+					keywordData.note.splice(noteIndex, 1);
+					for (let i = 0; i < keywordData.displayOrder.length; i++){
+						if (keywordData.displayOrder[i] > noteIndex){
+							keywordData.displayOrder[i] -= 1;
+						}
+						else if (keywordData.displayOrder[i] == noteIndex){
+							keywordData.note.splice(i, 1);
+							i -= 1;
+						}
+					}
+					
+					Result.KeywordNoteData[keywordKeyIndex] = keywordData;
+					await chrome.storage.local.set(Result);
+					
+					returnData.isFinish = true;
+					returnData.afterData = keywordData;
+				}
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in deleteKeywordNote:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function editKeywordNote(keywordKeyIndex, noteIndex, note, module = {}){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false,
+		"afterData": null
+	};
+	
+	if (keyword_KeyIndex.includes(keywordKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['KeywordNoteData']);
+			if(Result.KeywordNoteData === undefined){
+                Result.KeywordNoteData = {};
+            }
+			
+			if (Result.KeywordNoteData[keywordKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				let keywordData = Result.KeywordNoteData[keywordKeyIndex];
+				returnData.afterData = JSON.parse(JSON.stringify(keywordData));
+				
+				if (keywordData.note.length >= noteIndex){
+					keywordData.note.splice(noteIndex, 1, note);
+					keywordData.module = module;
+				
+					Result.KeywordNoteData[keywordKeyIndex] = keywordData;
+					await chrome.storage.local.set(Result);
+					
+					returnData.isFinish = true;
+					returnData.afterData = keywordData;
+				}
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in addKeywordNote:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function deleteKeyword(keywordKeyIndex){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false
+	};
+	
+	if (keyword_KeyIndex.includes(keywordKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['KeywordNoteData']);
+			if (Result.KeywordNoteData[keywordKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				delete Result.KeywordNoteData[keywordKeyIndex];
+				
+				await chrome.storage.local.set(Result);
+					
+				returnData.isFinish = true;
+				
+				keyword_KeyIndex = Object.keys(Result.KeywordNoteData);
+				updateKeywordKeyIndex();
+				removeKeywordInDisplayOrder(keywordKeyIndex);
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in deleteKeyword:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function getUrlData(urlKeyIndex){
+	let returnData = {
+		"isExist": false,
+		"data": null
+	};
+	
+	if (url_KeyIndex.includes(urlKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['UrlNoteData']);
+			if (Result.UrlNoteData[urlKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				returnData.data = Result.UrlNoteData[urlKeyIndex];
+				
+				return returnData;
+			}
+			
+			return returnData;
+		} catch (e) {
+            console.error("Error in getUrlData:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function refreshUrlKeyIndex(){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(['UrlKeyIndex']);
+		if (Result.UrlKeyIndex !== undefined){
+			url_KeyIndex = Result.UrlKeyIndex;
+			returnData.isFinish = true;
+		}
+		
+		return returnData;
+	} catch (e) {
+		console.error("Error in updateKeywordKeyIndex:", e);
+		return returnData;
+	}
+}
+
+async function updateUrlKeyIndex(){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	try {
+		await chrome.storage.local.set({UrlKeyIndex: url_KeyIndex});
+		
+		returnData.isFinish = true;
+		return returnData;
+	} catch (e) {
+		console.error("Error in updateUrlKeyIndex:", e);
+		return returnData;
+	}
+}
+
+async function addUrlNote(urlKeyIndex, note, module = {}){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false,
+		"afterData": null
+	};
+	
+	if (url_KeyIndex.includes(urlKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['UrlNoteData']);
+			if(Result.UrlNoteData === undefined){
+                Result.UrlNoteData = {};
+            }
+			
+			if (Result.UrlNoteData[urlKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				let urlData = Result.UrlNoteData[urlKeyIndex];
+				returnData.afterData = JSON.parse(JSON.stringify(urlData));
+				
+				const NewNoteIndex = urlData.note.length;
+				urlData.note.unshift(note);
+				urlData.displayOrder.unshift(NewNoteIndex);
+				urlData.module = module;
+				
+				Result.UrlNoteData[urlKeyIndex] = urlData;
+				await chrome.storage.local.set(Result);
+				
+				returnData.isFinish = true;
+				returnData.afterData = urlData;
+			}
+			else{
+				let newUrl = {
+					"title": urlKeyIndex,
+					"displayOrder": [0],
+					"note": [note],
+					"module": module
+				};
+				
+				Result.UrlNoteData[urlKeyIndex] = newUrl;
+				await chrome.storage.local.set(Result);
+
+				returnData.isExist = true;
+				returnData.isFinish = true;
+				returnData.afterData = newUrl;
+				
+				url_KeyIndex = Object.keys(Result.UrlNoteData);
+				updateUrlKeyIndex();
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in addUrlNote:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function updateUrlNoteDisplayOrder(urlKeyIndex, displayOrder){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false,
+		"displayOrder": null
+	};
+	
+	if (url_KeyIndex.includes(urlKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['UrlNoteData']);
+			if(Result.UrlNoteData === undefined){
+                Result.UrlNoteData = {};
+            }
+			
+			if (Result.UrlNoteData[urlKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				let urlData = Result.UrlNoteData[urlKeyIndex];
+				
+				returnData.displayOrder = urlData.displayOrder;
+				const NoteLength = urlData.note.length;
+				
+				if (displayOrder.length == NoteLength){
+					urlData.displayOrder = displayOrder;
+					
+					Result.UrlNoteData[urlKeyIndex] = urlData;
+					
+					await chrome.storage.local.set(Result)
+					
+					returnData.isFinish = true;
+					returnData.displayOrder = displayOrder;
+				}
+				else{
+					return returnData;
+				}
+			}
+			
+			return returnData;
+		} catch (e) {
+            console.error("Error in updateUrlDisplayOrder:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function deleteUrlNote(urlKeyIndex, noteIndex){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false,
+		"afterData": null
+	};
+	
+	if (url_KeyIndex.includes(urlKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['UrlNoteData']);
+			if (Result.UrlNoteData[urlKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				let urlData = Result.UrlNoteData[urlKeyIndex];
+				returnData.afterData = JSON.parse(JSON.stringify(urlData));
+				
+				if (urlData.note.length >= noteIndex){
+					urlData.note.splice(noteIndex, 1);
+					for (let i = 0; i < urlData.displayOrder.length; i++){
+						if (urlData.displayOrder[i] > noteIndex){
+							urlData.displayOrder[i] -= 1;
+						}
+						else if (urlData.displayOrder[i] == noteIndex){
+							urlData.note.splice(i, 1);
+							i -= 1;
+						}
+					}
+					
+					Result.UrlNoteData[urlKeyIndex] = urlData;
+					await chrome.storage.local.set(Result);
+					
+					returnData.isFinish = true;
+					returnData.afterData = urlData;
+				}
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in deleteUrlNote:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function editUrlNote(urlKeyIndex, noteIndex, note, module = {}){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false,
+		"afterData": null
+	};
+	
+	if (url_KeyIndex.includes(urlKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['UrlNoteData']);
+			if(Result.UrlNoteData === undefined){
+                Result.UrlNoteData = {};
+            }
+			
+			if (Result.UrlNoteData[urlKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				let urlData = Result.UrlNoteData[urlKeyIndex];
+				returnData.afterData = JSON.parse(JSON.stringify(urlData));
+				
+				if (urlData.note.length >= noteIndex){
+					urlData.note.splice(noteIndex, 1, note);
+					urlData.module = module;
+				
+					Result.UrlNoteData[urlKeyIndex] = urlData;
+					await chrome.storage.local.set(Result);
+					
+					returnData.isFinish = true;
+					returnData.afterData = urlData;
+				}
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in addUrlNote:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function deleteUrl(urlKeyIndex){
+	let returnData = {
+		"isExist": false,
+		"isFinish": false
+	};
+	
+	if (url_KeyIndex.includes(urlKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(['UrlNoteData']);
+			if (Result.UrlNoteData[urlKeyIndex] !== undefined){
+				returnData.isExist = true; 
+				delete Result.UrlNoteData[urlKeyIndex];
+				
+				await chrome.storage.local.set(Result);
+					
+				returnData.isFinish = true;
+				
+				url_KeyIndex = Object.keys(Result.UrlNoteData);
+				updateUrlKeyIndex();
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in deleteUrl:", e);
+            return returnData;
+        }
+	}
+	else{
+		return returnData;
+	}
+}
+
+async function getKeywordDisplayOrder(){
+	let returnData = {
+		"isFinish": false,
+		"displayOrder": []
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(["KeywordDisplayOrder"]);
+		if(Result.KeywordDisplayOrder === undefined){
+			Result.KeywordDisplayOrder = {
+				"maxKeywordDisplay": 10,
+				"displayCRF": []
+			};
+		}
+		
+		if (Result.KeywordDisplayOrder.displayCRF !== undefined){
+			const displayCRF = Result.KeywordDisplayOrder.displayCRF;
+			let display_list = [];
+			
+			const displayListLength = Math.min(displayCRF.length, Result.KeywordDisplayOrder.maxKeywordDisplay);
+			for (let i = 0; i < displayListLength; i++){
+				display_list.push(displayCRF[i][0]);
+			}
+			
+			returnData.displayOrder = display_list;
+			returnData.isFinish = true;
+		}
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in getKeywordDisplayOrder:", e);
+		return returnData;
+	}
+}
+
+async function updateKeywordDisplayOrder(keywordKeyIndex){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	if (keyword_KeyIndex.includes(keywordKeyIndex)){
+		try {
+			const Result = await chrome.storage.local.get(["KeywordDisplayOrder"]);
+			if(Result.KeywordDisplayOrder === undefined){
+				Result.KeywordDisplayOrder = {
+					"maxKeywordDisplay": 10,
+					"displayCRF": []
+				};
+			}
+			
+			if (Result.KeywordDisplayOrder.displayCRF !== undefined){
+				let displayCRF = Result.KeywordDisplayOrder.displayCRF;
+				let isInclude = false;
+				let lessCRF = -1;
+				
+				for (let i = 0; i < displayCRF.length; i++){
+					if (displayCRF[i][0] == keywordKeyIndex){
+						displayCRF[i][1] += 1;
+						isInclude = true;
+					}
+					else{
+						displayCRF[i][1] *= 0.9;
+						if (lessCRF > displayCRF[i][1]){
+							lessCRF = displayCRF[i][1];
+						}
+					}
+				}
+				
+				if(!isInclude){
+					if (displayCRF.length > Result.KeywordDisplayOrder.maxKeywordDisplay){
+						displayCRF[displayCRF.length - 1] = [keywordKeyIndex, 1.0];
+					}
+					else{
+						displayCRF.push([keywordKeyIndex, 1.0]);
+					}
+				}
+				
+				displayCRF.sort((a, b) => {
+					return b[1] - a[1]
+				});
+				
+				Result.KeywordDisplayOrder.displayCRF = displayCRF;
+				
+				await chrome.storage.local.set(Result);
+				returnData.isFinish = true;
+			}
+			
+			return returnData;
+		} catch (e) {
+			returnData.isFinish = false;
+			
+            console.error("Error in updateKeywordDisplayOrder:", e);
+            return returnData;
+        }
+	}
+}
+
+async function removeKeywordInDisplayOrder(keywordKeyIndex){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(["KeywordDisplayOrder"]);
+		if(Result.KeywordDisplayOrder === undefined){
+			Result.KeywordDisplayOrder = {
+				"maxKeywordDisplay": 10,
+				"displayCRF": []
+			};
+		}
+		
+		if (Result.KeywordDisplayOrder.displayCRF !== undefined){
+			let displayCRF = Result.KeywordDisplayOrder.displayCRF;
+			
+			for (let i = 0; i < displayCRF.length; i++){
+				if (displayCRF[i][0] == keywordKeyIndex){
+					Result.KeywordDisplayOrder.displayCRF.splice(i, 1);
+					break;
+				}
+			}
+			
+			await chrome.storage.local.set(Result);
+			returnData.isFinish = true;
+			
+			if (background_Info.currentKeyword == keywordKeyIndex){
+				background_Info.currentKeyword = displayCRF[0][0];
+			}
+		}
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in removeKeywordInDisplayOrder:", e);
+		return returnData;
+	}
+}
+
+async function questSetting(settingName, moduleName = null){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(["KeywordsSetting"]);
+		
+		if (Result.KeywordsSetting !== undefined){
+			if (Boolean(moduleName)){
+				if (Result.KeywordsSetting[moduleName] !== undefined){
+					if (Result.KeywordsSetting[moduleName][settingName] !== undefined){
+						returnData[settingName] = Result.KeywordsSetting[moduleName][settingName];
+						returnData.isFinish = true;
+					}
+				}
+			}
+			else if (Result.KeywordsSetting[settingName] !== undefined){
+				returnData[settingName] = Result.KeywordsSetting[settingName];
+				returnData.isFinish = true;
+			}
+		}
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in questSetting:", e);
+		return returnData;
+	}
+}
+
+async function setSetting(settingName, value, moduleName = null){
+	let returnData = {
+		"isFinish": false,
+		"afterValue": null
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(["KeywordsSetting"]);
+		
+		if (Result.KeywordsSetting !== undefined){
+			if (Boolean(moduleName)){
+				if (Result.KeywordsSetting[moduleName] !== undefined){
+					if (Result.KeywordsSetting[moduleName][settingName] !== undefined){
+						returnData[settingName] = JSON.parse(JSON.stringify(Result.KeywordsSetting[moduleName][settingName]));
+						Result.KeywordsSetting[moduleName][settingName] = value;
+						returnData.isFinish = true;
+					}
+				}
+			}
+			else if (Result.KeywordsSetting[settingName] !== undefined){
+				returnData[settingName] = JSON.parse(JSON.stringify(Result.KeywordsSetting[settingName]));
+				Result.KeywordsSetting[settingName] = value;
+				returnData.isFinish = true;
+			}
+		}
+		
+		if (returnData.isFinish){
+			await chrome.storage.local.set(Result);
+			returnData[settingName] = value;
+		}
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in questSetting:", e);
+		return returnData;
+	}
+}
+
+async function moduleDataRead(moduleName, keys){
+	let returnData = {
+		"isFinish": false,
+		"keysData": null
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(["ModuleData"]);
+		if(Result.ModuleData === undefined){
+			Result.ModuleData = {};
+		}
+		
+		if (Result.ModuleData[moduleName] !== undefined){
+			let replyData = new Object();
+			
+			while(keys.length){
+				const Key = keys.pop();
+				const Data = module_datas[modulename][Key];
+				
+				if (Data){
+					replyData[Key] = Data;
+				}
+			}
+			
+			returnData.keysData = replyData;
+		}
+		else{
+			returnData.keysData = undefined;
+		}
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in moduleDataRead:", e);
+		return returnData;
+	}
+}
+
+async function moduleDataWrite(moduleName, key, value){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(["ModuleData"]);
+		if(Result.ModuleData === undefined){
+			Result.ModuleData = {};
+		}
+		
+		if (Result.ModuleData[moduleName] !== undefined){
+			let replyData = new Object();
+			
+			Result.ModuleData[moduleName][key] = value;
+			
+			await chrome.storage.local.set(Result);
+			returnData.isFinish = true;
+		}
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in moduleDataRead:", e);
+		return returnData;
+	}
+}
 
 // ====== 檔案存取 ====== 
-function getInitTagFileData(callback){
-	fetch("/data_file/init_tagdata.json")
-	.then((response) => {
-		return response.json();
-	})
-	.then((data) => {
-		callback(data);
-	});
+async function getInitTagFileData(){
+	let returnData = {
+		"isFinish": false,
+		"initTagData": null
+	};
+	
+	try {
+		const Response = await fetch("/data_file/default_data.json");
+		
+		returnData.initTagData = await Response.json();
+		returnData.isFinish = true;
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in getInitTagFileData:", e);
+		return returnData;
+	}
 }
 
-function exportBackupData(callback){
-	let note_indexs = [];
-	let backup_output = {};
+async function initialDataProcess(){
+	let returnData = {
+		"isFinish": false
+	};
 	
-	function exporturl_index(Recorded_url_indexs){
-		const Recorded_host_indexs = Object.keys(Recorded_url_indexs)
-		for (var i = 0; i < Recorded_host_indexs.length; i++){
-			const host_data = Recorded_url_indexs[Recorded_host_indexs[i]]
-			
-			if (host_data.main){
-				note_indexs.push(Recorded_host_indexs[i])
-			}
-			
-			for (var j = 0; j < host_data.sub.length; j++){
-				const delimiter = (Recorded_host_indexs[i] in initSubPageIndexs) ? ':' : '@';
-				note_indexs.push((Recorded_host_indexs[i] + delimiter + host_data.sub[j]))
+	try {
+		const InitTagFile = await getInitTagFileData();
+		
+		if (InitTagFile.isFinish){
+			await chrome.storage.local.set(InitTagFile.initTagData);
+			returnData.isFinish = true;
+		}
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in initialDataProcess:", e);
+		return returnData;
+	}
+}
+
+async function exportBackupData(){
+	let returnData = {
+		"isFinish": false,
+		"exportData": null
+	};
+	
+	try {
+		const Result = await chrome.storage.local.get(KEYWORD_RESERVED_WORDS);
+		const InitTagFile = await getInitTagFileData();
+		
+		for (let i = 0; i < KEYWORD_RESERVED_WORDS.length; i++){
+			if (Result[KEYWORD_RESERVED_WORDS[i]] === undefined){
+				Result[KEYWORD_RESERVED_WORDS[i]] = InitTagFile[KEYWORD_RESERVED_WORDS[i]];
 			}
 		}
+		
+		returnData.exportData = Result;
+		returnData.isFinish = true;
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in exportBackupData:", e);
+		return returnData;
+	}
+}
+
+async function inportBackupData(importData, isOverwrite){
+	let returnData = {
+		"isFinish": false
+	};
+	
+	if (!Boolean(importData)){
+		return returnData;
 	}
 	
-	reloadKeywordlist((new_recorded_keywords) => {
-		note_indexs = new_recorded_keywords;
-		
-		chrome.storage.local.get(["RecordedUrls"]).then((result) => {
-			exporturl_index(result.RecordedUrls);
+	try {
+		if (isOverwrite){
+			let initTagFile = await getInitTagFileData();
 			
-			chrome.storage.local.get(keyword_reserved_words).then((result) => {
-				backup_output = result;
-				
-				chrome.storage.local.get(note_indexs).then((result) => {
-					backup_output['note_datas'] = result;
-					callback(backup_output);
-				});
-			});
-		});
-	});
-}
-
-function initialDataProcess(){
-	getInitTagFileData((initial_data) => {
-		function exporturl_index(Recorded_url_indexs){
-			let note_indexs = [];
-			const Recorded_host_indexs = Object.keys(Recorded_url_indexs)
-			for (var i = 0; i < Recorded_host_indexs.length; i++){
-				const host_data = Recorded_url_indexs[Recorded_host_indexs[i]]
-				
-				if (host_data.main){
-					note_indexs.push(Recorded_host_indexs[i])
-				}
-				
-				for (var j = 0; j < host_data.sub.length; j++){
-					note_indexs.push((Recorded_host_indexs[i] + ':' + host_data.sub[j]))
+			for (let i = 0; i < KEYWORD_RESERVED_WORDS.length; i++){
+				if (importData[KEYWORD_RESERVED_WORDS[i]] === undefined){
+					initTagFile[KEYWORD_RESERVED_WORDS[i]] = importData[KEYWORD_RESERVED_WORDS[i]];
 				}
 			}
 			
-			return note_indexs;
+			await chrome.storage.local.set(initTagFile);
+			returnData.isFinish = true;
 		}
-
-		const remove_url_indexs = exporturl_index(initial_data.RecordedUrls);
-		const remove_indexs = remove_url_indexs.concat(recorded_Keywords);
-					
-		chrome.storage.local.remove(remove_indexs).then(() => {
-			chrome.storage.local.set(initial_data).then(() => {
-				recorded_Keywords = ['標籤', '無標籤'];
-				current_Keyword = '標籤';
-				
-				triggerNotificationMessage(chrome.i18n.getMessage('initial_extension_data'), 'ok');
-				if (Boolean(portWithSidepanel)){
-					responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
-						const response_keyword_notedata = {
-							event_name: 'response-keyword-notedata-sidepanel',
-							keyword: current_Keyword,
-							keyword_notedata: keyword_notedata,
-							keywords_priority: keywords_priority
-						};
-						
-						if (is_SidepanelON){
-							chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-						}
-						chrome.runtime.sendMessage({event_name: 'reload-recorded-Keywords'}, (t) => {});
-					});
-				}
-			});
-		});
-	});
-}
-
-function inportBackupJsonData(import_data, is_overwrite){
-	function exporturl_index(Recorded_url_indexs){
-		let note_indexs = [];
-		const Recorded_host_indexs = Object.keys(Recorded_url_indexs)
-		for (var i = 0; i < Recorded_host_indexs.length; i++){
-			const host_data = Recorded_url_indexs[Recorded_host_indexs[i]]
+		else{
+			let localStorage = await chrome.storage.local.get(KEYWORD_RESERVED_WORDS);
 			
-			if (host_data.main){
-				note_indexs.push(Recorded_host_indexs[i])
-			}
-			
-			for (var j = 0; j < host_data.sub.length; j++){
-				note_indexs.push((Recorded_host_indexs[i] + ':' + host_data.sub[j]))
-			}
-		}
-		
-		return note_indexs;
-	}
-
-	chrome.storage.local.get(["KeywordsSetting"]).then((result) => {
-		const update_keywords_settings = Object.keys(import_data["KeywordsSetting"]);
-		const keywords_settings = result.KeywordsSetting;
-		
-		for (var i = 0; i < update_keywords_settings.length; i++){
-			keywords_settings[update_keywords_settings[i]] = import_data["KeywordsSetting"][update_keywords_settings[i]];
-		}
-		
-		import_data.ModuleData['SubpageIndex'] = import_data.ModuleData['SubpageIndex'] || {};
-		import_data.ModuleData['NotebooklmSummary'] = import_data.ModuleData['NotebooklmSummary'] || {};
-		if (is_overwrite){
-			const control_data = {
-				"RecordedKeywords": import_data.RecordedKeywords,
-				"RecordedUrls": import_data.RecordedUrls,
-				"AutoTriggerUrl": import_data.AutoTriggerUrl,
-				"KeywordsDisplayCRF": import_data.KeywordsDisplayCRF,
-				"KeywordsNotePriority": import_data.KeywordsNotePriority,
-				"KeywordsSetting": keywords_settings,
-				"ModuleData": import_data.ModuleData,
-				"NoIndexNote": import_data.NoIndexNote
-			}
-			
-			chrome.storage.local.get(["RecordedUrls"]).then((result) => {
-				const remove_url_indexs = exporturl_index(result.RecordedUrls);
-				const remove_indexs = remove_url_indexs.concat(recorded_Keywords);
-				
-				chrome.storage.local.remove(remove_indexs).then(() => {
-					chrome.storage.local.set(control_data).then(() => {
-						chrome.storage.local.set(import_data['note_datas']).then(() => {
-							recorded_Keywords = control_data.RecordedKeywords;
-							current_Keyword = control_data.RecordedKeywords.includes(current_Keyword) ? current_Keyword : import_data.RecordedKeywords[0];
+			if (importData.KeywordKeyIndex !== undefined){
+				importData.KeywordKeyIndex.forEach((ImportDataKeyword) => {
+					if (localStorage.KeywordKeyIndex.includes(ImportDataKeyword)){
+						if (importData.KeywordNoteData[ImportDataKeyword] !== undefined){
+							let nextNoteId = importData.KeywordNoteData[ImportDataKeyword].length;
 							
-							triggerNotificationMessage(chrome.i18n.getMessage('inport_backupdata_finish'), 'ok');
-							
-							subpageIndex.loadSubPageIndexData();
-							summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
-								setting['is_NotebooklmConnect'] = account_info;
+							importData.KeywordNoteData[ImportDataKeyword].note.forEach((importNote) => {
+								localStorage.KeywordNoteData[ImportDataKeyword].note.push(importNote);
+								localStorage.KeywordNoteData[ImportDataKeyword].displayOrder.push(nextNoteId);
+								nextNoteId += 1;
 							});
-							
-							if (Boolean(portWithSidepanel)){
-								responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
-									const response_keyword_notedata = {
-										event_name: 'response-keyword-notedata-sidepanel',
-										keyword: current_Keyword,
-										keyword_notedata: keyword_notedata,
-										keywords_priority: keywords_priority
-									};
-									
-									if (is_SidepanelON){
-										chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-									}
-									chrome.runtime.sendMessage({event_name: 'reload-recorded-Keywords'}, (t) => {});
-								});
-							}
-						});
-					});
+						}
+					}
+					else if (importData.KeywordNoteData[ImportDataKeyword] !== undefined){
+						localStorage.KeywordKeyIndex.push(ImportDataKeyword);
+						
+						importData.KeywordNoteData[ImportDataKeyword] = {
+							"title": importData.KeywordNoteData[ImportDataKeyword].title || ImportDataKeyword,
+							"displayOrder": importData.KeywordNoteData[ImportDataKeyword].displayOrder || [],
+							"note": importData.KeywordNoteData[ImportDataKeyword].note || [],
+							"module": importData.KeywordNoteData[ImportDataKeyword].module || {}
+						}
+					}
 				});
-			});
-		}
-		else{
-			let add_indexs = [];
-			let update_indexs = [];
+			}
 			
-			chrome.storage.local.get(keyword_reserved_words).then((reserved_result) => {
-				for (var i = 0; i < import_data['RecordedKeywords'].length; i++){
-					if (!reserved_result.RecordedKeywords.includes(import_data['RecordedKeywords'][i])){
-						add_indexs.push(import_data['RecordedKeywords'][i]);
-					}
-					else{
-						update_indexs.push(import_data['RecordedKeywords'][i]);
-					}
-				}
-				
-				const keyword_add_indexs = add_indexs;
-
-				let update_url_indexs = reserved_result.RecordedUrls;
-				const import_url_indexs = Object.keys(import_data['RecordedUrls']);
-				for (var i = 0; i < import_url_indexs.length; i++){
-					const recorded_host_data = update_url_indexs[import_url_indexs[i]];
-					const import_host_data = import_data['RecordedUrls'][import_url_indexs[i]];
-					
-					if (!Boolean(recorded_host_data)){
-						if (import_host_data.main){
-							add_indexs.push(import_url_indexs[i]);
-						}
-						
-						for (var j = 0; j < import_host_data.sub.length; j++){
-							add_indexs.push((import_url_indexs[i] + ':' + import_host_data.sub[j]))
-						}
-						
-						update_url_indexs[import_url_indexs[i]] = import_host_data;
-					}
-					else{
-						if (import_host_data.main){
-							if (recorded_host_data.main){
-								update_indexs.push(import_url_indexs[i]);
-							}
-							else{
-								add_indexs.push(import_url_indexs[i]);
-							}
-							update_url_indexs[import_url_indexs[i]].main = true;
-						}
-						
-						for (var j = 0; j < import_host_data.sub.length; j++){
-							if (recorded_host_data.sub.includes(import_host_data.sub[j])){
-								update_indexs.push((import_url_indexs[i] + ':' + import_host_data.sub[j]));
-							}
-							else{
-								add_indexs.push((import_url_indexs[i] + ':' + import_host_data.sub[j]));
-							}
-							update_url_indexs[import_url_indexs[i]].sub.push(import_host_data.sub[j]);
-						}
-					}
-				}
-				
-				const note_priority_indexs = Object.keys(import_data['KeywordsNotePriority']);
-				const update_note_priority = reserved_result.KeywordsNotePriority;
-				for (var i = 0; i < note_priority_indexs.length; i++){
-					const recored_note_priority = update_note_priority[note_priority_indexs[i]];
-					const add_note_priority = import_data['KeywordsNotePriority'][note_priority_indexs[i]]
-					
-					update_note_priority[note_priority_indexs[i]] = Boolean(recored_note_priority) ? recored_note_priority.concat(add_note_priority) : add_note_priority;
-				}
-				
-				chrome.storage.local.get(update_indexs).then((update_notedatas) => {
-					for (var i = 0; i < update_indexs.length; i++){
-						const add_notes = import_data['note_datas'][update_indexs[i]];
-						
-						update_notedatas[update_indexs[i]] = update_notedatas[update_indexs[i]].concat((Boolean(add_notes) ? add_notes : []));
-					}
-					
-					for (var i = 0; i < add_indexs.length; i++){
-						update_notedatas[add_indexs[i]] = import_data['note_datas'][add_indexs[i]];
-					}
-					
-					const control_data = {
-						"RecordedKeywords": reserved_result.RecordedKeywords.concat(keyword_add_indexs),
-						"RecordedUrls": update_url_indexs,
-						"AutoTriggerUrl": reserved_result.AutoTriggerUrl,
-						"KeywordsDisplayCRF": reserved_result.KeywordsDisplayCRF,
-						"KeywordsNotePriority": update_note_priority,
-						"KeywordsSetting": keywords_settings
-					}
-					
-					chrome.storage.local.set(control_data).then(() => {
-						chrome.storage.local.set(update_notedatas).then(() => {
-							recorded_Keywords = control_data.RecordedKeywords;
-							current_Keyword = control_data.RecordedKeywords.includes(current_Keyword) ? current_Keyword : import_data.RecordedKeywords[0];
+			if (importData.UrlKeyIndex !== undefined){
+				importData.UrlKeyIndex.forEach((ImportDataUrl) => {
+					if (localStorage.UrlKeyIndex.includes(ImportDataUrl)){
+						if (importData.UrlNoteData[ImportDataUrl] !== undefined){
+							let nextNoteId = importData.UrlNoteData[ImportDataUrl].length;
 							
-							triggerNotificationMessage(chrome.i18n.getMessage('inport_backupdata_finish'), 'ok');
-							if (Boolean(portWithSidepanel)){
-								responseSidepanelKeywordsNoteData(current_Keyword, true, (keyword_notedata, keywords_priority) => {
-									const response_keyword_notedata = {
-										event_name: 'response-keyword-notedata-sidepanel',
-										keyword: current_Keyword,
-										keyword_notedata: keyword_notedata,
-										keywords_priority: keywords_priority
-									};
-									
-									if (is_SidepanelON){
-										chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-									}
-									chrome.runtime.sendMessage({event_name: 'reload-recorded-Keywords'}, (t) => {});
-								});
-							}
-						});
-					});
+							importData.UrlNoteData[ImportDataUrl].note.forEach((importNote) => {
+								localStorage.UrlNoteData[ImportDataUrl].note.push(importNote);
+								localStorage.UrlNoteData[ImportDataUrl].displayOrder.push(nextNoteId);
+								nextNoteId += 1;
+							});
+						}
+					}
+					else if (importData.UrlNoteData[ImportDataUrl] !== undefined){
+						localStorage.UrlKeyIndex.push(ImportDataUrl);
+						
+						importData.UrlNoteData[ImportDataUrl] = {
+							"title": importData.UrlNoteData[ImportDataUrl].title || ImportDataUrl,
+							"displayOrder": importData.UrlNoteData[ImportDataUrl].displayOrder || [],
+							"note": importData.UrlNoteData[ImportDataUrl].note || [],
+							"module": importData.UrlNoteData[ImportDataUrl].module || {}
+						}
+					}
 				});
-			});
+			}
+			
+			// moduleInportBackupData
+			
+			await chrome.storage.local.set(localStorage);
+			returnData.isFinish = true;
 		}
-	});
+		
+		return returnData;
+	} catch (e) {
+		returnData.isFinish = false;
+		
+		console.error("Error in inportBackupData:", e);
+		return returnData;
+	}
 }
 
-// ====== 網路功能 ======
-function isConnectGoogle(callback){
-	chrome.identity.getAuthToken({'interactive': false}, (result) => {
-		if(chrome.runtime.lastError){
-			callback(false);
-		}
-		else{
-			callback(true);;
-		}
-	});
-}
+// ====== 事件處理 ====== 
+chrome.tabs.onActivated.addListener(async function (info){ //視窗中的使用中分頁變更時觸發
+	current_PageInfo = {
+		url: "",
+		indexKey: "",
+		title: "",
+		tabId: info.tabId,
+		isComplete: false,
+		isSupport: false,
+		isScriptRun: false,
+		isSearched: false,
+		keywordFound: {},
+		isMarkhide: false,
+		module: {}
+	}
 
-function getGoogleAccountInfo(callback){
-	chrome.identity.getAuthToken({'interactive': true}, (result) => {
-		if(chrome.runtime.lastError){
-			setting['is_GoogleConnect'] = [false, ""];
-			callback({email: '', id: '', picture: '', verified_email: ''});
-		}
-		else{
-			fetch("https://www.googleapis.com/userinfo/v2/me", {
-				headers: new Headers({'Authorization': `Bearer ${result}`})
-			})
-			.then((request) => {
-				return request.json();
-			}).then((account_info) => {
-				callback(account_info);
-			});
-		}
-	});
-}
-
-function connectGoogleAccount(callback){
-	chrome.identity.getAuthToken({'interactive': true}, (result) => {
-		if(chrome.runtime.lastError){
-			setting['is_GoogleConnect'] = [false, ""];
-			callback(false);
-		}
-		else{
-			getGoogleAccountInfo((account_info) => {
-				setting['is_GoogleConnect'] = [true, account_info.email];
-				callback(true);
-			});
-		}
-	});
-}
-
-function disconnectGoogleAccount(callback){
-	chrome.identity.clearAllCachedAuthTokens((result) => {
-		setting['is_GoogleConnect'] = [false, ""];
-		callback(true);
-	})
-}
-
-function getGoogleAccountToken(callback){
-	chrome.identity.getAuthToken({'interactive': false}, (result) => {
-		if(chrome.runtime.lastError){
-			setting['is_GoogleConnect'] = [false, ""];
-			callback("", false);
-		}
-		else{
-			getGoogleAccountInfo((account_info) => {
-				setting['is_GoogleConnect'] = [true, account_info.email];
-			});
-			callback(result, true);;
-		}
-	});
-}
-
-//function newNoteGoogleDocs(title, token, callback)
-//function remitNoteGoogleDocs(token, callback)
-
-// ====== 資料接收 ====== 
-chrome.tabs.onActivated.addListener(function(info) {
-	currentpage_TabId = info.tabId;
-	console.log(`currentpage_TabId: ${currentpage_TabId}`);
+	console.log(`currentpage_TabId: ${current_PageInfo.tabId}`);
 	
-	if (is_SidepanelON){
-		const current_data = {currentpage_tabid: currentpage_TabId,
-							  is_darkmode: setting['is_DarkMode']
-							  };
-		portWithSidepanel.postMessage(current_data);
-	}
-});
-
-chrome.tabs.onUpdated.addListener(function(tabId) {
-	if (is_SidepanelON && (tabId === currentpage_TabId)){
-		waiting_RefreshPage = tabId;
-	}
-});
-
-chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse){
-	switch (request.event_name) {
-		//初始化
-		case 'quest-current-tab-popup':
-			sendResponse({});
-			
-			responseCurrentPageStatus((current_tab_info) => {
-				
-				const response_tab_message = {
-					event_name: 'response-current-tab-popup',
-					tab_id: currentpage_TabId,
-					current_tab_info: current_tab_info
-				};
-				chrome.runtime.sendMessage(response_tab_message, (t) => {});
-			});
-			break;
-		case 'quest-current-tab-sidepanel':
-			sendResponse({});
-			
-			responseCurrentPageStatus((current_tab_info) => {
-				
-				const response_tab_message = {
-					event_name: 'response-current-tab-sidepanel',
-					current_tab_info: current_tab_info
-				};
-				chrome.runtime.sendMessage(response_tab_message, (t) => {});
-			});
-			break;
-		case 'quest-extension-setting':
-			responseSetting((setting) => {
-				sendResponse(setting);
-			});
-			
-			if (sender.tab && is_SidepanelON){
-				if (sender.tab.id === waiting_RefreshPage){
-					const current_data = {currentpage_tabid: currentpage_TabId,
-						is_darkmode: setting['is_DarkMode']
-						};
-					portWithSidepanel.postMessage(current_data);
-					
-					waiting_RefreshPage = null;
-				}
-			}
-			break;
-		case 'quest-recorded-keywords':
-			responseRecordedKeywords((recorded_keywords) => {
-				sendResponse(recorded_keywords);
-			});
-			break;
-			
-		case 'quest-open-sidePanel':
-			if (request.select_keyword != null){
-				current_Keyword = request.select_keyword;
-			}
-			sendResponse({is_allow: !is_SidepanelON});
-			
-			/*
-			if (!is_SidepanelON){
-				chrome.sidePanel.open({tabId: currentpage_TabId});
-			}
-			*/
-			
-			break;
-		case 'quest-sidePanel-on':
-			responseSidepanelOn((response) => {
-				sendResponse(response);
-			});
-			break;
-		//訊息傳送
-		case 'send-notification-message':
-			sendResponse({});
-			
-			triggerNotificationMessage(request.message, request.notification_type);
-			break;
-		//索要資料
-		case 'quest-url-notedata':
-			sendResponse({});
-			
-			responseSidepanelUrlNoteData(request.host, (host_notedata, keywords_priority) => {
-				const response_host_notedata = {
-					event_name: 'response-url-notedata',
-					host: request.host,
-					host_notedata: host_notedata,
-					keywords_priority: keywords_priority
-				};
-				chrome.runtime.sendMessage(response_host_notedata, (t) => {});
-			});
-			break;
-		case 'quest-special-url-notedata':
-			sendResponse({});
-			
-			responseSidepanelSpecialUrlNoteData(request.title, request.host, request.url, (title, key_index, host_notedata, keywords_priority) => {
-				const response_host_notedata = {
-					event_name: 'response-special-url-notedata',
-					title: title,
-					key_index: key_index,
-					host_notedata: host_notedata,
-					keywords_priority: keywords_priority
-				};
-				chrome.runtime.sendMessage(response_host_notedata, (t) => {});
-			});
-			break;
-			
-		case 'quest-keyword-notedata-sidepanel':
-			sendResponse({});
-			
-			const quest_keyword_side = request.keyword;
-			
-			if (recorded_Keywords.includes(quest_keyword_side)){
-				responseSidepanelKeywordsNoteData(quest_keyword_side, request.is_first, (keyword_notedata, keywords_priority) => {
-					const response_keyword_notedata = {
-						event_name: 'response-keyword-notedata-sidepanel',
-						keyword: quest_keyword_side,
-						keyword_notedata: keyword_notedata,
-						keywords_priority: keywords_priority
-					};
-					
-					if (is_SidepanelON){
-						chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-						current_Keyword = quest_keyword_side;
-					}
-				});
-			}
-			
-			break;
-		case 'quest-noindex-notedata-sidepanel':
-			sendResponse({});
-			
-			responseSidepanelKeywordsNoteData('NoIndexNote', true, (keyword_notedata, keywords_priority) => {
-				const response_keyword_notedata = {
-					event_name: 'response-noindex-notedata-sidepanel',
-					keyword_notedata: keyword_notedata,
-					keywords_priority: keywords_priority
-				};
-				
-				if (is_SidepanelON){
-					chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-					current_Keyword = 'NoIndexNote';
-				}
-			});
-			
-			break;
-		case 'quest-keyword-notedata-content':
-			sendResponse({});
-			
-			const quest_keyword_popup = request.keyword;
-			responseContentKeywordsNoteData(quest_keyword_popup, (response_keyword_notedata) => {
-				if (request.is_first){
-					response_keyword_notedata.mouseX = request.mouseX;
-					response_keyword_notedata.mouseY = request.mouseY;
-				}
-				else{
-					response_keyword_notedata.index = request.index;
-				}
-				response_keyword_notedata.is_first = request.is_first;
-				
-				chrome.tabs.sendMessage(sender.tab.id, response_keyword_notedata, (t) => {});
-			});
-			break;
-			
-		case 'quest-display-keywords':
-			sendResponse({});
-			
-			getDisplayKeyword((display_list) => {
-				const response_display_keyword = {
-					event_name: 'response-display-Keywords',
-					display_keywords: display_list
-				};
-				
-				chrome.runtime.sendMessage(response_display_keyword, (t) => {});
-			});
-			break;
-			
-		case 'quest-module-data-read':
-			sendResponse({});
-			
-			moduleDataRead(request.modulename, request.keys, (reply_data) => {
-				const response_module_data = {
-					event_name: request.reply_event_name,
-					reply_data: reply_data,
-					keys: request.keys,
-					note: request.note
-				};
-				
-				chrome.runtime.sendMessage(response_module_data, (t) => {});
-			});
-			break;
-		//修改儲存資料
-		case 'send-keyword-note-add-popup'://預計廢棄
-			sendResponse({});
-			
-			addNewKeyword(request.keyword, "", (process_state, save_datetime) => {
-				if (is_SidepanelON && process_state){
-					responseSidepanelKeywordsNoteData(request.keyword, false, (keyword_notedata, keywords_priority) => {
-						const response_keyword_notedata = {
-							event_name: 'response-keyword-notedata-sidepanel',
-							keyword: request.keyword,
-							keyword_notedata: keyword_notedata,
-							keywords_priority: keywords_priority
-						};
-						const send_keyword_add = {
-							event_name: 'reload-recorded-Keywords'
-						};
-						
-						chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-						chrome.runtime.sendMessage(send_keyword_add, (t) => {});
-					});
-				}
-			});
-			break;
-			
-		case 'send-keyword-note-add':
-			sendResponse({});
-			
-			addNewKeyword(request.keyword, request.notecontent, (process_state, save_datetime) => {
-				const response_keyword_process = {
-					event_name: 'response-keyword-note-add',
-					process_state: process_state,
-					save_datetime: save_datetime
-				};
-				const send_keyword_add = {
-					event_name: 'reload-recorded-Keywords'
-				};
-					
-				chrome.runtime.sendMessage(response_keyword_process, (t) => {});
-				chrome.runtime.sendMessage(send_keyword_add, (t) => {});
-			});
-			break;
-		case 'send-url-note-add':
-			sendResponse({});
-			
-			addNewUrl(request.host, request.notecontent, request.is_special_url, (process_state, save_datetime) => {
-				const response_url_process = {
-					event_name: 'response-url-note-add',
-					process_state: process_state,
-					save_datetime: save_datetime
-				};
-					
-				chrome.runtime.sendMessage(response_url_process, (t) => {});
-			});
-			break;
+	try {
+		const Tab = await chrome.tabs.get(current_PageInfo.tabId);
 		
-		case 'send-keyword-note-delete':
-			sendResponse({});
-			
-			deleteKeyword(request.keyword, (process_state) => {
-				const response_keyword_process = {
-					event_name: 'response-keyword-note-delete',
-					process_state: process_state
-				};
-					
-				chrome.runtime.sendMessage(response_keyword_process, (t) => {});
-			});
-			break;
-		case 'send-url-note-delete':
-			sendResponse({});
-			
-			deleteUrl(request.host, request.is_special_url, (process_state) => {
-				const response_url_process = {
-					event_name: 'response-url-note-delete',
-					process_state: process_state
-				};
-					
-				chrome.runtime.sendMessage(response_url_process, (t) => {});
-			});
-			break;
-		//-------
-		case 'send-keyword-notedata-add':
-			sendResponse({});
-			
-			addKeywordNote(request.keyword, request.notecontent, (process_state, save_datetime) => {
-				const response_keyword_process = {
-					event_name: 'response-keyword-notedata-save',
-					process_state: process_state,
-					note_id: request.note_id,
-					save_datetime: save_datetime
-				};
-					
-				chrome.runtime.sendMessage(response_keyword_process, (t) => {});
-			});
-			break;
-		case 'send-url-notedata-add':
-			sendResponse({});
-			
-			addKeywordNote(request.host, request.notecontent, (process_state, save_datetime) => {
-				const response_url_process = {
-					event_name: 'response-url-notedata-save',
-					process_state: process_state,
-					note_id: request.note_id,
-					save_datetime: save_datetime
-				};
-					
-				chrome.runtime.sendMessage(response_url_process, (t) => {});
-			});
-			break;
-			
-		case 'send-keyword-notedata-save':
-			sendResponse({});
-			
-			editKeywordNote(request.keyword, request.notecontent, request.note_id, (process_state, save_datetime) => {
-				const response_keyword_process = {
-					event_name: 'response-keyword-notedata-save',
-					process_state: process_state,
-					note_id: request.note_id,
-					save_datetime: save_datetime
-				};
-					
-				chrome.runtime.sendMessage(response_keyword_process, (t) => {});
-			});
-			break;
-		case 'send-url-notedata-save':
-			sendResponse({});
-			
-			editKeywordNote(request.host, request.notecontent, request.note_id, (process_state, save_datetime) => {
-				const response_url_process = {
-					event_name: 'response-url-notedata-save',
-					process_state: process_state,
-					note_id: request.note_id,
-					save_datetime: save_datetime
-				};
-					
-				chrome.runtime.sendMessage(response_url_process, (t) => {});
-			});
-			break;
-			
-		case 'send-keyword-notedata-delete':
-			sendResponse({});
-			
-			deleteKeywordNote(request.keyword, request.note_id, (process_state) => {
-				const response_keyword_process = {
-					event_name: 'response-keyword-notedata-delete',
-					process_state: process_state,
-					note_id: request.note_id
-				};
-					
-				chrome.runtime.sendMessage(response_keyword_process, (t) => {});
-			});
-			break;
-		case 'send-url-notedata-delete':
-			sendResponse({});
-			
-			deleteKeywordNote(request.host, request.note_id, (process_state) => {
-				const response_url_process = {
-					event_name: 'response-url-notedata-delete',
-					process_state: process_state,
-					note_id: request.note_id
-				};
-					
-				chrome.runtime.sendMessage(response_url_process, (t) => {});
-			});
-			break;
-		//-------
-		case 'send-keyword-note-pin':
-			sendResponse({});
-			
-			addNotePriority(request.keyword, request.note_id, (process_state) => {
-				const response_keyword_process = {
-					event_name: 'response-keyword-note-pin',
-					process_state: process_state,
-					note_id: request.note_id
-				};
-					
-				chrome.runtime.sendMessage(response_keyword_process, (t) => {});
-			});
-			break;
-		case 'send-url-note-pin':
-			sendResponse({});
-			
-			addNotePriority(request.host, request.note_id, (process_state) => {
-				const response_url_process = {
-					event_name: 'response-url-note-pin',
-					process_state: process_state,
-					note_id: request.note_id
-				};
-					
-				chrome.runtime.sendMessage(response_url_process, (t) => {});
-			});
-			break;
-			
-		case 'send-keyword-note-unpin':
-			sendResponse({});
-			
-			removeNotePriority(request.keyword, request.note_id, (process_state) => {
-				const response_keyword_process = {
-					event_name: 'response-keyword-note-unpin',
-					process_state: process_state,
-					note_id: request.note_id
-				};
-					
-				chrome.runtime.sendMessage(response_keyword_process, (t) => {});
-			});
-			break;
-		case 'send-url-note-unpin':
-			sendResponse({});
-			
-			removeNotePriority(request.host, request.note_id, (process_state) => {
-				const response_url_process = {
-					event_name: 'response-url-note-unpin',
-					process_state: process_state,
-					note_id: request.note_id
-				};
-					
-				chrome.runtime.sendMessage(response_url_process, (t) => {});
-			});
-			break;
-		//-------
-		case 'update-setting-change':
-			sendResponse({});
-			
-			settingInitialSetting(request.setting_name, request.value, (process_state) => {
-				const response_setting_change = {
-					event_name: 'response-setting-change',
-					setting_name: request.setting_name,
-					value: request.value,
-					process_state: process_state
-				};
-					
-				chrome.runtime.sendMessage(response_setting_change, (t) => {});
-			});
-			
-		//頁面更新
-		case 'webapp-url-page-updated':
-			sendResponse({});
-			
-			if (is_SidepanelON && currentpage_TabId == sender.tab.id){
-				const current_data = {currentpage_tabid: currentpage_TabId,
-									  is_darkmode: setting['is_DarkMode']
-									  };
-				portWithSidepanel.postMessage(current_data);
-			}
-			break;
-			
-		case 'response-keyword-mark-search':
-			if (request.request_from == 'hotkey'){
-				sendResponse({});
-			}
-			
-			chrome.action.setBadgeText({tabId: currentpage_TabId, text: `${request.process_keycount}`}, (t) => {});
-			break;
-			
-		//帳戶連接
-		/*
-		case 'check-account-google'://備用
-			sendResponse({});
-			getGoogleAccountInfo((account_info) => {
-				const response_check_account = {
-					event_name: 'response-check-account-google',
-					account_info: account_info
-				};
-					
-				chrome.runtime.sendMessage(response_check_account, (t) => {});
-			});
-			break;
-			
-		case 'connect-account-google':
-			sendResponse({});
-			connectGoogleAccount((process_state) => {
-				const response_connect_account = {
-					event_name: 'response-connect-account-google',
-					process_state: process_state
-				};
-					
-				chrome.runtime.sendMessage(response_connect_account, (t) => {});
-			});
-			break;
-		case 'disconnect-account-google':
-			sendResponse({});
-			disconnectGoogleAccount((process_state) => {
-				const response_disconnect_account = {
-					event_name: 'response-disconnect-account-google',
-					process_state: process_state
-				};
-					
-				chrome.runtime.sendMessage(response_disconnect_account, (t) => {});
-			});
-			break;
-		*/
-			
-		//備份資料
-		case 'quest-backupdata-export':
-			sendResponse({});
-			exportBackupData((backup_output) => {
-				const response_backupdata_export = {
-					event_name: 'response-backupdata-export',
-					backup_data: backup_output
-				};
-					
-				chrome.runtime.sendMessage(response_backupdata_export, (t) => {});
-			});
-			break;
-		case 'quest-backupdata-inport':
-			sendResponse({});
-			inportBackupJsonData(request.json_data, request.is_overwrite);
-			break;
-			
-		case 'quest-initialization-data':
-			sendResponse({});
-			const send_initialization_data = {
-				notification_type: 'initialization_data'
-			};
-
-			confirmNotificationMessage('初始化將刪除既有筆記並且無法回復初始化前，是否繼續初始化', '', send_initialization_data);
-			break;
-		
-		/*	//擱置開發
-		case 'create-backup-docs-google':
-			sendResponse({});
-			getKeywordData(request.tag_name, (result, is_exist) => {
-				if (is_exist){
-					if (setting['is_GoogleConnect'][0]){
-						chrome.runtime.sendMessage({event_name: 'format-note2googledocs', tag_name: request.tag_name, note_data: result}, () => {});
-					}
-					else{
-						triggerNotificationMessage(chrome.i18n.getMessage('backup_docs_google_unlogin_error'), 'warning');
-					}
-				}
-				else{
-					triggerNotificationMessage(chrome.i18n.getMessage('backup_docs_google_notexist_error'), 'error');
-				}
-			});
-			break;
-		case 'response-format-note2googledocs':
-			sendResponse({});
-
-			getGoogleAccountToken((token, process_state) => {
-				if (process_state){
-					remitNoteGoogleDocs(request.tag_name, request.output_requests, request.output_await_requests, request.process_state, token, () => {});
-				}
-				else{
-					triggerNotificationMessage(chrome.i18n.getMessage('backup_docs_google_cantgettoken_error'), 'error');
-				}
-			});
-			break;
-		*/
-			
-		//--- SubpageIndex.js ---
-		case 'update-subpage-rules-enable':
-			sendResponse({});
-			
-			subpageIndex.updateRulesEnable(request.rules_enable);
-			triggerNotificationMessage(chrome.i18n.getMessage('SubpageIndex_subpage_rules_enable'), 'ok');
-			break;
-			
-		case 'send-new-subpage-rules':
-			sendResponse({});
-			
-			subpageIndex.updateRules(request.host, request.rule_data);
-			triggerNotificationMessage(chrome.i18n.getMessage('SubpageIndex_new_subpage_rules'), 'ok');
-			break;
-		case 'send-delete-subpage-rules':
-			sendResponse({});
-			
-			subpageIndex.removeRules(request.rule_id);
-			triggerNotificationMessage(chrome.i18n.getMessage('SubpageIndex_delete_subpage_rules'), 'ok');
-			break;
-			
-		//--- notebooklmCaller.js ---
-		case 'quest-account-notebooklm-list':
-			sendResponse({});
-			const authusers = await summaryNotebooklm.listNotebookAuthUsers();
-			chrome.runtime.sendMessage({event_name: 'response-account-notebooklm-list', authusers: authusers}, () => {});
-			break;
-			
-		case 'connect-account-notebooklm':
-			sendResponse({});
-
-			let set_data = {
-				index: -1,
-				id: ""
-			}
-			if (request.account_index >= 0){
-				const authUserData = await summaryNotebooklm.testAuthUserIndex(request.account_index);
-				set_data.id = authUserData.id;
-				set_data.index = request.account_index;
-			}
-			
-			summaryNotebooklm.setAuthUser(set_data.index, set_data.id, () => {
-				summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
-					setting['is_NotebooklmConnect'] = account_info;
-					chrome.runtime.sendMessage({event_name: 'response-connect-account-notebooklm'}, () => {});
-				});
-			});
-			
-			break;
-			
-		case 'quest-summary-url':
-			sendResponse({});
-			
-			const summary_response = await summaryNotebooklm.summaryUrl(request.current_url, request.current_host);
-			chrome.runtime.sendMessage({event_name: 'response-summary-url', summary_response: summary_response}, () => {});
-			break;
+		current_PageInfo.url = Tab.url;
+		current_PageInfo.title = Tab.title;
+		current_PageInfo.isComplete = (Tab.status == "complete");
+		current_PageInfo.isSupport = (current_PageInfo.url.startsWith('http://') || current_PageInfo.url.startsWith('https://'));
+	} catch (e) {
+		console.log('tabs.onActivated', e);
+		current_PageInfo.isComplete = false;
 	}
-	console.log(request.event_name);
+	
+	updateCurrentPageInfo();
+	loadStartupData();
 });
 
-chrome.runtime.onConnect.addListener(function (port) {
-	switch (port.name) {
-		case 'Sidepanel':
-			is_SidepanelON = true;
-			
-			portWithSidepanel = port;
-			
-			setTimeout(() => {
-				const current_data = {currentpage_tabid: currentpage_TabId,
-									  is_darkmode: setting['is_DarkMode']
-									  };
-				portWithSidepanel.postMessage(current_data);
-			}, 500);
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab){ //分頁更新時觸發
+	if (current_PageInfo.tabId == tabId && changeInfo.status !== undefined){
+		if (!current_PageInfo.isComplete && (changeInfo.status == "complete")){
+			current_PageInfo.url = tab.url;
+			current_PageInfo.title = tab.title;
+			current_PageInfo.isComplete = true;
+			current_PageInfo.isSupport = (current_PageInfo.url.startsWith('http://') || current_PageInfo.url.startsWith('https://'));
+		}
+		else if (current_PageInfo.isComplete && (changeInfo.status != "complete")){
+			current_PageInfo.isComplete = false;
+		}
 		
-			port.onDisconnect.addListener(async () => {
-				is_SidepanelON = false;
-				portWithSidepanel = null;
-			});
-			break;
+		updateCurrentPageInfo();
 	}
 });
 
-chrome.contextMenus.onClicked.addListener(function (info, tab) {
+chrome.contextMenus.onClicked.addListener(async function (info, tab) { //內容功能表功能觸發
 	switch (info.menuItemId) {
 		case 'KDN_keywordselect':
-			if (keyword_reserved_words.includes(info.selectionText)){
-				//triggerNotificationMessage("這個關鍵字為系統保留字，無法新增", 'error');
+			if (KEYWORD_RESERVED_WORDS.includes(info.selectionText)){
 				triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_reserved_error'), 'error');
 			}
 			else if (info.selectionText != ""){
-				if (!is_SidepanelON){
-					current_Keyword = info.selectionText;
-					currentpage_TabId = tab.id;
-					chrome.sidePanel.open({tabId: currentpage_TabId});
+				background_Info.currentKeyword = info.selectionText;
 					
-					addNewKeyword(info.selectionText, "", (process_state, save_datetime) => {});
+				if (!current_SidepageInfo.isVisible){
+					chrome.sidePanel.open({tabId: current_PageInfo.tabId});
+				}
+			}
+			
+			break;
+	}
+});
+
+chrome.commands.onCommand.addListener(function (command){ //快捷鍵觸發
+	switch (command) {
+		case 'KDN_SearchKeyword':
+			if (current_PageInfo.isScriptRun){
+				if (!current_PageInfo.isSearched){
+					chrome.tabs.sendMessage(current_PageInfo.tabId, {event_name: 'keyword-mark-search', keyword_keyindex: keyword_KeyIndex}, function (ReturnData){
+						if (ReturnData.isFinish){
+							updateCurrentPageInfo();
+							chrome.action.setBadgeText({tabId: current_PageInfo.tabId, text: `${ReturnData.found}`});
+						}
+					});
+				}
+				else if(current_PageInfo.isMarkhide){
+					chrome.tabs.sendMessage(current_PageInfo.tabId, {event_name: 'keyword-mark-show'}, function (ReturnData){
+						if (ReturnData.isFinish){
+							updateCurrentPageInfo();
+						}
+					});
 				}
 				else{
-					addNewKeyword(info.selectionText, "", (process_state, save_datetime) => {
-						if (process_state){
-							current_Keyword = info.selectionText;
-							
-							responseSidepanelKeywordsNoteData(info.selectionText, false, (keyword_notedata, keywords_priority) => {
-								const response_keyword_notedata = {
-									event_name: 'response-keyword-notedata-sidepanel',
-									keyword: info.selectionText,
-									keyword_notedata: keyword_notedata,
-									keywords_priority: keywords_priority
-								};
-								const send_keyword_add = {
-									event_name: 'reload-recorded-Keywords'
-								};
-								
-								chrome.runtime.sendMessage(response_keyword_notedata, (t) => {});
-								chrome.runtime.sendMessage(send_keyword_add, (t) => {});
-							});
+					chrome.tabs.sendMessage(current_PageInfo.tabId, {event_name: 'keyword-mark-hide'}, function (ReturnData){
+						if (ReturnData.isFinish){
+							updateCurrentPageInfo();
 						}
 					});
 				}
 			}
-			break;
-	}
-});
-
-chrome.commands.onCommand.addListener((command) => {
-	switch (command) {
-		case 'KDN_SearchKeyword':
-			const quest_tab_message = {
-				event_name: 'quest-tab-status',
-				tab_id: currentpage_TabId
-			};
-			
-			function quest_contentaction(tabid){
-				chrome.tabs.sendMessage(tabid, quest_tab_message, (response) => {
-					if(chrome.runtime.lastError){
-						//triggerNotificationMessage("目前瀏覽網頁尚未初始化\n請重新載入", 'error');
-						triggerNotificationMessage(chrome.i18n.getMessage('web_page_notinit_error'), 'error');
-					}
-					else if (!response.is_areadysearch){
-						chrome.tabs.sendMessage(tabid, {event_name: 'keyword-mark-search', from: 'hotkey'}, (t) => {});
-					}
-					else if(response.is_markhide){
-						chrome.tabs.sendMessage(tabid, {event_name: 'keyword-mark-show', from: 'hotkey'}, (t) => {});
-					}
-					else{
-						chrome.tabs.sendMessage(tabid, {event_name: 'keyword-mark-hide', from: 'hotkey'}, (t) => {});
-					}
-				});
-			}
-			if (currentpage_TabId == null){
-				chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-				  currentpage_TabId = tabs[0].id;
-				  quest_contentaction(currentpage_TabId);
-				});
-			}
 			else{
-				quest_contentaction(currentpage_TabId);
+				//needErrorMessage
 			}
-			break;
 			
+			break;
 		case 'KDN_Sidepanel':
-			if (!is_SidepanelON){
-				if (currentpage_TabId == null){
-					chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-						currentpage_TabId = tabs[0].id;
-						chrome.sidePanel.open({tabId: currentpage_TabId});
-					});
-				}
-				else{
-					chrome.sidePanel.open({tabId: currentpage_TabId});
-				}
-			}
+			openSidepanel();
+			
+			break;
 	}
 });
 
-chrome.notifications.onButtonClicked.addListener(function(notificationId, btnIdx) {
-    if (Boolean(confirmnotifications_Data[notificationId])) {
-		switch (confirmnotifications_Data[notificationId].notification_type){
+chrome.notifications.onButtonClicked.addListener(async function(notificationId, btnIdx){ //帶選項通知訊息選項觸發
+    if (Boolean(confirm_NotificationsData[notificationId])) {
+		switch (confirm_NotificationsData[notificationId].notification_type){
 			case 'new_version':
 				if (btnIdx == 0){
 					chrome.tabs.create({ url: 'https://github.com/wantZzz/Keyword-Dictionary-Notes/releases/latest' });
 				}
 				else if(btnIdx == 1){
-					const latest_version = confirmnotifications_Data[notificationId].latest_version;
-					questInitialSetting('github_', (github_data) => {
-						github_data['version'] = latest_version;
-						settingInitialSetting('github_', github_data, () => {});
-					});
-					delete confirmnotifications_Data[notificationId];
+					const LatestVersion = confirm_NotificationsData[notificationId].latest_version;
+					const QuestResult = await questSetting('github_');
+					
+					if (QuestResult.isFinish){
+						QuestResult.github_['version'] = LatestVersion;
+						await setSetting('github_', QuestResult.github_);
+					}
+					
+					delete confirm_NotificationsData[notificationId];
+				}
+				
+				break;
+			case 'function':
+				if (btnIdx === 0){
+					confirm_NotificationsData[notificationId].funCall();
+					delete confirm_NotificationsData[notificationId];
 				}
 				break;
 			case 'initialization_data':
 				if (btnIdx == 0){
-					initialDataProcess();
+					const Result = await initialDataProcess();
+					if (!Result.isFinish){
+						//needErrorMessage
+					}
 				}
+				
 				break;
 		}
     }
-	/*else{
-		triggerNotificationMessage("該操作似乎超過時間限制了\n請嘗試重新該操作", 'warning');
-	}*/
+	else{
+		//needErrorMessage
+	}
 });
-// ====== 安裝時初始化 ====== 
-chrome.runtime.onInstalled.addListener(function (details){
+
+chrome.runtime.onInstalled.addListener(async function (details){ //安裝、更新觸發
 	if (details.reason == "install"){
-		getInitTagFileData((initial_data) => {
-			chrome.storage.local.set(initial_data).then(() => {});
+		const ReturnData = await initialDataProcess();
 		
-			recorded_Keywords = ['標籤', '無標籤'];
-			current_Keyword = '標籤';
+		if (ReturnData.isFinish){
+			const KeywordRefreshReturnData = await refreshKeywordKeyIndex();
+			const UrlRefreshReturnData = await refreshUrlKeyIndex();
 			
-			subpageIndex.loadSubPageIndexData();
-			summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
-				setting['is_NotebooklmConnect'] = account_info;
-			});
-			console.log('安裝初始化完成');
-		})
+			loadStartupData();
+		}
+		else{
+			//needErrorMessage
+		}
 	}
 	else{
-		questInitialSetting('is_DarkMode', (response) => {
-			setting['is_DarkMode'] = response;
-		});
-		questInitialSetting('is_SwitchWithTab', (response) => {
-			setting['is_SwitchWithTab'] = response;
-		});
-		settingInitialSetting('extension_version', 'v0.1.0-beta.0', () => {});
-		
-		questInitialSetting('note_version', (note_version) => {
-			if (note_version != 2){
-				switch (note_version) {
-					case 0:
-						const setting_github_init = {
-							version: "v0.1.0-beta.0",
-							notify_time: 100
-						}
-						
-						settingInitialSetting('github_', setting_github_init, () => {});
-						settingInitialSetting('note_version', 1, () => {});
-					case 1:
-						chrome.storage.local.set({"RecordedUrls": {}}).then(() => {});
-						settingInitialSetting('note_version', 2, () => {});
-					case 2:
-						chrome.storage.local.set({
-							"ModuleData": {
-								"SubpageIndex": {
-									"initindexs_enable": {
-										"www.google.com": true,
-										"www.bing.com": true,
-										"www.youtube.com": true,
-										"www.twitch.tv": true,
-										"forum.gamer.com.tw": true,
-										"home.gamer.com.tw": true
-									},
-									"custom_subpageIndexs": {
-										"www.pttweb.cc": []
-									},
-									"custom_subpageRules": {
-										"www.pttweb.cc": [{
-											"mode": "pathname",
-											"enable": true,
-											"id": 11111,
-											"regex_rule": "bbs/(?<specify_index>\\w+)([/]{0,1})"
-										}]
-									}
-								}
-							},
-							"NoIndexNote": []
-						}).then(() => {});
-						settingInitialSetting('note_version', 3, () => {});
-				}
-			}
-			/*
-			else if (note_version > 1){
-			}
-			*/
-			
-			subpageIndex.loadSubPageIndexData();
-			summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
-				setting['is_NotebooklmConnect'] = account_info;
-			});
-			console.log('擴充功能初始化完成');
-		});
+		loadStartupData();
 	}
-	
+
 	chrome.contextMenus.create({  
         id: 'KDN_keywordselect',
         type: 'normal',
@@ -2273,49 +1588,484 @@ chrome.runtime.onInstalled.addListener(function (details){
     });
 });
 
-// ====== 初始化 ====== 
-chrome.runtime.onStartup.addListener(() => {
-	chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-	  currentpage_TabId = tabs[0].id;
-	});
+chrome.runtime.onStartup.addListener(loadStartupData); //啟動(不含安裝、更新)觸發
+
+// ====== 分頁通訊 ====== 
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){ //短期連接通訊
+	switch (request.event_name) {
+		//訊息傳送
+		case 'send-notification-message':
+			sendResponse({});
+			createNotificationMessage(request.message, request.notification_type);
+			
+			break;
+			
+		//請求儲存資料
+		case 'quest-keyword-notedata-preview':
+			getNoteDataForPreview(request.keywordKeyIndex)
+			.then((PreviewReturnData) => {
+				sendResponse(PreviewReturnData);
+			});
+			
+			break;
+			
+		case 'quest-current-keyword':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					sendResponse({currentKeyword: background_Info.currentKeyword});
+					
+					if (!keyword_KeyIndex.includes(background_Info.currentKeyword)){
+						getKeywordDisplayOrder()
+						.then((DisplayOrderReturnData) => {
+							if (DisplayOrderReturnData.isFinish){
+								background_Info.currentKeyword = DisplayOrderReturnData.displayOrder[0];
+							}
+						});
+					}
+				}
+				else {
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'quest-keyword-notedata':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					getKeywordData(request.keywordKeyIndex)
+					.then((returnData) => {
+						sendResponse(returnData);
+						
+						if (!request.isFirst){
+							updateKeywordDisplayOrder(request.keywordKeyIndex);
+						}
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			
+			break;
+			
+		case 'quest-url-notedata':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					getUrlData(request.urlKeyIndex)
+					.then((returnData) => {
+						sendResponse(returnData);
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'quest-keyword-display-order':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					getKeywordDisplayOrder()
+					.then((returnData) => {
+						sendResponse(returnData);
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'quest-keyword-list':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					sendResponse({keywordKeyIndex: keyword_KeyIndex});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		//請求更改資料
+		case 'update-keyword-display-order':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					updateKeywordNoteDisplayOrder(request.keywordKeyIndex, request.displayOrder)
+					.then((returnData) => {
+						sendResponse(returnData);
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'update-url-display-order':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					updateUrlNoteDisplayOrder(request.urlKeyIndex, request.displayOrder)
+					.then((returnData) => {
+						sendResponse(returnData);
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'new-keyword-notedata':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					const NoteTimestamp = datetimeOutputFormat();
+					const NoteDataForSave = convertToNoteFormat(request.noteContent, NoteTimestamp);
+					addKeywordNote(request.keywordKeyIndex, NoteDataForSave)
+					.then((returnData) => {
+						returnData.noteTimestamp = NoteTimestamp;
+						sendResponse(returnData);
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'new-url-notedata':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					const NoteTimestamp = datetimeOutputFormat();
+					const NoteDataForSave = convertToNoteFormat(request.noteContent, NoteTimestamp);
+					addUrlNote(request.urlKeyIndex, NoteDataForSave)
+					.then((returnData) => {
+						returnData.noteTimestamp = NoteTimestamp;
+						sendResponse(returnData);
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'update-keyword-notedata':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					const NoteTimestamp = datetimeOutputFormat();
+					const NoteDataForSave = convertToNoteFormat(request.noteContent, NoteTimestamp);
+					editKeywordNote(request.keywordKeyIndex, request.noteId, NoteDataForSave)
+					.then((returnData) => {
+						returnData.noteTimestamp = NoteTimestamp;
+						sendResponse(returnData);
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'update-url-notedata':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					const NoteTimestamp = datetimeOutputFormat();
+					const NoteDataForSave = convertToNoteFormat(request.noteContent, NoteTimestamp);
+					editUrlNote(request.urlKeyIndex, request.noteId, NoteDataForSave)
+					.then((returnData) => {
+						returnData.noteTimestamp = NoteTimestamp;
+						sendResponse(returnData);
+					});
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'delete-keyword-noteindex':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					const funcall = () => {
+						deleteKeyword(request.keywordKeyIndex)
+						.then((returnData) => {
+							sendResponse(returnData);
+						});
+					}
+					const OptionData = {
+						notification_type: 'function',
+						funCall: funcall
+					};
+					
+					createConfirmNotificationMessage(chrome.i18n.getMessage('options_delete_keyword'), 'delete', OptionData);
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'delete-url-noteindex':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					const funcall = () => {
+						deleteUrl(request.urlKeyIndex)
+						.then((returnData) => {
+							sendResponse(returnData);
+						});
+					}
+					const OptionData = {
+						notification_type: 'function',
+						funCall: funcall
+					};
+					
+					createConfirmNotificationMessage(chrome.i18n.getMessage('options_delete_url'), 'delete', OptionData);
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'delete-keyword-note':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					const funcall = () => {
+						deleteKeywordNote(request.keywordKeyIndex, request.noteIndex)
+						.then((returnData) => {
+							sendResponse(returnData);
+						});
+					}
+					const OptionData = {
+						notification_type: 'function',
+						funCall: funcall
+					};
+					
+					createConfirmNotificationMessage(chrome.i18n.getMessage('options_delete_keyword_note'), 'delete', OptionData);
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		case 'update-url-note':
+			checkIdentificationToken(request.token)
+			.then((isPass) => {
+				if (isPass){
+					const funcall = () => {
+						deleteUrlNote(request.urlKeyIndex, request.noteIndex)
+						.then((returnData) => {
+							sendResponse(returnData);
+						});
+					}
+					const OptionData = {
+						notification_type: 'function',
+						funCall: funcall
+					};
+					
+					createConfirmNotificationMessage(chrome.i18n.getMessage('options_delete_url_note'), 'delete', OptionData);
+				}
+				else{
+					sendResponse({});
+				}
+			});
+			
+			break;
+			
+		//開啟側邊欄
+		case 'quest-open-sidepanel':
+			sendResponse({});
+			
+			if (request.isSpecifiedKeywords){
+				openSidepanel(request.keyword);
+			}
+			else{
+				openSidepanel();
+			}
+			
+			break;
+			
+		//test
+		case 'test-current-pageinfo':
+			sendResponse({});
+			console.log(current_PageInfo);
+			
+			break;
+	}
 	
-	questInitialSetting('is_DarkMode', (response) => {
-		setting['is_DarkMode'] = response;
-	});
-	questInitialSetting('is_SwitchWithTab', (response) => {
-		setting['is_SwitchWithTab'] = response;
-	});
-	
-	/*
-	isConnectGoogle((is_connect) => {
-		if(!is_connect){
-			setting['is_GoogleConnect'] = [false, ""];
-		}
-		else{
-			setTimeout(() => {
-				triggerNotificationMessage(chrome.i18n.getMessage('check_can_connect_google'), 'ok');
-				getGoogleAccountInfo((account_info) => {
-					setting['is_GoogleConnect'] = [true, account_info.email];
-				});
-			}, 2000);
-		}
-	});
-	*/
-	
-	checkForNewRelease();
-	subpageIndex.loadSubPageIndexData();
-	summaryNotebooklm.loadNotebooklmSummaryData((account_info) => {
-		setting['is_NotebooklmConnect'] = account_info;
-	});
-	
-	console.log('擴充功能初始化完成');
+	console.log(request.event_name);
+	return true;
 });
 
-reloadKeywordlist((new_recorded_keywords) => {
-	if ((current_Keyword == '') || (recorded_Keywords.length == 0)){
-		recorded_Keywords = new_recorded_keywords;
-		getDisplayKeyword((display_list) => {
-			current_Keyword = display_list[0];
-		});
+chrome.runtime.onConnect.addListener(async function (port){ //長期連接通訊
+	switch (port.name) {
+		case 'Sidepanel':
+			current_SidepageInfo.isVisible = true;
+			current_SidepageInfo.connectPort = port;
+			current_SidepageInfo.identificationToken = Math.random().toString(36).substr(2);
+			
+			current_SidepageInfo.connectPort.onMessage.addListener(onMessageFromSidepanel);
+			current_SidepageInfo.connectPort.onDisconnect.addListener(async function (){
+				current_SidepageInfo = {
+					isVisible: false,
+					connectPort: null,
+					identificationToken: "",
+					keywordShow: {
+						title: "",
+						indexKey: "",
+						module: {}
+					},
+					urlShow: {
+						title: "",
+						indexKey: "",
+						module: {}
+					}
+				};
+			});
+			
+			break;
 	}
 });
+function onMessageFromSidepanel(msg){
+	switch (msg.event_name) {
+		case 'refresh-tab-status':
+			updateCurrentPageInfo(true);
+			break;
+			
+		case 'keyword-previous-mark':
+			chrome.tabs.sendMessage(current_PageInfo.tabId, msg);
+			break;
+		case 'keyword-next-mark':
+			chrome.tabs.sendMessage(current_PageInfo.tabId, msg);
+			break;	
+	}
+}
+
+// ====== 初始化 ====== 
+async function loadStartupData(){
+	if (basic_StartupDataConfirmation == 'unload'){
+		basic_StartupDataConfirmation = 'loading';
+	
+		const KeywordRefreshReturnData = await refreshKeywordKeyIndex();
+		const UrlRefreshReturnData = await refreshUrlKeyIndex();
+			
+		if (KeywordRefreshReturnData.isFinish && UrlRefreshReturnData.isFinish){
+			basic_StartupDataConfirmation = 'complete';
+			
+			chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+				const currentWindowTab = tabs[0];
+				
+				current_PageInfo.tabId = currentWindowTab.id;
+				updateCurrentPageInfo();
+			});
+			if ((background_Info.currentKeyword == '') && (keyword_KeyIndex.length != 0)){
+				
+				const DisplayOrderReturnData = await getKeywordDisplayOrder();
+				if (DisplayOrderReturnData.isFinish){
+					background_Info.currentKeyword = DisplayOrderReturnData.displayOrder[0];
+				}
+			}
+		}
+		else{
+			basic_StartupDataConfirmation = 'fail';
+			//needErrorMessage
+		}
+	}
+}
+
+async function awaitLoadStartupData(){
+	await timeout(1000);
+	if (basic_StartupDataConfirmation == 'unload'){
+		loadStartupData();
+	}
+}
+
+awaitLoadStartupData();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
