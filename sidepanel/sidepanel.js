@@ -18,11 +18,7 @@ var sidepanel_Info = {
 	isDraggingEdge: false,
 	draggingOffsetY: 0,
 	titleOffsetHeight: 0,
-	keywordOffsetHeight: 0,
-	isDraggingBlock: false,
-	blockDragging: null,
-	blockContainerOffsetHeight: 0,
-	blockInitY: 0
+	keywordOffsetHeight: 0
 }
 
 var editing_DataInfo = {
@@ -1189,7 +1185,7 @@ function editorExitButtonClick(event){//v
 	edit_options_popup.classList.remove('popup_show');
 }
 
-// ====== 分頁通訊 ====== 
+// ====== 資料接收 ====== 
 /*
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){ //短期連接通訊
 	console.log(request.event_name);
@@ -1220,6 +1216,11 @@ function onMessageFromBackground(msg){//長期連接通訊
 	switch (msg.event_name) {
 		case 'update-sidepanel-status':
 			refreshSidepanelStatus(msg);
+			
+			break;
+			
+		case 'show-selected-keyword':
+			refreshKeywordShow(msg.keywordSelected);
 			
 			break;
 	}
@@ -1337,41 +1338,6 @@ function runInitial(){
 			title_area.style.height = Math.max(150, Math.min(sidepanel_Info.titleOffsetHeight + offset, maxheight)) + 'px';
 			keyword_area.style.height = Math.max(150, Math.min(sidepanel_Info.keywordOffsetHeight - offset, maxheight)) + 'px';
 		}
-		else if (sidepanel_Info.isDraggingBlock && sidepanel_Info.blockDragging) {
-			const container = sidepanel_Info.blockDragging.closest("div.windos_message_container");
-			
-			sidepanel_Info.blockDragging.classList.remove("insert-animation");
-			let newTop = sidepanel_Info.blockOffsetHeight - (sidepanel_Info.blockInitY - e.clientY);
-			if (newTop < 0) {
-				newTop = 10;
-				
-				container.scrollTop -= 10; 
-			} else if (newTop > container.offsetHeight - 30) {
-				newTop = container.offsetHeight - 40;
-				
-				container.scrollTop += 10;
-			}
-			sidepanel_Info.blockDragging.style.top = newTop + "px";
-
-			let itemSibilings = [
-				...container.querySelectorAll("div.windos_message_block:not(.dragging)"),
-			];
-			let nextItem = itemSibilings.find((sibiling) => {
-				return (
-				  e.clientY - container.getBoundingClientRect().top + sidepanel_Info.blockOffsetHeight / 2 <=
-				  sibiling.offsetTop + sibiling.offsetHeight / 2
-				);
-			});
-
-			itemSibilings.forEach((sibiling) => {
-				sibiling.style.marginTop = "";
-			});
-
-			if (nextItem) {
-				nextItem.style.marginTop = sidepanel_Info.blockDragging.offsetHeight + "px";
-			}
-			container.insertBefore(sidepanel_Info.blockDragging, nextItem);
-        }
 	}
 	function drag_mouseup(e){
 		if (sidepanel_Info.isDraggingEdge) {
@@ -1389,7 +1355,6 @@ function runInitial(){
 			keyword_area.style.height = 'calc(' + (100 - title_area_precent) + '% - 59px)';
 			document.body.style.userSelect = "auto";
 		}
-
 	}
 	
 	// ====== 請求設定資料 ====== 

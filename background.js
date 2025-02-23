@@ -39,6 +39,10 @@ var current_SidepageInfo = {
 		module: {}
 	}
 }
+var current_PopupInfo = {
+	isVisible: false,
+	connectPort: null
+}
 
 // ====== 通知訊息處理 ====== 
 function createNotificationMessage(message, type){
@@ -258,6 +262,15 @@ async function updateCurrentPageInfo(forceUpdate = false){
 					identificationToken: current_SidepageInfo.identificationToken
 				});
 			}
+			if (current_PopupInfo.isVisible && current_PopupInfo.connectPort !== null){
+				current_PopupInfo.connectPort.postMessage({
+					event_name: 'update-tab-status',
+					isSupport: current_PageInfo.isSupport,
+					isScriptRun: current_PageInfo.isScriptRun,
+					isSearched: current_PageInfo.isSearched,
+					isMarkhide: current_PageInfo.isMarkhide
+				});
+			}
 			
 			if (!current_PageInfo.isScriptRun){
 				chrome.action.setBadgeText({tabId: current_PageInfo.tabId, text: '！'});
@@ -285,6 +298,15 @@ async function updateCurrentPageInfo(forceUpdate = false){
 				keywordFound: current_PageInfo.keywordFound,
 				module: current_PageInfo.module,
 				identificationToken: current_SidepageInfo.identificationToken
+			});
+		}
+		if (current_PopupInfo.isVisible && current_PopupInfo.connectPort !== null){
+			current_PopupInfo.connectPort.postMessage({
+				event_name: 'update-tab-status',
+				isSupport: current_PageInfo.isSupport,
+				isScriptRun: current_PageInfo.isScriptRun,
+				isSearched: current_PageInfo.isSearched,
+				isMarkhide: current_PageInfo.isMarkhide
 			});
 		}
 		
@@ -536,7 +558,7 @@ async function updateKeywordNoteDisplayOrder(keywordKeyIndex, displayOrder){
 			
 			return returnData;
 		} catch (e) {
-            console.error("Error in updateKeywordDisplayOrder:", e);
+            console.error("Error in updateKeywordNoteDisplayOrder:", e);
             return returnData;
         }
 	}
@@ -1470,9 +1492,15 @@ chrome.contextMenus.onClicked.addListener(async function (info, tab) { //內容�
 				triggerNotificationMessage(chrome.i18n.getMessage('add_new_keyword_reserved_error'), 'error');
 			}
 			else if (info.selectionText != ""){
-				background_Info.currentKeyword = info.selectionText;
 					
-				if (!current_SidepageInfo.isVisible){
+				if (current_SidepageInfo.isVisible){
+					current_SidepageInfo.connectPort.postMessage({
+						event_name: 'show-selected-keyword',
+						keywordSelected: info.selectionText
+					});
+				}
+				else{
+					background_Info.currentKeyword = info.selectionText;
 					chrome.sidePanel.open({tabId: current_PageInfo.tabId});
 				}
 			}
@@ -1590,7 +1618,7 @@ chrome.runtime.onInstalled.addListener(async function (details){ //安裝、更�
 
 chrome.runtime.onStartup.addListener(loadStartupData); //啟動(不含安裝、更新)觸發
 
-// ====== 分頁通訊 ====== 
+// ====== 資料接收 ====== 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){ //短期連接通訊
 	switch (request.event_name) {
 		//訊息傳送
@@ -1639,7 +1667,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){ /
 					.then((returnData) => {
 						sendResponse(returnData);
 						
-						if (!request.isFirst){
+						if (!returnData.isFirst && returnData.isExist){
 							updateKeywordDisplayOrder(request.keywordKeyIndex);
 						}
 					});
@@ -1954,6 +1982,19 @@ chrome.runtime.onConnect.addListener(async function (port){ //長期連接通訊
 			});
 			
 			break;
+		case 'Popup':
+			current_PopupInfo.isVisible = true;
+			current_PopupInfo.connectPort = port;
+			
+			current_PopupInfo.connectPort.onMessage.addListener(onMessageFromPopup);
+			current_PopupInfo.connectPort.onDisconnect.addListener(async function (){
+				current_PopupInfo = {
+					isVisible: false,
+					connectPort: null
+				};
+			});
+			
+			break;
 	}
 });
 function onMessageFromSidepanel(msg){
@@ -1968,6 +2009,59 @@ function onMessageFromSidepanel(msg){
 		case 'keyword-next-mark':
 			chrome.tabs.sendMessage(current_PageInfo.tabId, msg);
 			break;	
+	}
+}
+function onMessageFromPopup(msg){
+	switch (msg.event_name) {
+		case 'quest-tab-status':
+			current_PopupInfo.connectPort.postMessage({
+				event_name: 'update-tab-status',
+				isSupport: current_PageInfo.isSupport,
+				isScriptRun: current_PageInfo.isScriptRun,
+				isSearched: current_PageInfo.isSearched,
+				isMarkhide: current_PageInfo.isMarkhide
+			});
+			
+			break;
+			
+		case 'quest-open-sidepanel':
+			if (current_SidepageInfo.isVisible && Boolean(msg.targetKeyword)){
+				current_SidepageInfo.connectPort.postMessage({
+					event_name: 'show-selected-keyword',
+					keywordSelected: msg.targetKeyword
+				});
+			}
+			else{
+				if (Boolean(msg.targetKeyword)){
+					background_Info.currentKeyword = msg.targetKeyword;
+				}
+				chrome.sidePanel.open({tabId: current_PageInfo.tabId});
+			}
+			
+			break;
+			
+		case 'quest-keyword-search':
+			chrome.tabs.sendMessage(current_PageInfo.tabId, {event_name: 'keyword-mark-search', keyword_keyindex: keyword_KeyIndex}, function (ReturnData){
+				if (ReturnData.isFinish){
+					updateCurrentPageInfo();
+					chrome.action.setBadgeText({tabId: current_PageInfo.tabId, text: `${ReturnData.found}`});
+				}
+			});
+			break;
+		case 'quest-keyword-show':
+			chrome.tabs.sendMessage(current_PageInfo.tabId, {event_name: 'keyword-mark-show'}, function (ReturnData){
+				if (ReturnData.isFinish){
+					updateCurrentPageInfo();
+				}
+			});
+			break;
+		case 'quest-keyword-hide':
+			chrome.tabs.sendMessage(current_PageInfo.tabId, {event_name: 'keyword-mark-hide'}, function (ReturnData){
+				if (ReturnData.isFinish){
+					updateCurrentPageInfo();
+				}
+			});
+			break;
 	}
 }
 
