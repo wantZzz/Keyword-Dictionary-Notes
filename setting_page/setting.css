@@ -38,7 +38,7 @@ body.dark {
   --text-color: #ccc;
 }
 
-div.display-area {
+div.display_area {
   height: 100%;
   width: 100%;
   
@@ -47,7 +47,7 @@ div.display-area {
   display: flex;
 }
 
-#sidebar-area {
+#sidebar_area {
   background: var(--popup-color);
   max-width: 300px;
   
@@ -58,50 +58,50 @@ div.display-area {
   margin-right: 10px;
   padding-top: 15px;
 }
-#sidebar-area header {
+#sidebar_area header {
     position: relative;
     padding: 0 8px;
     margin-bottom: 25px;
 }
-#sidebar-area header .image-text {
+#sidebar_area header .image_text {
     display: flex;
     align-items: center;
 }
-#sidebar-area header .keyword-image {
+#sidebar_area header .keyword_image {
     display: flex;
     align-items: center;
     min-width: 50px;
     border-radius: 6px;
 }
-#sidebar-area header .keyword-image img {
+#sidebar_area header .keyword_image img {
     width: 40px;
     border-radius: 6px;
 }
-#sidebar-area header .logo-text {
+#sidebar_area header .logo_text {
     display: flex;
     flex-direction: column;
 }
-#sidebar-area header .image-text .name {
+#sidebar_area header .image_text .name {
     margin-top: 2px;
     font-size: 14px;
     font-weight: 600;
 }
-#sidebar-area header .image-text .version {
+#sidebar_area header .image_text .version {
     font-size: 10px;
     font-weight: 300;
 }
-#sidebar-area header .image-text .profession {
+#sidebar_area header .image_text .profession {
     margin-top: 2px;
     font-size: 12px;
     display: block;
 }
-#sidebar-area .settings-button {
+#sidebar_area .settings_button {
     position: relative;
     padding: 0 8px;
     margin-top: 8px;
 }
 
-#sidebar-area button.title_botton {
+#sidebar_area button.title_botton {
     border-radius: 5px;
     list-style: none;
     background-color: transparent;
@@ -115,41 +115,41 @@ div.display-area {
     padding-left: 15px;
 }
 
-#sidebar-area .button-text {
+#sidebar_area .button_text {
     font-size: 17px;
     font-weight: bold;
     white-space: nowrap;
     margin-left: 10px;
 }
 
-#sidebar-area button.title_botton:hover {
+#sidebar_area button.title_botton:hover {
     background-color: var(--primary-color);
 }
 
-#sidebar-area button.title_botton:hover .keyword-icon,
-#sidebar-area button.title_botton:hover .keyword-text{
+#sidebar_area button.title_botton:hover .keyword_icon,
+#sidebar_area button.title_botton:hover .keyword_text{
   color: var(--popup-color);
 }
 
-body.dark #sidebar-area button.title_botton:hover .keyword-icon,
-body.dark #sidebar-area button.title_botton:hover .keyword-text{
+body.dark #sidebar_area button.title_botton:hover .keyword_icon,
+body.dark #sidebar_area button.title_botton:hover .keyword_text{
   color: var(--text-color);
 }
 
-div#center-area {
+div#center_area {
     display: flex;
     justify-content: center;
 	overflow-y: scroll;
 	position: relative;
 }
-div#center-area::-webkit-scrollbar{
+div#center_area::-webkit-scrollbar{
 	display: none;
 }
 
-#center-area p{
+#center_area p{
 	line-height: 1.5em;
 }
-#center-area button {
+#center_area button {
     border-radius: 5px;
     border: none;
     background: var(--primary-color-light-popup);
@@ -159,25 +159,25 @@ div#center-area::-webkit-scrollbar{
     padding: 0 15px;
 	
 }
-#center-area button:hover {
+#center_area button:hover {
     /*font-weight: bold;*/
     box-shadow: rgba(0, 0, 0, 0.2) 3px 3px 10px 0px;
 }
 
-div#center-area > div {
+div#center_area > div {
     max-width: 700px;
     width: 100%;
     margin: 0 14px;
 }
 
-.sync-message-container {
+.sync_message_container {
 	height: 50px;
 	display: none;
 }
-.sync-message-container.display {
+.sync_message_container.display {
 	display: block;
 }
-.change-message {
+.change_message {
     height: 50px;
     background: darkgreen;
     width: 100%;
@@ -186,29 +186,29 @@ div#center-area > div {
     line-height: 50px;
     padding: 0 25px;
 }
-.change-message span {
+.change_message span {
     font-weight: bold;
     color: white;
 }
 
-ul.switch-list,
+ul.switch_list,
 ul.collapse-list {
     padding: 0px;
     list-style-type: none;
 }
-.switch-content{
+.switch_content{
     padding-left: 75px;
     padding-top: 10px;
     padding-bottom: 10px;
     position: relative;
 }
-.bottom-line {
+.bottom_line {
     border-bottom-width: 1px;
     border-bottom-style: solid;
     border-bottom-color: var(--bottom-line-color);
 }
 
-li.switch-content .switch-toggle{
+li.switch_content .switch_toggle{
   position: absolute;
   left: 0;
   top: 0;
@@ -218,7 +218,7 @@ li.switch-content .switch-toggle{
   align-items: center;
   justify-content: center;
 }
-li.switch-content .switch-toggle .toggle-box{
+li.switch_content .switch_toggle .toggle_box{
   position: relative;
   height: 22px;
   width: 40px;
@@ -227,7 +227,7 @@ li.switch-content .switch-toggle .toggle-box{
   transition: var(--tran-05);
   cursor: pointer;
 }
-li.switch-content .switch-toggle .toggle-box::before{
+li.switch_content .switch_toggle .toggle_box::before{
   content: "";
   position: absolute;
   height: 15px;
@@ -239,55 +239,55 @@ li.switch-content .switch-toggle .toggle-box::before{
   background-color: var(--popup-color);
   transition: var(--tran-04);
 }
-li.switch-content.on .switch-toggle .toggle-box{
+li.switch_content.on .switch_toggle .toggle_box{
 	background-color: forestgreen;
 }
-li.switch-content.on .switch-toggle .toggle-box::before{
+li.switch_content.on .switch_toggle .toggle_box::before{
 	left: 20px;
 	background-color: var(--toggle-color);
 }
 
-#rules-created-table {
+#rules_created_table {
     border-collapse: collapse;
     width: 100%;
 }
-#rules-created-table td {
+#rules_created_table td {
     padding: 4px 10px;
 }
-#rules-created-table td:nth-child(2) {
+#rules_created_table td:nth-child(2) {
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
     max-width: 140px;
 }
-#rules-created-table td:nth-child(3) {
+#rules_created_table td:nth-child(3) {
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
     max-width: 300px;
 }
-#rules-created-table tbody tr:first-child {
+#rules_created_table tbody tr:first-child {
     padding: 0 10px 0 5px;
 }
-#rules-created-table tbody tr:first-child {
+#rules_created_table tbody tr:first-child {
     background-color: var(--primary-color-light-popup);
 }
-#rules-created-table td:has(.rule-created-control){
+#rules_created_table td:has(.rule-created-control){
     padding: 4px 1px;
 }
-#rules-created-table .rule-created-control{
+#rules_created_table .rule-created-control{
     display: flex;
     justify-content: space-around;
 }
 
-#rules-created-table .switch-toggle{
+#rules_created_table .switch-toggle{
 	height: 100%;
 	min-width: 60px;
 	display: flex;
 	align-items: center;
 	justify-content: flex-start;
 }
-#rules-created-table .switch-toggle .toggle-box{
+#rules_created_table .switch_toggle .toggle_box{
 	position: relative;
 	height: 22px;
 	width: 40px;
@@ -296,7 +296,7 @@ li.switch-content.on .switch-toggle .toggle-box::before{
 	transition: var(--tran-05);
 	cursor: pointer;
 }
-#rules-created-table .switch-toggle .toggle-box::before{
+#rules_created_table .switch_toggle .toggle_box::before{
   content: "";
   position: absolute;
   height: 15px;
@@ -308,28 +308,28 @@ li.switch-content.on .switch-toggle .toggle-box::before{
   background-color: var(--popup-color);
   transition: var(--tran-04);
 }
-#rules-created-table tr.on .switch-toggle .toggle-box{
+#rules_created_table tr.on .switch_toggle .toggle_box{
 	background-color: forestgreen;
 }
-#rules-created-table tr.on .switch-toggle .toggle-box::before{
+#rules_created_table tr.on .switch_toggle .toggle_box::before{
 	left: 20px;
 	background-color: var(--toggle-color);
 }
 
-.rules-enable-confirm {
+.rules_enable_confirm {
     margin-top: 10px;
     text-align: right;
 }
 
-.collapse-content {
+.collapse_content {
     padding-top: 10px;
     padding-bottom: 10px;
     position: relative;
 }
-.collapse-content .drop-down-header{
+.collapse_content .drop_down_header{
     padding-left: 40px;
 }
-.collapse-content .drop-down-control{
+.collapse_content .drop_down_control{
     position: absolute;
     top: 12px;
     left: 5px;
@@ -338,79 +338,79 @@ li.switch-content.on .switch-toggle .toggle-box::before{
     align-items: center;
     justify-content: center;
 }
-.collapse-content .drop-down-control svg {
+.collapse_content .drop_down_control svg {
     border-radius: 12px;
     cursor: pointer;
 }
-.collapse-content.expand .drop-down-control svg{
+.collapse_content.expand .drop_down_control svg{
 	transform: rotate(180deg);
 }
 
-.svg-24button{
+.svg_24button{
     display: flex;
     align-items: center;
 }
-.svg-24button > svg{
+.svg_24button > svg{
     border-radius: 12px;
     cursor: pointer;
 }
-.svg-24button > svg:hover{
+.svg_24button > svg:hover{
   background: var(--popup-color);
 }
 
-.fold-content{
+.fold_content{
 	display: none;
   
 	width: 100%;
 	padding: 0 15px;
 }
-.fold-content p {
+.fold_content p {
     margin-block-start: 5px;
     margin-block-end: 5px;
 }
-.fold-content .url-var-rule {
+.fold_content .url_var_rule {
     width: 100%;
 }
-.fold-content > * {
+.fold_content > * {
     margin-top: 10px;
 }
-.collapse-content.expand .fold-content{
+.collapse_content.expand .fold_content{
 	display: block;
 }
 
-.rule-confirm{
+.rule_confirm{
 	text-align: right;
 }
 
-.domainname-input {
+.domainname_input {
     display: flex;
 }
-.domainname-input > *:not(:first-child) {
+.domainname_input > *:not(:first-child) {
     margin-left: 10px;
 }
-.domainname-input input{
+.domainname_input input{
     border-radius: 5px;
     width: calc(80% - 70px);
     min-width: 260px;
 }
 
-.url-var-input-table input{
+.url_var_input_table input{
     border-radius: 5px;
 }
 
-.regex-input input{
+.regex_input input{
 	border-radius: 5px;
 	width: calc(80% - 70px);
     min-width: 260px;
 }
 
-.import-backup-block,
-.export-backup-block{
+.import_backup_block,
+.export_backup_block{
 	display: flex;
 	margin-bottom: 10px;
 }
-.import-backup-block button,
-.export-backup-block button{
+.import_backup_block button,
+.export_backup_block button{
     display: flex;
     align-items: center;
     justify-content: space-around;
@@ -432,34 +432,34 @@ li.switch-content.on .switch-toggle .toggle-box::before{
 	box-shadow: rgba(0, 0, 0, 0.2) 3px 3px 10px 0px;
 }
 
-.google-account-block{
+.google_account_block{
 	display: flex;
 }
-.google-account-block div{
+.google_account_block div{
 	margin-left: 8px;
 	font-size: 10px;
 }
-.google-account-block div p{
+.google_account_block div p{
 	margin: 0;
 }
-.google-account-block .account-connect-button{
+.google_account_block .account_connect_button{
 	width: 170px;
     display: flex;
     align-items: center;
     justify-content: space-around;
 }
 
-.notebooklm-account-block{
+.notebooklm_account_block{
 	display: flex;
 }
-.notebooklm-account-block div{
+.notebooklm_account_block div{
 	margin-left: 8px;
 	font-size: 10px;
 }
-.notebooklm-account-block p{
+.notebooklm_account_block p{
 	margin: 0;
 }
-.notebooklm-account-block .notebooklm-account-select {
+.notebooklm_account_block .notebooklm_account_select {
 	width: 220px;
     display: flex;
     align-items: center;
@@ -475,15 +475,15 @@ li.switch-content.on .switch-toggle .toggle-box::before{
 	color: var(--text-color);
 	font-size: 16px;
 }
-.notebooklm-account-block .notebooklm-account-select option {
+.notebooklm_account_block .notebooklm_account_select option {
 	padding: 5px;
 	background-color: var(--primary-color-light-popup);
 	color: var(--text-color);
 }
-.notebooklm-account-block .notebooklm-account-select option:hover {
+.notebooklm_account_block .notebooklm_account_select option:hover {
     background-color: var(--primary-color);
 }
-.notebooklm-account-block .notebooklm-connect-confirm{
+.notebooklm_account_block .notebooklm_connect_confirm{
 	margin-left: 8px;
 	
 	width: 130px;
@@ -492,21 +492,21 @@ li.switch-content.on .switch-toggle .toggle-box::before{
     justify-content: space-around;
 }
 
-#center-area {
+#center_area {
   background: var(--primary-color);
   
   flex-grow: 1;
   flex-basis: 600px;
   flex-shrink: 0;
 }
-#center-area svg{
+#center_area svg{
   fill: var(--text-color);
 }
-#center-area a svg{
+#center_area a svg{
   position: relative;
   top: 2px;
 }
-#center-area a{
+#center_area a{
   color: var(--text-color);
   text-decoration: none;
   background-color: var(--primary-color-light-popup);
@@ -515,7 +515,7 @@ li.switch-content.on .switch-toggle .toggle-box::before{
   display: inline-block;
 }
 
-#center-area #support-tab p {
+#center_area #support_tab p {
     margin: 10px 0;
 }
 
@@ -528,7 +528,7 @@ li.switch-content.on .switch-toggle .toggle-box::before{
     left: 0;
     top: 0;
 }
-.unfinish-message {
+.unfinish_message {
     position: absolute;
     height: 150px;
     width: 400px;

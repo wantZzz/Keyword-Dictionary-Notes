@@ -1131,9 +1131,10 @@ async function removeKeywordInDisplayOrder(keywordKeyIndex){
 	}
 }
 
-async function questSetting(settingName, moduleName = null){
+async function questSetting(settingNames, moduleName = null){
 	let returnData = {
-		"isFinish": false
+		"isFinish": false,
+		"settings": {}
 	};
 	
 	try {
@@ -1142,15 +1143,22 @@ async function questSetting(settingName, moduleName = null){
 		if (Result.KeywordsSetting !== undefined){
 			if (Boolean(moduleName)){
 				if (Result.KeywordsSetting[moduleName] !== undefined){
-					if (Result.KeywordsSetting[moduleName][settingName] !== undefined){
-						returnData[settingName] = Result.KeywordsSetting[moduleName][settingName];
-						returnData.isFinish = true;
-					}
+					settingNames.forEach((settingName) => {
+						if (Result.KeywordsSetting[moduleName][settingName] !== undefined){
+							returnData.settings[settingName] = Result.KeywordsSetting[moduleName][settingName];
+							returnData.isFinish = true;
+						}
+					});
 				}
 			}
-			else if (Result.KeywordsSetting[settingName] !== undefined){
-				returnData[settingName] = Result.KeywordsSetting[settingName];
-				returnData.isFinish = true;
+			else{
+				settingNames.forEach((settingName) => {
+					if (Result.KeywordsSetting[settingName] !== undefined){
+						returnData.settings[settingName] = Result.KeywordsSetting[settingName];
+						returnData.isFinish = true;
+					}
+				});
+				
 			}
 		}
 		
@@ -1176,16 +1184,18 @@ async function setSetting(settingName, value, moduleName = null){
 			if (Boolean(moduleName)){
 				if (Result.KeywordsSetting[moduleName] !== undefined){
 					if (Result.KeywordsSetting[moduleName][settingName] !== undefined){
-						returnData[settingName] = JSON.parse(JSON.stringify(Result.KeywordsSetting[moduleName][settingName]));
+						returnData.afterValue = JSON.parse(JSON.stringify(Result.KeywordsSetting[moduleName][settingName]));
 						Result.KeywordsSetting[moduleName][settingName] = value;
 						returnData.isFinish = true;
+						returnData.afterValue = value;
 					}
 				}
 			}
 			else if (Result.KeywordsSetting[settingName] !== undefined){
-				returnData[settingName] = JSON.parse(JSON.stringify(Result.KeywordsSetting[settingName]));
+				returnData.afterValue = JSON.parse(JSON.stringify(Result.KeywordsSetting[settingName]));
 				Result.KeywordsSetting[settingName] = value;
 				returnData.isFinish = true;
+				returnData.afterValue = value;
 			}
 		}
 		
@@ -1725,6 +1735,22 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse){ /
 			
 			break;
 			
+		case 'quest-setting-data':
+			questSetting(request.settingNames, request.moduleName)
+			.then((returnData) => {
+				sendResponse(returnData);
+			});
+			
+			break;
+			
+		case 'update-setting-change':
+			setSetting(request.settingName, request.value, request.moduleName)
+			.then((returnData) => {
+				sendResponse(returnData);
+			});
+			
+			break;
+			
 		//請求更改資料
 		case 'update-keyword-display-order':
 			checkIdentificationToken(request.token)
@@ -2079,8 +2105,10 @@ async function loadStartupData(){
 			chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
 				const currentWindowTab = tabs[0];
 				
-				current_PageInfo.tabId = currentWindowTab.id;
-				updateCurrentPageInfo();
+				if (currentWindowTab !== undefined){
+					current_PageInfo.tabId = currentWindowTab.id;
+					updateCurrentPageInfo();
+				}
 			});
 			if ((background_Info.currentKeyword == '') && (keyword_KeyIndex.length != 0)){
 				
@@ -2105,61 +2133,3 @@ async function awaitLoadStartupData(){
 }
 
 awaitLoadStartupData();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

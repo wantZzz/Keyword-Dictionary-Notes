@@ -1333,7 +1333,7 @@ function runInitial(){
 			const title_area = document.getElementById("title_area");
 			const keyword_area = document.getElementById("keyword_area");
 			
-			const maxheight = (document.body.offsetHeight - 231);
+			const maxheight = (sidepanel_Info.titleOffsetHeight + sidepanel_Info.keywordOffsetHeight - 150);
 			
 			title_area.style.height = Math.max(150, Math.min(sidepanel_Info.titleOffsetHeight + offset, maxheight)) + 'px';
 			keyword_area.style.height = Math.max(150, Math.min(sidepanel_Info.keywordOffsetHeight - offset, maxheight)) + 'px';
